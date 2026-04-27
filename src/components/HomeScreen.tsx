@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ref, set, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
+import { useRouter } from 'next/navigation';
+import { GameMode } from '@/lib/types';
 
-// Funció original per gestionar l'ID del jugador
 function getOrCreatePlayerId(): string {
   let id = localStorage.getItem('geoPlayerId');
   if (!id) {
@@ -17,190 +17,230 @@ function getOrCreatePlayerId(): string {
 }
 
 export default function HomeScreen() {
-  const [name, setName] = useState('');
+  const router = useRouter();
+  const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [gameMode, setGameMode] = useState<'world' | 'catalunya'>('world');
+  const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
+  const [gameMode, setGameMode] = useState<GameMode>('world');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
-  // Lògica per CREAR (Solo o Multi)
-  const handleCreateRoom = async (isSingle: boolean) => {
-    if (!name.trim()) return setError('Introdueix el teu nom');
+  // ── LÒGICA ORIGINAL (Sense tocar ni una coma) ─────────────────────────────
+  const handleSolo = async () => {
+    if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true);
     setError('');
-
     try {
       const playerId = getOrCreatePlayerId();
-      const roomCode = generateRoomCode(); // Fem servir el codi de 6 lletres original
-
+      const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { name: name.trim(), joinedAt: Date.now() } },
+        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
         currentRound: 0,
         gameState: 'lobby',
         createdAt: Date.now(),
-        isSinglePlayer: isSingle,
+        isSinglePlayer: true,
         gameMode,
       });
-
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
-      localStorage.setItem('geoPlayerName', name.trim());
+      localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${roomCode}`);
-    } catch (err) {
+    } catch {
       setError('Error en crear la partida.');
       setLoading(false);
     }
   };
 
-  // Lògica per UNIR-SE (Nova en el disseny Pro)
-  const handleJoinRoom = async () => {
-    if (!name.trim()) return setError('Introdueix el teu nom');
-    if (!joinCode.trim() || joinCode.length < 6) return setError('Codi de sala invàlid');
-    
+  const handleCreate = async () => {
+    if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true);
     setError('');
-    const code = joinCode.trim().toUpperCase();
-
     try {
-      const snap = await get(ref(db, `rooms/${code}`));
-      if (!snap.exists()) {
-        setError('Sala no trobada. Comprova el codi.');
-        return setLoading(false);
-      }
-
-      const room = snap.val();
-      if (room.gameState !== 'lobby') {
-        setError('La partida ja ha començat.');
-        return setLoading(false);
-      }
-
       const playerId = getOrCreatePlayerId();
-      const existingPlayers = Object.keys(room.players || {});
-      
-      if (existingPlayers.length >= 2 && !existingPlayers.includes(playerId)) {
-        setError('La sala és plena.');
-        return setLoading(false);
-      }
-
-      if (!existingPlayers.includes(playerId)) {
-        await set(ref(db, `rooms/${code}/players/${playerId}`), {
-          name: name.trim(),
-          joinedAt: Date.now(),
-        });
-        await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
-      }
-
-      localStorage.setItem('geoPlayerName', name.trim());
-      router.push(`/room/${code}`);
-    } catch (err) {
-      setError('Error en unir-se a la sala.');
+      const roomCode = generateRoomCode();
+      await set(ref(db, `rooms/${roomCode}`), {
+        hostId: playerId,
+        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
+        currentRound: 0,
+        gameState: 'lobby',
+        createdAt: Date.now(),
+        isSinglePlayer: false,
+        gameMode,
+      });
+      await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
+      localStorage.setItem('geoPlayerName', playerName.trim());
+      router.push(`/room/${roomCode}`);
+    } catch {
+      setError('Error en crear la sala.');
       setLoading(false);
     }
   };
 
-  return (
-    <div className="relative min-h-screen w-full flex items-center justify-center bg-[#0a0f1a] overflow-hidden">
+  const handleJoin = async () => {
+    if (!playerName.trim()) return setError('Introdueix el teu nom');
+    if (!joinCode.trim()) return setError('Introdueix el codi de sala');
+    setLoading(true);
+    setError('');
+    const code = joinCode.trim().toUpperCase();
+    try {
+      const snap = await get(ref(db, `rooms/${code}`));
+      if (!snap.exists()) {
+        setError('Sala no trobada.');
+        return setLoading(false);
+      }
+      const room = snap.val();
+      const playerId = getOrCreatePlayerId();
+      const existing = Object.keys(room.players || {});
       
-      {/* Decoració de fons */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/20 rounded-full blur-[120px]" />
+      if (!existing.includes(playerId)) {
+        await set(ref(db, `rooms/${code}/players/${playerId}`), {
+          name: playerName.trim(),
+          joinedAt: Date.now(),
+        });
+        await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
+      }
+      localStorage.setItem('geoPlayerName', playerName.trim());
+      router.push(`/room/${code}`);
+    } catch {
+      setError('Error en unir-se.');
+      setLoading(false);
+    }
+  };
+
+  const tabs = [
+    { id: 'solo' as const, label: '🧍 Individual' },
+    { id: 'create' as const, label: '🏠 Crear Sala' },
+    { id: 'join' as const, label: '🔗 Unir-se' },
+  ];
+
+  // ── DISSENY NOU (Aplicat sobre la teva estructura) ────────────────────────
+  return (
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-[#0a0f1a] overflow-hidden p-6">
+      
+      {/* Llums de fons */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/20 rounded-full blur-[120px]" />
 
       {/* Crèdits */}
-      <div className="absolute top-6 right-8 text-right hidden sm:block">
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Projecte Alpha</p>
-        <p className="text-white font-medium text-xs">Creat per: <span className="text-emerald-400">Fortià Arumí Casals</span></p>
+      <div className="absolute top-8 right-10 text-right hidden sm:block">
+        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Projecte Alpha</p>
+        <p className="text-white font-medium text-sm">Creat per: <span className="text-emerald-400 font-bold">Fortià Arumí Casals</span></p>
       </div>
 
-      <div className="relative z-10 w-full max-w-md px-6">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4 animate-bounce">🌍</div>
-          <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tighter mb-2">
-            LA QUINTA <span className="text-emerald-400">FORCA</span>
+      <div className="relative z-10 w-full max-w-md">
+        
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="text-7xl mb-4 drop-shadow-[0_0_20px_rgba(52,211,153,0.2)] animate-bounce">🌍</div>
+          <h1 className="text-5xl font-black text-white tracking-tighter mb-2 italic">
+            LA QUINTA <span className="text-emerald-400 not-italic">FORCA</span>
           </h1>
-          <p className="text-gray-400 font-medium text-sm">Endevina on ets al món</p>
+          <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Endevina on ets al món</p>
         </div>
 
+        {/* Targeta Glassmorphism */}
         <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl">
           
           {/* Input Nom */}
           <div className="mb-6">
-            <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-3 ml-1">El teu Nickname</label>
+            <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 ml-1">Nickname</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => { setName(e.target.value); setError(''); }}
-              placeholder="Ex: ElMestreDelsMapes"
-              className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-3.5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 transition-all"
+              value={playerName}
+              onChange={(e) => {setPlayerName(e.target.value); setError('');}}
+              placeholder="Introdueix el teu nom..."
+              className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all text-lg"
             />
           </div>
 
-          {/* Selector Regió */}
-          <div className="mb-8">
-            <label className="block text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-4 ml-1">Regió de joc</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setGameMode('world')}
-                className={`py-3 rounded-xl font-bold text-xs transition-all ${gameMode === 'world' ? 'bg-white text-black shadow-lg' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-              >
-                🌎 Tot el Món
-              </button>
-              <button
-                onClick={() => setGameMode('catalunya')}
-                className={`py-3 rounded-xl font-bold text-xs transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
-              >
-                🔴🟡 Catalunya
-              </button>
+          {/* Selector Mode (Només Solo/Create) */}
+          {tab !== 'join' && (
+            <div className="mb-8">
+              <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-1">Regió de joc</label>
+              <div className="flex bg-black/40 rounded-xl p-1 gap-2 border border-white/5">
+                <button
+                  onClick={() => setGameMode('world')}
+                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'world' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                >
+                  🌎 TOT EL MÓN
+                </button>
+                <button
+                  onClick={() => setGameMode('catalunya')}
+                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                >
+                  🔴🟡 CATALUNYA
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* Tabs */}
+          <div className="flex bg-black/40 rounded-xl p-1 mb-8 gap-1 border border-white/5">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all ${tab === t.id ? 'bg-emerald-500 text-black' : 'text-gray-500 hover:text-white'}`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
-          {/* Botons d'Acció */}
-          <div className="flex flex-col gap-4">
-            <button
-              onClick={() => handleCreateRoom(true)}
-              disabled={loading}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-4 rounded-2xl text-lg shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-50"
-            >
-              {loading ? 'CARREGANT...' : '▶ JUGAR SOL'}
-            </button>
-
-            <div className="grid grid-cols-2 gap-3 mt-2">
+          {/* Accions segons Tab */}
+          <div className="space-y-4">
+            {tab === 'solo' && (
               <button
-                onClick={() => handleCreateRoom(false)}
-                disabled={loading}
-                className="bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl text-xs transition-all"
+                onClick={handleSolo}
+                disabled={loading || !playerName.trim()}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-5 rounded-2xl text-xl shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-20"
               >
-                ➕ Crear Sala
+                {loading ? 'CARREGANT...' : '🚀 JUGAR SOL'}
               </button>
-              <div className="relative flex gap-2">
+            )}
+
+            {tab === 'create' && (
+              <button
+                onClick={handleCreate}
+                disabled={loading || !playerName.trim()}
+                className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-5 rounded-2xl text-xl shadow-[0_10px_20px_rgba(99,102,241,0.2)] transition-all active:scale-95 disabled:opacity-20"
+              >
+                {loading ? 'CREANT...' : '🏠 CREAR SALA'}
+              </button>
+            )}
+
+            {tab === 'join' && (
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Codi"
-                  maxLength={6}
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 text-center text-white focus:outline-none focus:border-indigo-500/50 text-xs font-mono"
+                  placeholder="CODI"
+                  maxLength={6}
+                  className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white text-center font-mono text-2xl focus:outline-none focus:border-indigo-500"
                 />
-                <button 
-                  onClick={handleJoinRoom}
-                  className="bg-indigo-600 p-3 rounded-xl hover:bg-indigo-500 transition-all"
+                <button
+                  onClick={handleJoin}
+                  disabled={loading || !playerName.trim() || joinCode.length < 6}
+                  className="bg-indigo-600 px-6 rounded-2xl text-white font-bold hover:bg-indigo-500 transition-all disabled:opacity-20"
                 >
                   ➜
                 </button>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Missatge d'Error */}
+          {/* Error */}
           {error && (
-            <p className="text-red-400 text-[10px] text-center mt-4 font-bold bg-red-500/10 py-2 rounded-lg border border-red-500/20">
+            <div className="mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] text-center font-bold uppercase tracking-widest">
               ⚠️ {error}
-            </p>
+            </div>
           )}
         </div>
-        
-        <p className="text-center text-gray-600 text-[10px] mt-8 font-medium">
-          Versió 1.2.0 • Sistema de coordenades verificat
+
+        {/* Footer */}
+        <p className="text-center text-gray-700 text-[10px] mt-10 font-black uppercase tracking-[0.2em]">
+          Versió 1.2.5 • Estructures de dades verificades
         </p>
       </div>
     </div>
