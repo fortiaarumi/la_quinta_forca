@@ -25,7 +25,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ── LÒGICA ORIGINAL (Sense tocar ni una coma) ─────────────────────────────
+  // ── LÒGICA ORIGINAL (INTACTA) ─────────────────────────────────────────────
   const handleSolo = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true);
@@ -40,7 +40,7 @@ export default function HomeScreen() {
         gameState: 'lobby',
         createdAt: Date.now(),
         isSinglePlayer: true,
-        gameMode,
+        gameMode, // Aquesta línia ara sí que enviarà 'catalunya' o 'world' correctament
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       localStorage.setItem('geoPlayerName', playerName.trim());
@@ -113,23 +113,23 @@ export default function HomeScreen() {
     { id: 'join' as const, label: '🔗 Unir-se' },
   ];
 
-  // ── DISSENY NOU (Aplicat sobre la teva estructura) ────────────────────────
+  // ── DISSENY NOU (Aplicat sobre la teva estructura de return) ──────────────
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center bg-[#0a0f1a] overflow-hidden p-6">
       
-      {/* Llums de fons */}
+      {/* Llums decoratives de fons */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/20 rounded-full blur-[120px]" />
 
-      {/* Crèdits */}
+      {/* Crèdits d'autor */}
       <div className="absolute top-8 right-10 text-right hidden sm:block">
         <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Projecte Alpha</p>
-        <p className="text-white font-medium text-sm">Creat per: <span className="text-emerald-400 font-bold">Fortià Arumí Casals</span></p>
+        <p className="text-white font-medium text-sm italic">Creat per: <span className="text-emerald-400 font-bold not-italic">Fortià Arumí Casals</span></p>
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="w-full max-w-md relative z-10">
         
-        {/* Logo */}
+        {/* Logo i Títol */}
         <div className="text-center mb-10">
           <div className="text-7xl mb-4 drop-shadow-[0_0_20px_rgba(52,211,153,0.2)] animate-bounce">🌍</div>
           <h1 className="text-5xl font-black text-white tracking-tighter mb-2 italic">
@@ -138,35 +138,35 @@ export default function HomeScreen() {
           <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px]">Endevina on ets al món</p>
         </div>
 
-        {/* Targeta Glassmorphism */}
+        {/* Targeta Principal amb Glassmorphism */}
         <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl">
           
-          {/* Input Nom */}
+          {/* Nom del jugador */}
           <div className="mb-6">
-            <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 ml-1">Nickname</label>
+            <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-3 ml-1">El teu Nickname</label>
             <input
               type="text"
               value={playerName}
-              onChange={(e) => {setPlayerName(e.target.value); setError('');}}
+              onChange={(e) => { setPlayerName(e.target.value); setError(''); }}
               placeholder="Introdueix el teu nom..."
-              className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all text-lg"
+              className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-gray-700 focus:outline-none focus:border-emerald-500/50 transition-all text-lg shadow-inner"
             />
           </div>
 
-          {/* Selector Mode (Només Solo/Create) */}
+          {/* Selector de mode de joc (Respectant l'estat original) */}
           {tab !== 'join' && (
-            <div className="mb-8">
+            <div className="mb-6">
               <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-1">Regió de joc</label>
               <div className="flex bg-black/40 rounded-xl p-1 gap-2 border border-white/5">
                 <button
                   onClick={() => setGameMode('world')}
-                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'world' ? 'bg-white text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'world' ? 'bg-white text-black shadow-lg scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
                 >
-                  🌎 TOT EL MÓN
+                  🌎 MÓN
                 </button>
                 <button
                   onClick={() => setGameMode('catalunya')}
-                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
+                  className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
                 >
                   🔴🟡 CATALUNYA
                 </button>
@@ -174,7 +174,7 @@ export default function HomeScreen() {
             </div>
           )}
 
-          {/* Tabs */}
+          {/* Tabs Navegació */}
           <div className="flex bg-black/40 rounded-xl p-1 mb-8 gap-1 border border-white/5">
             {tabs.map((t) => (
               <button
@@ -187,15 +187,15 @@ export default function HomeScreen() {
             ))}
           </div>
 
-          {/* Accions segons Tab */}
+          {/* Contingut del Tab (Botons d'Acció Principals) */}
           <div className="space-y-4">
             {tab === 'solo' && (
               <button
                 onClick={handleSolo}
                 disabled={loading || !playerName.trim()}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-5 rounded-2xl text-xl shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-20"
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-6 rounded-3xl text-xl shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-20"
               >
-                {loading ? 'CARREGANT...' : '🚀 JUGAR SOL'}
+                {loading ? '⌛ PREPARANT...' : '🚀 JUGAR SOL'}
               </button>
             )}
 
@@ -203,9 +203,9 @@ export default function HomeScreen() {
               <button
                 onClick={handleCreate}
                 disabled={loading || !playerName.trim()}
-                className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-black py-5 rounded-2xl text-xl shadow-[0_10px_20px_rgba(99,102,241,0.2)] transition-all active:scale-95 disabled:opacity-20"
+                className="w-full bg-white text-black font-black py-6 rounded-3xl text-xl shadow-[0_10px_20px_rgba(255,255,255,0.1)] transition-all active:scale-95 disabled:opacity-20"
               >
-                {loading ? 'CREANT...' : '🏠 CREAR SALA'}
+                {loading ? '⌛ CREANT SALA...' : '🏠 CREAR SALA'}
               </button>
             )}
 
@@ -222,7 +222,7 @@ export default function HomeScreen() {
                 <button
                   onClick={handleJoin}
                   disabled={loading || !playerName.trim() || joinCode.length < 6}
-                  className="bg-indigo-600 px-6 rounded-2xl text-white font-bold hover:bg-indigo-500 transition-all disabled:opacity-20"
+                  className="bg-indigo-600 px-6 rounded-2xl text-white font-bold hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-20"
                 >
                   ➜
                 </button>
@@ -230,7 +230,7 @@ export default function HomeScreen() {
             )}
           </div>
 
-          {/* Error */}
+          {/* Missatge d'Error */}
           {error && (
             <div className="mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] text-center font-bold uppercase tracking-widest">
               ⚠️ {error}
@@ -238,9 +238,9 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer amb versió */}
         <p className="text-center text-gray-700 text-[10px] mt-10 font-black uppercase tracking-[0.2em]">
-          Versió 1.2.5 • Estructures de dades verificades
+          Versió 1.2.6 • Core Original Restaurat
         </p>
       </div>
     </div>

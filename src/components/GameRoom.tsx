@@ -108,7 +108,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     
     // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
     const coords = room.gameMode === 'catalunya' 
-      ? randomBiasedCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
+      ? randomCatalunyaLocations()[0] // Aquí hauries d'usar una que només doni coordenades de CAT
       : randomBiasedCoords();
 
     await new Promise<void>((resolve) => {
