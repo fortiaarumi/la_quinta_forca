@@ -1,3 +1,4 @@
+/// <reference types="@types/google.maps" />
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -35,14 +36,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
 
-  // Carregar Google Maps
   useEffect(() => {
     loadGoogleMaps()
       .then(() => setMapsReady(true))
       .catch((e) => console.error('Error carregant Maps:', e));
   }, []);
 
-  // Subscripció Firebase
   useEffect(() => {
     const roomRef = ref(db, `rooms/${roomId}`);
     const unsub = onValue(
@@ -65,7 +64,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     return () => unsub();
   }, [roomId]);
 
-  // Reiniciar estat per ronda nova
   useEffect(() => {
     if (!room) return;
     if (prevRoundRef.current !== room.currentRound) {
@@ -79,9 +77,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const isSinglePlayer = room?.isSinglePlayer ?? false;
   const isHost = room?.hostId === playerId;
 
-  // Transició automàtica quan tots han endevinat
-  // En mode un jugador: passa quan el jugador sol ha endevinat
-  // En mode multijugador: espera tots dos jugadors (comportament original)
   useEffect(() => {
     if (!room || room.hostId !== playerId || room.gameState !== 'playing') return;
     if (transitionedRef.current) return;
@@ -90,8 +85,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const playerIds = Object.keys(room.players);
 
     const allGuessed = isSinglePlayer
-      ? playerIds.every((id) => guesses[id])           // 1 jugador: només ell
-      : playerIds.length >= 2 && playerIds.every((id) => guesses[id]); // 2 jugadors
+      ? playerIds.every((id) => guesses[id])
+      : playerIds.length >= 2 && playerIds.every((id) => guesses[id]);
 
     if (allGuessed) {
       transitionedRef.current = true;
@@ -99,7 +94,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     }
   }, [room, playerId, roomId, isSinglePlayer]);
 
-  // Generar ubicacions — món o Catalunya
   const generateLocations = useCallback(async () => {
     if (!mapsReady || !room) return;
     await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
@@ -107,11 +101,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
     let locations: { lat: number; lng: number; panoId: string }[] = [];
 
     if (room.gameMode === 'catalunya') {
-      // Mode Catalunya: coordenades predefinides, sense cerca de Street View
       locations = randomCatalunyaLocations();
     } else {
-      // Mode Món: cerca aleatòria de Street View (comportament original)
-      const service = new google.maps.StreetViewService();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const service = new (google.maps as any).StreetViewService();
       let attempts = 0;
 
       while (locations.length < 5 && attempts < 150) {
@@ -119,6 +112,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const coords = randomBiasedCoords();
 
         await new Promise<void>((resolve) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           service.getPanorama(
             {
               location: coords,
@@ -128,8 +122,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
             },
-            (data: google.maps.StreetViewPanoramaData | null, status: google.maps.StreetViewStatus) => {
-              if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (data: any, status: any) => {
+              if (
+                status === google.maps.StreetViewStatus.OK &&
+                data?.location?.latLng
+              ) {
                 locations.push({
                   lat: data.location.latLng.lat(),
                   lng: data.location.latLng.lng(),
@@ -160,7 +158,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     });
   }, [mapsReady, roomId, room]);
 
-  // En mode un jugador, el lobby arrenca sol automàticament quan Maps està llest
   useEffect(() => {
     if (!room || !mapsReady || !isHost) return;
     if (!isSinglePlayer) return;
@@ -168,7 +165,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     generateLocations();
   }, [room?.gameState, mapsReady, isSinglePlayer, isHost]);
 
-  // Enviar endevinança
   const submitGuess = useCallback(
     async (guessLat: number, guessLng: number) => {
       if (!room?.locations || hasGuessed) return;
@@ -194,7 +190,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     [room, roomId, playerId, hasGuessed]
   );
 
-  // Avançar ronda (host)
   const nextRound = useCallback(async () => {
     if (!room || !isHost) return;
     const next = room.currentRound + 1;
@@ -207,8 +202,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
       });
     }
   }, [room, isHost, roomId]);
-
-  // ──── Renders ────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -227,8 +220,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     );
   }
 
-  // En mode un jugador, el lobby i la generació mostren una pantalla de càrrega simple
-  // (no es mostra el LobbyScreen de multijugador)
   if (isSinglePlayer && (room.gameState === 'lobby' || room.gameState === 'generating')) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center gap-4">
@@ -272,16 +263,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
     );
   }
 
-  // gameState === 'playing'
-  const roundGuesses = room.rounds?.[room.currentRound]?.guesses || {};
   const allPlayerIds = Object.keys(room.players);
-
-  // Badge de mode
   const modeBadge = room.gameMode === 'catalunya' ? '🔴🟡 Catalunya' : null;
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
-      {/* Street View */}
       {mapsReady && room.locations?.[room.currentRound] && (
         <StreetViewPane
           key={`sv-${room.currentRound}`}
@@ -289,7 +275,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         />
       )}
 
-      {/* HUD superior — ronda */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
         <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
           Ronda {room.currentRound + 1} / 5
@@ -301,7 +286,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         )}
       </div>
 
-      {/* HUD puntuacions */}
       <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
         {allPlayerIds.map((id, i) => {
           const player = room.players[id];
@@ -322,7 +306,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         })}
       </div>
 
-      {/* Botó d'endevinar */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
         {!hasGuessed && !showGuessMap && (
           <button
@@ -332,7 +315,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
             📍 Endevinar
           </button>
         )}
-        {/* En mode un jugador, quan ha endevinat no cal esperar ningú */}
         {hasGuessed && !isSinglePlayer && (
           <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl">
             ⏳ Esperant {Object.entries(room.players).find(([id]) => id !== playerId)?.[1]?.name ?? "l'adversari"}...
@@ -345,7 +327,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         )}
       </div>
 
-      {/* Mapa d'endevinar */}
       {showGuessMap && mapsReady && (
         <GuessMap onGuess={submitGuess} onClose={() => setShowGuessMap(false)} />
       )}
