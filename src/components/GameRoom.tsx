@@ -95,68 +95,62 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }, [room, playerId, roomId, isSinglePlayer]);
 
   const generateLocations = useCallback(async () => {
-    if (!mapsReady || !room) return;
-    await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
+  if (!mapsReady || !room) return;
+  await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
 
-    let locations: { lat: number; lng: number; panoId: string }[] = [];
+  const service = new (google.maps as any).StreetViewService();
+  const locations: { lat: number; lng: number; panoId: string }[] = [];
+  let attempts = 0;
 
-    if (room.gameMode === 'catalunya') {
-      locations = randomCatalunyaLocations();
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const service = new (google.maps as any).StreetViewService();
-      let attempts = 0;
+  // Aquest bucle s'assegura que cada ubicació tingui foto real
+  while (locations.length < 5 && attempts < 150) {
+    attempts++;
+    
+    // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
+    const coords = room.gameMode === 'catalunya' 
+      ? randomBiasedCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
+      : randomBiasedCoords();
 
-      while (locations.length < 5 && attempts < 150) {
-        attempts++;
-        const coords = randomBiasedCoords();
-
-        await new Promise<void>((resolve) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          service.getPanorama(
-            {
-              location: coords,
-              radius: 50000,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
-            },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (data: any, status: any) => {
-              if (
-                status === google.maps.StreetViewStatus.OK &&
-                data?.location?.latLng
-              ) {
-                locations.push({
-                  lat: data.location.latLng.lat(),
-                  lng: data.location.latLng.lng(),
-                  panoId: data.location.pano || '',
-                });
-              }
-              resolve();
-            }
-          );
-        });
-      }
-
-      while (locations.length < 5) {
-        locations.push(FALLBACK_LOCATIONS[locations.length]);
-      }
-    }
-
-    const initialScores = Object.fromEntries(
-      Object.keys(room.players).map((id) => [id, 0])
-    );
-
-    await update(ref(db, `rooms/${roomId}`), {
-      locations,
-      gameState: 'playing',
-      currentRound: 0,
-      totalScores: initialScores,
-      rounds: null,
+    await new Promise<void>((resolve) => {
+      service.getPanorama(
+        {
+          location: coords,
+          radius: room.gameMode === 'catalunya' ? 1000 : 50000, // Radi més petit a CAT per ser més precís
+          source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
+          preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
+        },
+        (data: any, status: any) => {
+          // NOMÉS afegim la ubicació si Google ens confirma que l'estat és OK
+          if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+            locations.push({
+              lat: data.location.latLng.lat(),
+              lng: data.location.latLng.lng(),
+              panoId: data.location.pano || '',
+            });
+          }
+          resolve();
+        }
+      );
     });
-  }, [mapsReady, roomId, room]);
+  }
+
+  // Si després de 150 intents no n'hi ha 5 (molt difícil), usem els fallbacks
+  while (locations.length < 5) {
+    locations.push(FALLBACK_LOCATIONS[locations.length]);
+  }
+
+  const initialScores = Object.fromEntries(
+    Object.keys(room.players).map((id) => [id, 0])
+  );
+
+  await update(ref(db, `rooms/${roomId}`), {
+    locations,
+    gameState: 'playing',
+    currentRound: 0,
+    totalScores: initialScores,
+    rounds: null,
+  });
+}, [mapsReady, roomId, room]);;
 
   useEffect(() => {
     if (!room || !mapsReady || !isHost) return;
