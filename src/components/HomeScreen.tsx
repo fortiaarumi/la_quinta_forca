@@ -20,7 +20,7 @@ function getOrCreateGuestId(): string {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, nickname, isGuest, logout } = useAuth();
+  const { user, nickname, isAdmin, isGuest, logout } = useAuth();
 
   // L'ID del jugador és el UID de Firebase si està loguejat, o el localStorage si és convidat
   const getPlayerId = () => user ? user.uid : getOrCreateGuestId();
@@ -117,7 +117,7 @@ export default function HomeScreen() {
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
+        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: true, gameMode, timeMode,
       });
@@ -134,7 +134,7 @@ export default function HomeScreen() {
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
+        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
       });
@@ -158,7 +158,7 @@ export default function HomeScreen() {
         setError('La sala és plena (màxim 10 jugadors).'); return setLoading(false);
       }
       if (!existing.includes(playerId)) {
-        await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now() });
+        await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
       router.push(`/room/${code}`);

@@ -15,6 +15,7 @@ export default function FinalResults({ room, playerId }: Props) {
       id,
       name: player.name,
       score: room.totalScores?.[id] ?? 0,
+      isAdmin: (player as any).isAdmin, // Afegim això!
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -54,7 +55,10 @@ export default function FinalResults({ room, playerId }: Props) {
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{medals[i] ?? '🎮'}</span>
                     <div>
-                      <div className="font-black text-xl">{p.name}</div>
+                      <div className="font-black text-xl flex items-center gap-2">
+                        {p.name} 
+                        {p.isAdmin && <span className="text-[10px] bg-red-600 text-white px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
+                      </div>
                       {isMe && <div className="text-xs text-gray-400">Tu</div>}
                     </div>
                   </div>

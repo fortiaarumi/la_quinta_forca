@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 interface UserStats {
   uid: string;
   nickname: string;
+  isAdmin?: boolean;
   bestScoreWorld: number;
   bestScoreCatalunya: number;
   total5k: number;
@@ -120,9 +121,12 @@ export default function StatsPage() {
                     >
                       <td className="p-6 font-black text-xl italic opacity-30 italic">#{index + 1}</td>
                       <td className="p-6">
-                        <div className="font-bold text-lg">{player.nickname}</div>
-                        {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">Tu</span>}
-                      </td>
+                      <div className="font-bold text-lg flex items-center gap-2">
+                        {player.nickname}
+                        {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
+                      </div>
+                      {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mt-1 inline-block">Tu</span>}
+                    </td>
                       <td className="p-6 text-right font-mono text-2xl font-black text-emerald-400">
                         {mode === '5k' ? player.total5k : mode === 'world' ? player.bestScoreWorld : player.bestScoreCatalunya}
                       </td>

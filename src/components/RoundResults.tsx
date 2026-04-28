@@ -123,9 +123,11 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: color }}
                   />
-                  <span className="text-white font-bold text-sm truncate">
-                    {player?.name}{isMe ? ' (Tu)' : ''}
-                  </span>
+                  <span className="text-white font-bold text-sm truncate flex items-center gap-1.5">
+                  {player?.name}
+                  {(player as any)?.isAdmin && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.8)]">👑 ADMIN</span>}
+                  {isMe ? ' (Tu)' : ''}
+                </span>
                 </div>
                 {guess ? (
                   <>
@@ -148,7 +150,9 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
         <div className="bg-gray-800 rounded-xl p-3 mb-4 flex justify-around">
           {playerIds.map((pid) => (
             <div key={pid} className="text-center">
-              <div className="text-gray-400 text-xs mb-1">{room.players[pid]?.name}</div>
+              <div className="text-gray-400 text-xs mb-1 flex justify-center items-center gap-1">
+                {room.players[pid]?.name} {(room.players[pid] as any)?.isAdmin && '👑'}
+              </div>
               <div className="text-yellow-400 font-black text-lg">
                 {(room.totalScores?.[pid] ?? 0).toLocaleString()}
               </div>

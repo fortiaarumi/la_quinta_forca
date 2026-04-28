@@ -8,6 +8,7 @@ import { auth, db } from './firebase';
 interface AuthContextType {
   user: User | null;
   nickname: string | null;
+  isAdmin: boolean;
   isGuest: boolean;
   loading: boolean;
   logout: () => Promise<void>;
@@ -18,6 +19,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   nickname: null,
+  isAdmin: false,
   isGuest: false,
   loading: true,
   logout: async () => {},
@@ -28,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -37,9 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (u) {
         setIsGuest(false);
         try {
-          // 1. Busquem el Nickname
-          const snap = await get(ref(db, `users/${u.uid}/nickname`));
-          if (snap.exists()) setNickname(snap.val() as string);
+          // 1. Busquem tot el perfil de l'usuari (per tenir nickname i isAdmin)
+          const snap = await get(ref(db, `users/${u.uid}`));
+          if (snap.exists()) {
+            const data = snap.val();
+            setNickname(data.nickname);
+            setIsAdmin(data.isAdmin === true); // Si tens el rol, s'activa!
+          }
 
           // 2. SISTEMA DE PRESÈNCIA (Nou radar)
           const userStatusRef = ref(db, `users/${u.uid}/status`);
@@ -89,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       nickname, 
+      isAdmin,
       isGuest, 
       loading, 
       logout, 
