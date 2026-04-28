@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { ref, onValue, update, set, runTransaction } from 'firebase/database';
+import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
 import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords } from '@/lib/gameUtils';
@@ -118,33 +118,45 @@ export default function GameRoom({ roomId, playerId }: Props) {
         clearInterval(interval);
         transitionedRef.current = true;
 
-        // Tancar el mapa si a algú se li ha esgotat el temps
-        if (isTimeUp && !hasGuessed) {
-          if (tempPinRef.current) {
-            // 👈 AFEGIT: Si tenim un pin posat, l'enviem directament!
-            submitGuess(tempPinRef.current.lat, tempPinRef.current.lng);  
-          } else {
-            setShowGuessMap(false);
-            setHasGuessed(true);
+        // Ho posem dins d'una funció asyncrona per poder esperar
+        const wrapUpRound = async () => {
+          // 1. Tancar el mapa i enviar el pin auto-guardat si s'ha esgotat el temps
+          if (isTimeUp && !hasGuessed) {
+            if (tempPinRef.current) {
+              await submitGuess(tempPinRef.current.lat, tempPinRef.current.lng); // Esperem que s'enviï
+            } else {
+              setShowGuessMap(false);
+              setHasGuessed(true);
+            }
           }
-        }
 
-        // NOMÉS el Host calcula i suma els punts (per no sumar-los dues vegades)
-        if (room.hostId === playerId) {
-          const updates: Record<string, any> = { gameState: 'roundResults' };
-          
-          playerIds.forEach(id => {
-            const roundScore = guesses[id]?.score || 0; // Si no ha votat, 0 punts
-            const currentTotal = room.totalScores?.[id] || 0;
-            updates[`totalScores/${id}`] = currentTotal + roundScore;
-          });
+          // 2. NOMÉS el Host calcula i suma els punts
+          if (room.hostId === playerId) {
+            // Donem 1.5 segons de marge de gràcia perquè els pins automàtics arribin a la base de dades
+            setTimeout(async () => {
+              // Llegim les dades més FRESCAS de Firebase
+              const snap = await get(ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses`));
+              const finalGuesses = snap.val() || {};
 
-          update(ref(db, `rooms/${roomId}`), updates);
-        }
+              const updates: Record<string, any> = { gameState: 'roundResults' };
+              
+              playerIds.forEach(id => {
+                const roundScore = finalGuesses[id]?.score || 0; // Fem servir les dades fresques!
+                const currentTotal = room.totalScores?.[id] || 0;
+                updates[`totalScores/${id}`] = currentTotal + roundScore;
+              });
+
+              update(ref(db, `rooms/${roomId}`), updates);
+            }, 1500); // 1.5 segons d'espera abans de calcular
+          }
+        };
+
+        wrapUpRound();
       }
     }, 500);
 
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room, roomId, playerId, isSinglePlayer, hasGuessed]);
 
   const generateLocations = useCallback(async () => {
