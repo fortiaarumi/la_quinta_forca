@@ -512,7 +512,7 @@ export default function HomeScreen() {
             <span style={{ fontSize: '20px' }}>⛷️</span>
             <div>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>Roger Bernadó masterclass esquiant</p>
-              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Projecte Alpha</p>
+              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Fase Alpha</p>
             </div>
           </div>
 
@@ -557,7 +557,7 @@ export default function HomeScreen() {
 
           {/* Versió */}
           <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center' }}>
-            Versió 2.0 · Creat per Fortià Arumí Casals
+            Versió 3.0 · Creat per Fortià Arumí Casals
           </p>
         </div>
 
