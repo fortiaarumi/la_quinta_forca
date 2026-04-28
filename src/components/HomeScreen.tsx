@@ -9,6 +9,7 @@ import { GameMode } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
 import { getUserProfile } from '@/lib/userStats';
 import Link from 'next/link';
+import FriendsTab from './FriendsTab';
 
 // Per a convidats: manté el localStorage ID
 function getOrCreateGuestId(): string {
@@ -34,6 +35,9 @@ export default function HomeScreen() {
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // AFEGIT: Per canviar entre menú de joc i menú d'amics
+  const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
 
   // Estadístiques de l'usuari autenticat per la columna dreta
   const [myBestWorld, setMyBestWorld] = useState<number | null>(null);
@@ -184,8 +188,30 @@ export default function HomeScreen() {
             </p>
           </div>
 
-          {/* Nom del jugador */}
-          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px 24px' }}>
+          {/* TABS DE NAVEGACIÓ (PLAY / FRIENDS) */}
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '16px', padding: '4px', gap: '4px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' }}>
+            <button 
+              onClick={() => setActiveMenu('play')}
+              style={{
+                flex: 1, padding: '14px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase',
+                background: activeMenu === 'play' ? '#10b981' : 'transparent',
+                color: activeMenu === 'play' ? 'black' : 'rgba(255,255,255,0.4)',
+                boxShadow: activeMenu === 'play' ? '0 4px 12px rgba(16,185,129,0.3)' : 'none'
+              }}>🎮 Jugar</button>
+            <button 
+              onClick={() => setActiveMenu('friends')}
+              style={{
+                flex: 1, padding: '14px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase',
+                background: activeMenu === 'friends' ? '#6366f1' : 'transparent',
+                color: activeMenu === 'friends' ? 'white' : 'rgba(255,255,255,0.4)',
+                boxShadow: activeMenu === 'friends' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none'
+              }}>👥 Amics</button>
+          </div>
+
+          {activeMenu === 'play' ? (
+            <>
+              {/* Nom del jugador */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px 24px' }}>
             <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '10px' }}>
               {user ? 'Jugues com' : 'El teu nom'}
             </label>
@@ -301,6 +327,13 @@ export default function HomeScreen() {
               </div>
             )}
           </div>
+        </>
+      ) : (
+        /* CONTINGUT DE LA PESTANYA AMICS */
+        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+          <FriendsTab />
+        </div>
+      )}
 
           {/* Footer mòbil */}
           <div className="text-center lg:hidden">

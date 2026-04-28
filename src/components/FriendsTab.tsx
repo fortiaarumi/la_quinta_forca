@@ -1,0 +1,181 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { ref, onValue, get } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/authContext';
+import { getUserByEmail, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
+
+interface FriendData {
+  uid: string;
+  nickname: string;
+  status: string;
+}
+
+interface RequestData {
+  uid: string;
+  nickname: string;
+}
+export default function FriendsTab() {
+  const { user, isGuest } = useAuth();
+  const [emailInput, setEmailInput] = useState('');
+  const [msg, setMsg] = useState({ text: '', type: '' });
+  const [friends, setFriends] = useState<FriendData[]>([]);
+  const [requests, setRequests] = useState<RequestData[]>([]);
+
+  // 1. Carregar amics en temps real (per veure online/offline)
+  useEffect(() => {
+    if (!user || isGuest) return;
+    const friendsRef = ref(db, `users/${user.uid}/friends`);
+    
+    const unsubFriends = onValue(friendsRef, (snap) => {
+      if (!snap.exists()) {
+        setFriends([]);
+        return;
+      }
+      
+      const friendUids = Object.keys(snap.val());
+      const unsubList: (() => void)[] = [];
+      const friendsMap = new Map();
+
+      friendUids.forEach(uid => {
+        const userRef = ref(db, `users/${uid}`);
+        const unsub = onValue(userRef, (uSnap) => {
+          if (uSnap.exists()) {
+            friendsMap.set(uid, { uid, ...uSnap.val() });
+            // Convertim el Map a Array i ordenem perquè els 'online' surtin a dalt
+            const sortedFriends = Array.from(friendsMap.values()).sort((a, b) => {
+              if (a.status === 'online' && b.status !== 'online') return -1;
+              if (a.status !== 'online' && b.status === 'online') return 1;
+              return 0;
+            });
+            setFriends(sortedFriends);
+          }
+        });
+        unsubList.push(unsub);
+      });
+
+      return () => unsubList.forEach(u => u());
+    });
+    
+    return () => unsubFriends();
+  }, [user, isGuest]);
+
+  // 2. Carregar peticions d'amistat
+  useEffect(() => {
+    if (!user || isGuest) return;
+    const reqRef = ref(db, `users/${user.uid}/friendRequests`);
+    const unsubReq = onValue(reqRef, async (snap) => {
+      if (!snap.exists()) {
+        setRequests([]);
+        return;
+      }
+      
+      const reqUids = Object.keys(snap.val());
+      const reqData = await Promise.all(reqUids.map(async (uid) => {
+        const uSnap = await get(ref(db, `users/${uid}/nickname`));
+        return { uid, nickname: uSnap.exists() ? uSnap.val() : 'Explorador' };
+      }));
+      setRequests(reqData);
+    });
+    return () => unsubReq();
+  }, [user, isGuest]);
+
+  // 3. Funció per buscar i afegir amic
+  const handleAddFriend = async () => {
+    if (!emailInput || !user) return;
+    setMsg({ text: 'Buscant...', type: 'info' });
+    try {
+      const targetUser: any = await getUserByEmail(emailInput);
+      if (!targetUser) {
+        setMsg({ text: "No hem trobat cap jugador amb aquest correu.", type: 'error' });
+        return;
+      }
+      if (targetUser.uid === user.uid) {
+        setMsg({ text: 'No et pots afegir a tu mateix, Fortià! 😅', type: 'error' });
+        return;
+      }
+      await sendFriendRequest(user.uid, targetUser.uid);
+      setMsg({ text: 'Petició enviada! Esperant que accepti.', type: 'success' });
+      setEmailInput('');
+    } catch (e: any) {
+      setMsg({ text: e.message || 'Error enviant petició', type: 'error' });
+    }
+  };
+
+  if (isGuest) {
+    return (
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 text-center text-gray-400">
+        <p>Has d'iniciar sessió per afegir amics.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up">
+      
+      {/* Afegir Amic */}
+      <div className="flex gap-2 mb-4">
+        <input 
+          type="email" 
+          value={emailInput}
+          onChange={(e) => setEmailInput(e.target.value)}
+          placeholder="Correu electrònic de l'amic..."
+          className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+        />
+        <button 
+          onClick={handleAddFriend}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition-all active:scale-95 text-sm"
+        >
+          Afegir
+        </button>
+      </div>
+      {msg.text && (
+        <div className={`text-xs font-bold mb-6 px-3 py-2 rounded-lg ${msg.type === 'error' ? 'bg-red-500/20 text-red-400' : msg.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* Peticions Pendents */}
+      {requests.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-2">Peticions Pendents ({requests.length})</h3>
+          <div className="space-y-2">
+            {requests.map(req => (
+              <div key={req.uid} className="flex items-center justify-between bg-white/5 border border-emerald-500/30 rounded-xl p-3">
+                <span className="text-white font-bold text-sm">{req.nickname} vol ser amic teu</span>
+                <div className="flex gap-2">
+                  <button onClick={() => acceptFriendRequest(user!.uid, req.uid)} className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 px-3 py-1 rounded-lg text-sm transition-colors">Acceptar</button>
+                  <button onClick={() => rejectFriendRequest(user!.uid, req.uid)} className="bg-red-500/20 hover:bg-red-500/40 text-red-400 px-3 py-1 rounded-lg text-sm transition-colors">Rebutjar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Llista d'amics */}
+      <div>
+        <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-2">La teva pinya ({friends.length})</h3>
+        {friends.length === 0 ? (
+          <p className="text-xs text-gray-500 italic">Encara no tens cap amic afegit.</p>
+        ) : (
+          <div className="space-y-2">
+            {friends.map(friend => (
+              <div key={friend.uid} className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3 transition-colors hover:bg-white/5">
+                <div className="flex items-center gap-3">
+                  {/* Puntet d'estat Online/Offline */}
+                  <div className={`w-2.5 h-2.5 rounded-full shadow-lg ${friend.status === 'online' ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse' : 'bg-gray-600'}`}></div>
+                  <span className="text-white font-bold">{friend.nickname}</span>
+                </div>
+                <div className="text-[10px] uppercase font-black tracking-widest text-gray-500">
+                  {friend.status === 'online' ? <span className="text-emerald-400">En línia</span> : 'Desconnectat'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
