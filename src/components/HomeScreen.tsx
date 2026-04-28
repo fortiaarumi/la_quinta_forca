@@ -92,6 +92,12 @@ export default function HomeScreen() {
       const playerId = getOrCreatePlayerId();
       const existing = Object.keys(room.players || {});
       
+      // Comprovar el límit de 10 jugadors ABANS de deixar-lo entrar
+      if (existing.length >= 10 && !existing.includes(playerId)) {
+        setError('La sala és plena (màxim 10 jugadors).');
+        return setLoading(false);
+      }
+
       if (!existing.includes(playerId)) {
         await set(ref(db, `rooms/${code}/players/${playerId}`), {
           name: playerName.trim(),
@@ -99,6 +105,7 @@ export default function HomeScreen() {
         });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
+      
       localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${code}`);
     } catch {

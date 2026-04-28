@@ -49,7 +49,7 @@ export default function LobbyScreen({
         {/* Jugadors */}
         <div className="mb-8">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Jugadors ({players.length}/2)
+            Jugadors ({players.length}/10)
           </p>
           <div className="space-y-2">
             {players.map(([id, player]) => (
@@ -65,12 +65,6 @@ export default function LobbyScreen({
                 )}
               </div>
             ))}
-            {players.length < 2 && (
-              <div className="flex items-center gap-3 bg-gray-800/40 rounded-xl p-4 border border-dashed border-gray-700">
-                <div className="w-2.5 h-2.5 rounded-full bg-gray-600" />
-                <span className="text-gray-500 italic">Esperant jugador...</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -80,19 +74,19 @@ export default function LobbyScreen({
             <button
               onClick={onStart}
               disabled={!canStart}
-              className="w-full bg-green-500 hover:bg-green-400 active:scale-95 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl text-xl transition-all shadow-lg shadow-green-500/20"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-6 rounded-3xl text-xl shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-20 uppercase tracking-tighter mt-4"
             >
               {isGenerating
-                ? '⚙️ Generant ubicacions...'
+                ? '⌛ GENERANT MAPA...'
                 : !mapsReady
-                ? '⌛ Carregant Maps...'
+                ? '⌛ CARREGANT...'
                 : players.length < 2
-                ? '⏳ Esperant jugador...'
-                : '🚀 Iniciar Partida'}
+                ? '⏳ ESPERANT JUGADORS...'
+                : '🚀 INICIAR PARTIDA'}
             </button>
             {!canStart && mapsReady && !isGenerating && players.length < 2 && (
               <p className="text-center text-gray-500 text-sm mt-3">
-                Cal ser 2 jugadors per iniciar
+                Esperant almenys 1 jugador més per iniciar...
               </p>
             )}
           </>
