@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   setGuestMode: (v: boolean) => void;
+  loginAsGuest: () => void; // Afegim la definició aquí
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   setGuestMode: () => {},
+  loginAsGuest: () => {}, // I aquí
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -58,8 +60,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsGuest(v);
   };
 
+  // Aquesta és la funció que necessitava el fitxer page.tsx
+  const loginAsGuest = () => {
+    setIsGuest(true);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, nickname, isGuest, loading, logout, setGuestMode }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      nickname, 
+      isGuest, 
+      loading, 
+      logout, 
+      setGuestMode, 
+      loginAsGuest // La passem al Provider
+    }}>
       {children}
     </AuthContext.Provider>
   );
