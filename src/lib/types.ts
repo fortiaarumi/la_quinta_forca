@@ -27,7 +27,11 @@ export type GameState =
   | 'roundResults'
   | 'finished';
 
+// Tipus de modes de joc
 export type GameMode = 'world' | 'catalunya';
+
+// NOU: Tipus per al ritme de la partida
+export type TimeMode = 'bala' | 'normal' | 'infinit';
 
 export interface Room {
   hostId: string;
@@ -40,5 +44,6 @@ export interface Room {
   createdAt: number;
   isSinglePlayer?: boolean;
   gameMode?: GameMode;
+  timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
   roundEndsAt?: number;
 }

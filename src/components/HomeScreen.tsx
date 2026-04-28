@@ -22,10 +22,10 @@ export default function HomeScreen() {
   const [joinCode, setJoinCode] = useState('');
   const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
   const [gameMode, setGameMode] = useState<GameMode>('world');
+  const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ── LÒGICA ORIGINAL (INTACTA) ─────────────────────────────────────────────
   const handleSolo = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true);
@@ -40,7 +40,8 @@ export default function HomeScreen() {
         gameState: 'lobby',
         createdAt: Date.now(),
         isSinglePlayer: true,
-        gameMode, // Aquesta línia ara sí que enviarà 'catalunya' o 'world' correctament
+        gameMode,
+        timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       localStorage.setItem('geoPlayerName', playerName.trim());
@@ -66,6 +67,7 @@ export default function HomeScreen() {
         createdAt: Date.now(),
         isSinglePlayer: false,
         gameMode,
+        timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       localStorage.setItem('geoPlayerName', playerName.trim());
@@ -176,6 +178,32 @@ export default function HomeScreen() {
                   className={`flex-1 py-3 text-[10px] font-black rounded-lg transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
                 >
                   🔴🟡 CATALUNYA
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Selector de Ritme de joc */}
+          {tab !== 'join' && (
+            <div className="mb-6">
+              <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4 ml-1">Ritme de joc</label>
+              <div className="flex bg-black/40 rounded-xl p-1 gap-1 border border-white/5">
+                <button
+                  onClick={() => setTimeMode('bala')}
+                  className={`flex-1 py-3 text-[9px] font-black rounded-lg transition-all ${timeMode === 'bala' ? 'bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)] scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
+                >
+                  ⚡ BALA (1m)
+                </button>
+                <button
+                  onClick={() => setTimeMode('normal')}
+                  className={`flex-1 py-3 text-[9px] font-black rounded-lg transition-all ${timeMode === 'normal' ? 'bg-emerald-500 text-black shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
+                >
+                  🚶 NORMAL (5m)
+                </button>
+                <button
+                  onClick={() => setTimeMode('infinit')}
+                  className={`flex-1 py-3 text-[9px] font-black rounded-lg transition-all ${timeMode === 'infinit' ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] scale-[1.02]' : 'text-gray-500 hover:text-white'}`}
+                >
+                  ♾️ SENSE TEMPS
                 </button>
               </div>
             </div>

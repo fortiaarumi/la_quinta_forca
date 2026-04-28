@@ -14,8 +14,16 @@ export function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function calculateScore(distanceKm: number): number {
-  return Math.round(5000 * Math.exp(-distanceKm / 2000));
+export function calculateScore(distanceKm: number, mode: 'world' | 'catalunya' = 'world'): number {
+  if (mode === 'catalunya') {
+    // Escala per a Catalunya: La caiguda de punts és molt ràpida (divisor 30)
+    const score = Math.round(5000 * Math.exp(-distanceKm / 30));
+    return Math.max(0, Math.min(5000, score));
+  } else {
+    // Escala per al Món: La caiguda de punts és més suau (divisor 2000)
+    const score = Math.round(5000 * Math.exp(-distanceKm / 2000));
+    return Math.max(0, Math.min(5000, score));
+  }
 }
 
 export function generateRoomCode(): string {
@@ -59,62 +67,16 @@ export function randomBiasedCoords(): Coords {
   return { lat: Math.random() * 140 - 55, lng: Math.random() * 360 - 180 };
 }
 
-// Pobles i ciutats de Catalunya amb coordenades verificades de Street View
-export const CATALUNYA_LOCATIONS: { lat: number; lng: number; name: string }[] = [
-  { lat: 41.3851, lng: 2.1734, name: 'Barcelona' },
-  { lat: 41.9794, lng: 2.8214, name: 'Girona' },
-  { lat: 41.6176, lng: 0.6200, name: 'Lleida' },
-  { lat: 41.1189, lng: 1.2445, name: 'Tarragona' },
-  { lat: 41.7286, lng: 1.8264, name: 'Manresa' },
-  { lat: 41.5463, lng: 2.1086, name: 'Sabadell' },
-  { lat: 41.5561, lng: 2.0089, name: 'Terrassa' },
-  { lat: 41.4663, lng: 2.2907, name: 'Badalona' },
-  { lat: 41.6579, lng: 2.7088, name: 'Mataró' },
-  { lat: 41.9831, lng: 2.8249, name: 'Salt' },
-  { lat: 42.1028, lng: 3.1089, name: 'Figueres' },
-  { lat: 41.8101, lng: 2.6635, name: 'Granollers' },
-  { lat: 41.4850, lng: 2.0697, name: 'Sant Cugat del Vallès' },
-  { lat: 41.4760, lng: 2.2922, name: "L'Hospitalet de Llobregat" },
-  { lat: 41.3244, lng: 1.9848, name: 'Vilafranca del Penedès' },
-  { lat: 41.2261, lng: 1.7257, name: 'Vilanova i la Geltrú' },
-  { lat: 41.6899, lng: 0.5318, name: 'Lleida (centre)' },
-  { lat: 40.8090, lng: 0.5211, name: 'Tortosa' },
-  { lat: 41.2834, lng: 1.9773, name: 'El Vendrell' },
-  { lat: 41.4228, lng: 2.1659, name: 'Cornellà de Llobregat' },
-  { lat: 41.4533, lng: 2.2261, name: 'Esplugues de Llobregat' },
-  { lat: 41.3898, lng: 2.1561, name: 'Sant Joan Despí' },
-  { lat: 41.8794, lng: 2.7618, name: 'Calella' },
-  { lat: 42.2673, lng: 3.1334, name: 'Roses' },
-  { lat: 41.6919, lng: 2.8586, name: 'Malgrat de Mar' },
-  { lat: 41.7283, lng: 2.9225, name: 'Blanes' },
-  { lat: 41.8040, lng: 2.9983, name: 'Lloret de Mar' },
-  { lat: 41.7912, lng: 3.0289, name: 'Tossa de Mar' },
-  { lat: 41.8277, lng: 3.0607, name: 'Sant Feliu de Guíxols' },
-  { lat: 41.9559, lng: 3.2089, name: 'Platja d\'Aro' },
-  { lat: 42.1906, lng: 2.4877, name: 'Ripoll' },
-  { lat: 42.3059, lng: 1.8419, name: 'La Seu d\'Urgell' },
-  { lat: 42.5031, lng: 1.5218, name: 'Sort' },
-  { lat: 42.6200, lng: 0.9300, name: 'Vielha' },
-  { lat: 41.5992, lng: 1.8328, name: 'Igualada' },
-  { lat: 41.7742, lng: 1.8198, name: 'Cardona' },
-  { lat: 41.8654, lng: 2.1651, name: 'Vic' },
-  { lat: 42.0172, lng: 2.1827, name: 'Torelló' },
-  { lat: 41.9561, lng: 2.0411, name: 'Sant Hipòlit de Voltregà' },
-  { lat: 41.6822, lng: 2.4611, name: 'Caldes de Montbui' },
-  { lat: 41.7461, lng: 2.5289, name: 'La Garriga' },
-  { lat: 41.5811, lng: 1.5589, name: 'Cervera' },
-  { lat: 41.6461, lng: 1.0219, name: 'Mollerussa' },
-  { lat: 41.4789, lng: 0.5211, name: 'Almacelles' },
-  { lat: 40.6761, lng: 0.4561, name: 'Amposta' },
-  { lat: 40.9061, lng: 0.8561, name: 'Gandesa' },
-  { lat: 41.1201, lng: 0.9819, name: 'Montblanc' },
-  { lat: 41.2419, lng: 1.2389, name: 'Reus' },
-  { lat: 41.0761, lng: 1.1489, name: 'Salou' },
-  { lat: 41.0819, lng: 1.0219, name: 'Cambrils' },
-];
- 
-// Retorna 5 ubicacions aleatòries de Catalunya
-export function randomCatalunyaLocations(): { lat: number; lng: number; panoId: string }[] {
-  const shuffled = [...CATALUNYA_LOCATIONS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 5).map((loc) => ({ ...loc, panoId: '' }));
+// Genera coordenades aleatòries dins d'una caixa delimitadora (Bounding Box) per a Catalunya
+export function randomCatalunyaCoords(): Coords {
+  // Límits geogràfics aproximats de Catalunya
+  const minLat = 40.52; // Sud (Montsià)
+  const maxLat = 42.86; // Nord (Val d'Aran)
+  const minLng = 0.15;  // Oest (Terra Alta)
+  const maxLng = 3.33;  // Est (Cap de Creus)
+
+  const lat = minLat + Math.random() * (maxLat - minLat);
+  const lng = minLng + Math.random() * (maxLng - minLng);
+  
+  return { lat, lng };
 }

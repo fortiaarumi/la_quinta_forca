@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { ref, onValue, update, set, runTransaction } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
-import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaLocations } from '@/lib/gameUtils';
+import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
 import StreetViewPane from './StreetViewPane';
 import GuessMap from './GuessMap';
@@ -25,6 +25,11 @@ const FALLBACK_LOCATIONS = [
   { lat: -33.8688, lng: 151.2093, panoId: '' },
   { lat: 51.5074, lng: -0.1278, panoId: '' },
 ];
+const getTimeSettings = (mode?: string) => {
+  if (mode === 'normal') return { total: 300000, panic: 60000 }; // 5 minuts / 1 minut
+  if (mode === 'infinit') return { total: null, panic: null };  // Sense temps
+  return { total: 60000, panic: 15000 }; // Bala (per defecte)
+};
 
 export default function GameRoom({ roomId, playerId }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
@@ -83,7 +88,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     if (!room || room.gameState !== 'playing') return;
     if (transitionedRef.current) return;
 
-    // Un rellotge que fa un "tick" cada mig segon
     const interval = setInterval(() => {
       const guesses = room.rounds?.[room.currentRound]?.guesses || {};
       const playerIds = Object.keys(room.players);
@@ -92,17 +96,24 @@ export default function GameRoom({ roomId, playerId }: Props) {
         ? playerIds.every((id) => guesses[id])
         : playerIds.length >= 2 && playerIds.every((id) => guesses[id]);
 
-      const endsAt = room.roundEndsAt || (Date.now() + 60000);
-      const remaining = Math.max(0, endsAt - Date.now());
-      setTimeLeft(Math.ceil(remaining / 1000));
+      let isTimeUp = false;
+
+      // Només calculem el temps si NO estem en mode infinit i tenim una data límit
+      if (room.timeMode !== 'infinit' && room.roundEndsAt) {
+        const remaining = Math.max(0, room.roundEndsAt - Date.now());
+        setTimeLeft(Math.ceil(remaining / 1000));
+        if (remaining === 0) isTimeUp = true;
+      } else {
+        setTimeLeft(null); // Mode infinit: amaguem el rellotge
+      }
 
       // Si s'acaba el temps O tothom ha endevinat
-      if (remaining === 0 || allGuessed) {
+      if (isTimeUp || allGuessed) {
         clearInterval(interval);
         transitionedRef.current = true;
 
         // Tancar el mapa si a algú se li ha esgotat el temps
-        if (remaining === 0 && !hasGuessed) {
+        if (isTimeUp && !hasGuessed) {
           setShowGuessMap(false);
           setHasGuessed(true);
         }
@@ -139,7 +150,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     
     // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
     const coords = room.gameMode === 'catalunya' 
-      ? randomCatalunyaLocations()[0] // Aquí hauries d'usar una que només doni coordenades de CAT
+      ? randomCatalunyaCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
       : randomBiasedCoords();
 
     await new Promise<void>((resolve) => {
@@ -174,13 +185,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
     Object.keys(room.players).map((id) => [id, 0])
   );
 
+  const tSettings = getTimeSettings(room.timeMode);
+
   await update(ref(db, `rooms/${roomId}`), {
     locations,
     gameState: 'playing',
     currentRound: 0,
     totalScores: initialScores,
     rounds: null,
-    roundEndsAt: Date.now() + 60000,
+    roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
   });
 }, [mapsReady, roomId, room]);;
 
@@ -212,9 +225,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const existingGuesses = room.rounds?.[room.currentRound]?.guesses || {};
       const isFirstToGuess = Object.keys(existingGuesses).length === 0;
 
-      // Si ets el primer en Multijugador, reduïm el temps de la sala a 15 segons
-      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt) {
-        const panicTime = Date.now() + 15000;
+      // Si ets el primer en Multijugador, reduïm el temps de la sala segons el mode
+      const tSettings = getTimeSettings(room.timeMode);
+      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt && tSettings.panic) {
+        const panicTime = Date.now() + tSettings.panic;
         if (panicTime < room.roundEndsAt) {
           await update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });
         }
@@ -232,10 +246,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
     if (next >= 5) {
       await update(ref(db, `rooms/${roomId}`), { gameState: 'finished' });
     } else {
+      const tSettings = getTimeSettings(room.timeMode);
       await update(ref(db, `rooms/${roomId}`), {
         currentRound: next,
         gameState: 'playing',
-        roundEndsAt: Date.now() + 60000,
+        roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
       });
     }
   }, [room, isHost, roomId]);
