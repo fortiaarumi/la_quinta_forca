@@ -112,7 +112,7 @@ export default function StatsPage() {
         )}
 
         {/* Taula de Rànquing */}
-        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-2xl">
           {loading ? (
             <div className="p-20 text-center text-gray-500 font-bold uppercase tracking-widest animate-pulse">
               Carregant dades del servidor...
