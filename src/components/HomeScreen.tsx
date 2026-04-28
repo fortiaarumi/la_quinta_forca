@@ -1,12 +1,12 @@
 'use client';
-
+ 
 import { useState, useEffect } from 'react';
 import { ref, set, get, query, orderByChild, endAt, remove } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
 import { GameMode } from '@/lib/types';
-
+ 
 function getOrCreatePlayerId(): string {
   let id = localStorage.getItem('geoPlayerId');
   if (!id) {
@@ -15,7 +15,7 @@ function getOrCreatePlayerId(): string {
   }
   return id;
 }
-
+ 
 export default function HomeScreen() {
   const router = useRouter();
   const [playerName, setPlayerName] = useState('');
@@ -25,253 +25,326 @@ export default function HomeScreen() {
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Camió de les escombraries: Elimina sales de més de 24h quan algú obre la web
+ 
   useEffect(() => {
     const netejarBrossa = async () => {
       try {
         const unDia = 24 * 60 * 60 * 1000;
         const limitTemps = Date.now() - unDia;
-        
-        // Busquem totes les sales creades abans d'ahir a aquesta mateixa hora
         const oldRoomsQuery = query(
-          ref(db, 'rooms'), 
-          orderByChild('createdAt'), 
+          ref(db, 'rooms'),
+          orderByChild('createdAt'),
           endAt(limitTemps)
         );
-        
         const snap = await get(oldRoomsQuery);
         if (snap.exists()) {
-          snap.forEach((child) => {
-            remove(child.ref); // Esborra la sala
-          });
+          snap.forEach((child) => { remove(child.ref); });
         }
       } catch (e) {
         console.log('Error netejant sales antigues', e);
       }
     };
-
     netejarBrossa();
   }, []);
-
+ 
   const handleSolo = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const playerId = getOrCreatePlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
         players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
-        currentRound: 0,
-        gameState: 'lobby',
-        createdAt: Date.now(),
-        isSinglePlayer: true,
-        gameMode,
-        timeMode,
+        currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
+        isSinglePlayer: true, gameMode, timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${roomCode}`);
-    } catch {
-      setError('Error en crear la partida.');
-      setLoading(false);
-    }
+    } catch { setError('Error en crear la partida.'); setLoading(false); }
   };
-
+ 
   const handleCreate = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const playerId = getOrCreatePlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
         players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now() } },
-        currentRound: 0,
-        gameState: 'lobby',
-        createdAt: Date.now(),
-        isSinglePlayer: false,
-        gameMode,
-        timeMode,
+        currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
+        isSinglePlayer: false, gameMode, timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${roomCode}`);
-    } catch {
-      setError('Error en crear la sala.');
-      setLoading(false);
-    }
+    } catch { setError('Error en crear la sala.'); setLoading(false); }
   };
-
+ 
   const handleJoin = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     if (!joinCode.trim()) return setError('Introdueix el codi de sala');
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     const code = joinCode.trim().toUpperCase();
     try {
       const snap = await get(ref(db, `rooms/${code}`));
-      if (!snap.exists()) {
-        setError('Sala no trobada.');
-        return setLoading(false);
-      }
+      if (!snap.exists()) { setError('Sala no trobada.'); return setLoading(false); }
       const room = snap.val();
       const playerId = getOrCreatePlayerId();
       const existing = Object.keys(room.players || {});
-      
-      // Comprovar el límit de 10 jugadors ABANS de deixar-lo entrar
       if (existing.length >= 10 && !existing.includes(playerId)) {
-        setError('La sala és plena (màxim 10 jugadors).');
-        return setLoading(false);
+        setError('La sala és plena (màxim 10 jugadors).'); return setLoading(false);
       }
-
       if (!existing.includes(playerId)) {
-        await set(ref(db, `rooms/${code}/players/${playerId}`), {
-          name: playerName.trim(),
-          joinedAt: Date.now(),
-        });
+        await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now() });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
-      
       localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${code}`);
-    } catch {
-      setError('Error en unir-se.');
-      setLoading(false);
-    }
+    } catch { setError('Error en unir-se.'); setLoading(false); }
   };
-
+ 
   const tabs = [
     { id: 'solo' as const, label: '🧍 Individual' },
     { id: 'create' as const, label: '🏠 Crear Sala' },
     { id: 'join' as const, label: '🔗 Unir-se' },
   ];
-
+ 
   return (
-    <div className="relative min-h-[100dvh] w-full flex items-center justify-center bg-[#0a0f1a] overflow-x-hidden p-4 md:p-8 font-sans">
-      
-      {/* Llums decoratives de fons */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-emerald-600/20 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Crèdits d'autor */}
-      <div className="absolute top-8 right-10 text-right hidden lg:block z-0">
-        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-1">Projecte Alpha</p>
-        <p className="text-white font-medium text-sm italic">Creat per: <span className="text-emerald-400 font-bold not-italic">Fortià Arumí Casals</span></p>
+    <div className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden font-sans" style={{ background: '#06080f' }}>
+ 
+      {/* ── Fons amb taques de color ── */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        {/* Taques principals */}
+        <div style={{ position: 'absolute', top: '-15%', left: '-10%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(16,185,129,0.13) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '60%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '15%', width: '35%', height: '35%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.07) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+        <div style={{ position: 'absolute', bottom: '10%', left: '20%', width: '30%', height: '30%', background: 'radial-gradient(ellipse, rgba(239,68,68,0.06) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+ 
+        {/* Graella subtil */}
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.025,
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
+          backgroundSize: '60px 60px'
+        }} />
       </div>
-
-      {/* CONTENIDOR FLEX: Embolica Menú i Vídeo en horitzontal al PC */}
-      <div className="w-full max-w-6xl relative z-10 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 my-8 px-6">
-        
-        {/* COLUMNA ESQUERRA: Tot el menú de joc */}
-        <div className="w-full max-w-xl flex flex-col gap-6 md:gap-8">
-          
-          {/* BLOC 1: Logo i Títol */}
-          <div className="text-center mt-4 mb-2">
-            <div className="text-6xl md:text-8xl mb-4 drop-shadow-[0_0_20px_rgba(52,211,153,0.2)] animate-bounce">🌍</div>
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-2 italic">
-              LA QUINTA <span className="text-emerald-400 not-italic">FORCA</span>
+ 
+      {/* Crèdits d'autor */}
+      <div className="absolute top-6 right-8 text-right hidden lg:block z-10">
+        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '2px' }}>Projecte Alpha</p>
+        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontStyle: 'italic' }}>Creat per: <span style={{ color: '#10b981', fontWeight: 700, fontStyle: 'normal' }}>Fortià Arumí Casals</span></p>
+      </div>
+ 
+      {/* ── Layout principal ── */}
+      <div className="w-full max-w-6xl relative z-10 flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-14 py-12 px-6">
+ 
+        {/* ═══ COLUMNA ESQUERRA ═══ */}
+        <div className="w-full max-w-xl flex flex-col gap-5 mx-auto lg:mx-0">
+ 
+          {/* Títol */}
+          <div className="text-center pt-2 pb-1">
+            <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(16,185,129,0.3))' }}>🌍</div>
+            <h1 style={{
+              fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 900, letterSpacing: '-0.03em',
+              color: 'white', lineHeight: 1, marginBottom: '8px', fontStyle: 'italic'
+            }}>
+              LA QUINTA <span style={{ color: '#10b981' }}>FORCA</span>
             </h1>
-            <p className="text-gray-400 font-medium tracking-widest uppercase text-[10px] md:text-xs">Endevina on ets al món</p>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase' }}>
+              Endevina on ets al món
+            </p>
           </div>
-
-          {/* BLOC 2: Nickname */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-xl w-full mx-auto">
-            <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-4 text-center">Identificació</label>
+ 
+          {/* Nickname */}
+          <div style={{
+            background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px'
+          }}>
+            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '14px' }}>Identificació</label>
             <input
               type="text"
               value={playerName}
               onChange={(e) => { setPlayerName(e.target.value); setError(''); }}
               placeholder="Escriu el teu Nickname..."
-              className="w-full bg-black/50 border border-white/10 rounded-2xl px-6 py-5 text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 transition-all text-xl md:text-2xl text-center font-bold shadow-inner"
+              style={{
+                width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '16px', padding: '16px 24px', color: 'white',
+                fontSize: '20px', textAlign: 'center', fontWeight: 700, outline: 'none',
+                transition: 'border-color 0.2s', boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'rgba(16,185,129,0.5)'}
+              onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
-
-          {/* BLOC 3: Configuració */}
+ 
+          {/* Configuració */}
           {tab !== 'join' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full mx-auto">
-              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 shadow-xl flex flex-col">
-                <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-4 text-center">Regió de joc</label>
-                <div className="flex flex-col gap-3 flex-1">
-                  <button onClick={() => setGameMode('world')} className={`flex-1 py-4 text-sm font-black rounded-xl transition-all ${gameMode === 'world' ? 'bg-white text-black shadow-lg scale-[1.02]' : 'bg-black/40 text-gray-500 border border-white/5 hover:text-white'}`}>🌎 TOT EL MÓN</button>
-                  <button onClick={() => setGameMode('catalunya')} className={`flex-1 py-4 text-sm font-black rounded-xl transition-all ${gameMode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg scale-[1.02]' : 'bg-black/40 text-gray-500 border border-white/5 hover:text-white'}`}>🔴🟡 CATALUNYA</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* Regió */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Regió de joc</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button onClick={() => setGameMode('world')} style={{
+                    padding: '14px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                    background: gameMode === 'world' ? 'white' : 'rgba(0,0,0,0.4)',
+                    color: gameMode === 'world' ? 'black' : 'rgba(255,255,255,0.4)',
+                    transform: gameMode === 'world' ? 'scale(1.02)' : 'scale(1)',
+                    boxShadow: gameMode === 'world' ? '0 4px 20px rgba(255,255,255,0.15)' : 'none'
+                  }}>🌎 TOT EL MÓN</button>
+                  <button onClick={() => setGameMode('catalunya')} style={{
+                    padding: '14px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                    background: gameMode === 'catalunya' ? '#fbbf24' : 'rgba(0,0,0,0.4)',
+                    color: gameMode === 'catalunya' ? 'black' : 'rgba(255,255,255,0.4)',
+                    transform: gameMode === 'catalunya' ? 'scale(1.02)' : 'scale(1)',
+                    boxShadow: gameMode === 'catalunya' ? '0 4px 20px rgba(251,191,36,0.3)' : 'none'
+                  }}>🔴🟡 CATALUNYA</button>
                 </div>
               </div>
-
-              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 shadow-xl flex flex-col">
-                <label className="block text-gray-400 text-xs font-black uppercase tracking-widest mb-4 text-center">Ritme de joc</label>
-                <div className="flex flex-col gap-3 flex-1">
-                  <button onClick={() => setTimeMode('bala')} className={`flex-1 py-3 text-xs md:text-sm font-black rounded-xl transition-all ${timeMode === 'bala' ? 'bg-yellow-500 text-black shadow-lg scale-[1.02]' : 'bg-black/40 text-gray-500 border border-white/5 hover:text-white'}`}>⚡ BALA (1 min)</button>
-                  <button onClick={() => setTimeMode('normal')} className={`flex-1 py-3 text-xs md:text-sm font-black rounded-xl transition-all ${timeMode === 'normal' ? 'bg-emerald-500 text-black shadow-lg scale-[1.02]' : 'bg-black/40 text-gray-500 border border-white/5 hover:text-white'}`}>🚶 NORMAL (5 min)</button>
-                  <button onClick={() => setTimeMode('infinit')} className={`flex-1 py-3 text-xs md:text-sm font-black rounded-xl transition-all ${timeMode === 'infinit' ? 'bg-indigo-500 text-white shadow-lg scale-[1.02]' : 'bg-black/40 text-gray-500 border border-white/5 hover:text-white'}`}>♾️ SENSE TEMPS</button>
+ 
+              {/* Ritme */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Ritme de joc</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {([
+                    { id: 'bala', label: '⚡ BALA (1 min)', active: '#f59e0b', shadow: 'rgba(245,158,11,0.3)' },
+                    { id: 'normal', label: '🚶 NORMAL (5 min)', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
+                    { id: 'infinit', label: '♾️ SENSE TEMPS', active: '#6366f1', shadow: 'rgba(99,102,241,0.3)' },
+                  ] as const).map(({ id, label, active, shadow }) => (
+                    <button key={id} onClick={() => setTimeMode(id)} style={{
+                      padding: '11px 8px', fontSize: '11px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      background: timeMode === id ? active : 'rgba(0,0,0,0.4)',
+                      color: timeMode === id ? (id === 'infinit' ? 'white' : 'black') : 'rgba(255,255,255,0.4)',
+                      transform: timeMode === id ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: timeMode === id ? `0 4px 16px ${shadow}` : 'none'
+                    }}>{label}</button>
+                  ))}
                 </div>
               </div>
             </div>
           )}
-
-          {/* BLOC 4: Accions Principals */}
-          <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 md:p-8 shadow-xl w-full mx-auto text-center">
-            <div className="flex bg-black/50 rounded-xl p-1 mb-8 gap-1 border border-white/5">
+ 
+          {/* Accions */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px' }}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '14px', padding: '4px', marginBottom: '20px', gap: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
               {tabs.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)} className={`flex-1 py-3 text-xs font-black rounded-lg transition-all ${tab === t.id ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-500 hover:text-white'}`}>{t.label}</button>
+                <button key={t.id} onClick={() => setTab(t.id)} style={{
+                  flex: 1, padding: '10px 4px', fontSize: '11px', fontWeight: 900, borderRadius: '10px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: tab === t.id ? '#10b981' : 'transparent',
+                  color: tab === t.id ? 'black' : 'rgba(255,255,255,0.35)',
+                  boxShadow: tab === t.id ? '0 2px 12px rgba(16,185,129,0.3)' : 'none'
+                }}>{t.label}</button>
               ))}
             </div>
-
-            <div className="space-y-4">
-              {tab === 'solo' && (
-                <button onClick={handleSolo} disabled={loading || !playerName.trim()} className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-6 rounded-2xl text-2xl shadow-lg transition-all active:scale-95 disabled:opacity-20 tracking-tight">
-                  {loading ? '⌛ PREPARANT...' : '🚀 JUGAR SOL'}
-                </button>
-              )}
-              {tab === 'create' && (
-                <button onClick={handleCreate} disabled={loading || !playerName.trim()} className="w-full bg-white hover:bg-gray-200 text-black font-black py-6 rounded-2xl text-2xl shadow-lg transition-all active:scale-95 disabled:opacity-20 tracking-tight">
-                  {loading ? '⌛ CREANT SALA...' : '🏠 CREAR SALA'}
-                </button>
-              )}
-              {tab === 'join' && (
-                <div className="flex flex-col md:flex-row gap-3">
-                  <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="CODI" maxLength={6} className="flex-1 bg-black/50 border border-white/10 rounded-2xl px-6 py-5 text-white text-center font-mono text-3xl focus:outline-none focus:border-indigo-500 shadow-inner" />
-                  <button onClick={handleJoin} disabled={loading || !playerName.trim() || joinCode.length < 6} className="bg-indigo-600 px-8 py-5 rounded-2xl text-white font-black text-xl hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-20">UNIR-SE</button>
-                </div>
-              )}
-            </div>
-
+ 
+            {/* Botons d'acció */}
+            {tab === 'solo' && (
+              <button onClick={handleSolo} disabled={loading || !playerName.trim()} style={{
+                width: '100%', background: loading || !playerName.trim() ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
+                color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'white',
+                fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
+                boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(16,185,129,0.35)', transition: 'all 0.2s', letterSpacing: '-0.01em'
+              }}>
+                {loading ? '⌛ PREPARANT...' : '🚀 JUGAR SOL'}
+              </button>
+            )}
+            {tab === 'create' && (
+              <button onClick={handleCreate} disabled={loading || !playerName.trim()} style={{
+                width: '100%', background: loading || !playerName.trim() ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
+                color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'black',
+                fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
+                boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(255,255,255,0.15)', transition: 'all 0.2s', letterSpacing: '-0.01em'
+              }}>
+                {loading ? '⌛ CREANT SALA...' : '🏠 CREAR SALA'}
+              </button>
+            )}
+            {tab === 'join' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="CODI" maxLength={6} style={{
+                  background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
+                  padding: '18px 24px', color: 'white', textAlign: 'center', fontFamily: 'monospace', fontSize: '32px', fontWeight: 700, outline: 'none', letterSpacing: '0.2em', boxSizing: 'border-box', width: '100%'
+                }} />
+                <button onClick={handleJoin} disabled={loading || !playerName.trim() || joinCode.length < 6} style={{
+                  background: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(99,102,241,0.2)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  color: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(255,255,255,0.3)' : 'white',
+                  padding: '18px', borderRadius: '14px', fontWeight: 900, fontSize: '18px', border: 'none',
+                  cursor: loading || !playerName.trim() || joinCode.length < 6 ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 8px 32px rgba(99,102,241,0.25)', transition: 'all 0.2s'
+                }}>UNIR-SE</button>
+              </div>
+            )}
+ 
             {error && (
-              <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold uppercase tracking-widest italic">
+              <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#f87171', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
                 ⚠️ {error}
               </div>
             )}
           </div>
-
-          {/* Footer (Només Mòbil) */}
-          <div className="text-center lg:hidden mt-4">
-            <p className="text-gray-600 text-[10px] font-black uppercase tracking-[0.2em]">Versió 1.3 • Disseny Modular</p>
+ 
+          {/* Footer mòbil */}
+          <div className="text-center lg:hidden">
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 1.3 · Disseny Modular</p>
           </div>
-
-        </div> {/* Tanquem COLUMNA ESQUERRA */}
-
-        {/* COLUMNA DRETA: Vídeo Decoratiu (Només PC) */}
-        <div className="hidden lg:block w-full max-w-md animate-fade-in">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-indigo-600/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-75 transition duration-1000"></div>
-            <video
-              src="/Rochaesquiant.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="relative rounded-[2rem] border border-white/10 shadow-2xl w-full aspect-video object-cover transition-transform duration-700 group-hover:scale-[1.01]"
-            />
+        </div>
+ 
+        {/* ═══ COLUMNA DRETA: Vídeo ═══ */}
+        <div className="hidden lg:flex flex-col gap-4 w-full max-w-md" style={{ paddingTop: '8px' }}>
+ 
+          {/* Etiqueta "vídeo del dia" */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>📹 Vídeo del dia</span>
+            <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
           </div>
-          <p className="mt-4 text-center text-gray-600 text-[9px] font-black uppercase tracking-[0.4em] opacity-40 italic">
-            Video del dia: Roger Bernadó masterclass esquiant
+ 
+          {/* Contenidor vídeo */}
+          <div style={{ position: 'relative' }}>
+            {/* Glow exterior */}
+            <div style={{
+              position: 'absolute', inset: '-2px', borderRadius: '26px', zIndex: 0,
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(99,102,241,0.2))',
+              filter: 'blur(12px)'
+            }} />
+            <div style={{
+              position: 'relative', zIndex: 1, borderRadius: '24px', overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.5)'
+            }}>
+              <video
+                src="/Rochaesquiant.mp4"
+                autoPlay loop muted playsInline
+                style={{
+                  display: 'block', width: '100%',
+                  /* Mostrem el vídeo sencer sense retallar */
+                  aspectRatio: '16/9',
+                  objectFit: 'contain',
+                  background: '#000'
+                }}
+              />
+            </div>
+          </div>
+ 
+          {/* Caption del vídeo — ara visible */}
+          <div style={{
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <span style={{ fontSize: '20px' }}>⛷️</span>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>Roger Bernadó masterclass esquiant</p>
+              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contenido exclusivo · Projecte Alpha</p>
+            </div>
+          </div>
+ 
+          {/* Versió */}
+          <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center' }}>
+            Versió 1.3 · Anem millorant
           </p>
         </div>
-
-      </div> {/* Tanquem CONTENIDOR FLEX */}
+ 
+      </div>
     </div>
   );
 }
