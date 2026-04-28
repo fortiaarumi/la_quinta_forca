@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { GameMode } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
 import { getUserProfile } from '@/lib/userStats';
+import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils'; // 👈 AFEGIT
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   
   // AFEGIT: Variable per guardar la invitació que ens arriba
   const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
+  const [activeFriendReq, setActiveFriendReq] = useState<{uid: string, nickname: string} | null>(null); // 👈 AFEGIT
 
   // ── EL GUÀRDIA DE SEGURETAT DEL LÍMIT DIARI ──
   const MAX_DAILY_ROOMS = 500; // 👈 Pots canviar aquest límit al que tu vulguis
@@ -61,6 +63,23 @@ export default function HomeScreen() {
     // Retorna 'true' si ens ha deixat sumar, o 'false' si ha avortat pel límit
     return result.committed; 
   };
+
+  // AFEGIT: El radar de peticions d'amistat
+  useEffect(() => {
+    if (!user) return;
+    const reqRef = ref(db, `users/${user.uid}/friendRequests`);
+    const unsub = onValue(reqRef, async (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const firstUid = Object.keys(data)[0];
+        const uSnap = await get(ref(db, `users/${firstUid}/nickname`));
+        setActiveFriendReq({ uid: firstUid, nickname: uSnap.exists() ? uSnap.val() : 'Un explorador' });
+      } else {
+        setActiveFriendReq(null);
+      }
+    });
+    return () => unsub();
+  }, [user]);
 
   // AFEGIT: El radar d'invitacions (La Bústia)
   useEffect(() => {
@@ -121,6 +140,19 @@ export default function HomeScreen() {
     if (!activeInvite || !user) return;
     await remove(ref(db, `users/${user.uid}/invites/${activeInvite.roomId}`)); // Llencem la carta
     setActiveInvite(null);
+  };
+
+  // 👈 AFEGIT: Funcions per al pop-up d'amistat
+  const acceptFriend = async () => {
+    if (!activeFriendReq || !user) return;
+    await acceptFriendRequest(user.uid, activeFriendReq.uid);
+    setActiveFriendReq(null);
+  };
+
+  const declineFriend = async () => {
+    if (!activeFriendReq || !user) return;
+    await rejectFriendRequest(user.uid, activeFriendReq.uid);
+    setActiveFriendReq(null);
   };
 
   // Estadístiques de l'usuari autenticat per la columna dreta
@@ -545,7 +577,7 @@ export default function HomeScreen() {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
               <strong style={{ color: '#818cf8', fontSize: '16px' }}>{activeInvite.from}</strong> t'ha convidat a jugar una partida.
             </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
+           <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={declineInvite} style={{
                 flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
                 color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
@@ -559,6 +591,37 @@ export default function HomeScreen() {
           </div>
         </div>
       )}
+
+      {/* ── AFEGIT: MODAL DE PETICIÓ D'AMISTAT ── */}
+      {activeFriendReq && !activeInvite && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '32px',
+            maxWidth: '360px', width: '90%', textAlign: 'center', boxShadow: '0 24px 50px rgba(16,185,129,0.2)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'bounce 2s infinite' }}>👋</div>
+            <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Nou Amic!</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
+              <strong style={{ color: '#34d399', fontSize: '16px' }}>{activeFriendReq.nickname}</strong> vol afegir-te a la seva pinya.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={declineFriend} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+              }}>Rebutjar</button>
+              <button onClick={acceptFriend} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#10b981',
+                color: 'black', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 8px 24px rgba(16,185,129,0.4)'
+              }}>Acceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

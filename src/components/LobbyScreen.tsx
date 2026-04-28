@@ -5,6 +5,7 @@ import { Room } from '@/lib/types';
 import { ref, onValue, set } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
+import { sendFriendRequest } from '@/lib/friendUtils'; // 👈 AFEGIT
 
 interface Props {
   room: Room;
@@ -27,6 +28,8 @@ export default function LobbyScreen({
   const { user, nickname } = useAuth();
   const [onlineFriends, setOnlineFriends] = useState<any[]>([]);
   const [invited, setInvited] = useState<Record<string, boolean>>({});
+  const [myFriends, setMyFriends] = useState<string[]>([]); // 👈 AFEGIT
+  const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({}); // 👈 AFEGIT
 
   // AFEGIT: Busquem només els amics que estiguin 'online'
   useEffect(() => {
@@ -36,10 +39,12 @@ export default function LobbyScreen({
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) {
         setOnlineFriends([]);
+        setMyFriends([]); // 👈 AFEGIT
         return;
       }
       
       const friendUids = Object.keys(snap.val());
+      setMyFriends(friendUids); // 👈 AFEGIT: Guardem tots els teus amics
       const unsubList: (() => void)[] = [];
       const friendsMap = new Map();
 
@@ -121,11 +126,29 @@ export default function LobbyScreen({
                 <span className="font-semibold">
                   {player.name}{id === playerId ? ' (Tu)' : ''}
                 </span>
-                {id === room.hostId && (
-                  <span className="ml-auto text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold">
-                    HOST
-                  </span>
-                )}
+                
+                <div className="ml-auto flex items-center gap-2">
+                  {id === room.hostId && (
+                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold">
+                      HOST
+                    </span>
+                  )}
+                  {/* 👈 AFEGIT: Botó d'afegir amic a desconeguts */}
+                  {user && id !== playerId && !myFriends.includes(id) && (
+                    <button
+                      onClick={async () => {
+                        await sendFriendRequest(user.uid, id);
+                        setFriendReqSent(prev => ({ ...prev, [id]: true }));
+                      }}
+                      disabled={friendReqSent[id]}
+                      className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg transition-all ${
+                        friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
+                      }`}
+                    >
+                      {friendReqSent[id] ? '✓ Petició Enviada' : '+ Afegir Amic'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -146,14 +169,16 @@ export default function LobbyScreen({
                   </div>
                   <button
                     onClick={() => sendInvite(friend.uid)}
-                    disabled={invited[friend.uid]}
+                    disabled={invited[friend.uid] || Object.keys(room.players).includes(friend.uid)}
                     className={`text-xs px-4 py-2 rounded-lg font-black tracking-wider uppercase transition-all ${
-                      invited[friend.uid] 
-                        ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
+                      Object.keys(room.players).includes(friend.uid)
+                        ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                        : invited[friend.uid] 
+                          ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
+                          : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
                     }`}
                   >
-                    {invited[friend.uid] ? '✓ Enviat' : 'Convidar'}
+                    {Object.keys(room.players).includes(friend.uid) ? 'A la sala' : invited[friend.uid] ? '✓ Enviat' : 'Convidar'}
                   </button>
                 </div>
               ))}

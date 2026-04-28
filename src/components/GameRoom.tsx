@@ -344,7 +344,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }
 
   if (room.gameState === 'finished') {
-    return <FinalResults room={room} playerId={playerId} />;
+    return <FinalResults 
+      room={room} 
+      playerId={playerId} 
+      onRestart={generateLocations} 
+      isHost={isHost} 
+    />;
   }
 
   if (room.gameState === 'roundResults') {

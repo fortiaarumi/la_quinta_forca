@@ -1,15 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { ref, onValue } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/authContext';
+import { sendFriendRequest } from '@/lib/friendUtils';
 import { Room } from '@/lib/types';
 
 interface Props {
   room: Room;
   playerId: string;
+  onRestart: () => void; // 👈 AFEGIT: Funció per reiniciar la partida
+  isHost: boolean;       // 👈 AFEGIT: Saber si soc l'amfitrió
 }
 
 const MAX_SCORE = 25000;
 
-export default function FinalResults({ room, playerId }: Props) {
+export default function FinalResults({ room, playerId, onRestart, isHost }: Props) {
+  const { user } = useAuth();
+  const [myFriends, setMyFriends] = useState<string[]>([]);
+  const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    const friendsRef = ref(db, `users/${user.uid}/friends`);
+    const unsub = onValue(friendsRef, (snap) => {
+      if (snap.exists()) setMyFriends(Object.keys(snap.val()));
+    });
+    return () => unsub();
+  }, [user]);
+
   const sorted = Object.entries(room.players)
     .map(([id, player]) => ({
       id,
@@ -60,6 +80,21 @@ export default function FinalResults({ room, playerId }: Props) {
                         {p.isAdmin && <span className="text-[10px] bg-red-600 text-white px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
                       </div>
                       {isMe && <div className="text-xs text-gray-400">Tu</div>}
+                      {/* 👈 AFEGIT: Botó d'afegir amic a la pantalla final */}
+                      {user && !isMe && !myFriends.includes(p.id) && (
+                        <button
+                          onClick={async () => {
+                            await sendFriendRequest(user.uid, p.id);
+                            setFriendReqSent(prev => ({ ...prev, [p.id]: true }));
+                          }}
+                          disabled={friendReqSent[p.id]}
+                          className={`mt-1 text-[9px] uppercase font-black px-2 py-1 rounded transition-all ${
+                            friendReqSent[p.id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
+                          }`}
+                        >
+                          {friendReqSent[p.id] ? '✓ Petició Enviada' : '+ Afegir Amic'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
@@ -81,12 +116,28 @@ export default function FinalResults({ room, playerId }: Props) {
           })}
         </div>
 
-        <button
-          onClick={() => (window.location.href = '/')}
-          className="w-full bg-green-500 hover:bg-green-400 active:scale-95 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-xl shadow-green-500/30"
-        >
-          🔄 Jugar de Nou
-        </button>
+        {/* ── NOU: GRUP DE BOTONS ── */}
+        <div className="flex flex-col gap-3">
+          {isHost ? (
+            <button
+              onClick={onRestart}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-white font-black py-4 rounded-xl text-lg transition-all shadow-xl shadow-emerald-500/20 uppercase tracking-wide border-b-4 border-emerald-700"
+            >
+              🔄 Jugar de nou la revenja!
+            </button>
+          ) : (
+            <div className="w-full bg-gray-800 border border-gray-700 text-gray-400 font-bold py-4 rounded-xl text-sm text-center uppercase tracking-wide">
+              ⏳ Esperant l'amfitrió...
+            </div>
+          )}
+
+          <button
+            onClick={() => (window.location.href = '/')}
+            className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 active:scale-95 text-white font-bold py-4 rounded-xl text-sm transition-all uppercase tracking-widest text-gray-400 hover:text-white"
+          >
+            🏠 Tornar a l'inici
+          </button>
+        </div>
       </div>
     </div>
   );
