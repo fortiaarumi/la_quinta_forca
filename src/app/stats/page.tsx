@@ -58,12 +58,12 @@ export default function StatsPage() {
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Capçalera */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-6">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter">
-              RÀNQUINGS <span className="text-emerald-400 not-italic">GLOBALS</span>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8 pt-4">
+          <div className="flex-1">
+            <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter leading-tight">
+              RÀNQUINGS <span className="text-emerald-400 not-italic block md:inline">GLOBALS</span>
             </h1>
-            <p className="text-gray-500 text-[10px] uppercase tracking-[0.3em] font-bold mt-2">Hall of Fame — La Quinta Forca</p>
+            <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold mt-3">Hall of Fame — La Quinta Forca</p>
           </div>
           <button 
             onClick={() => router.push('/')}

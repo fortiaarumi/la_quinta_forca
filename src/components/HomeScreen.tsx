@@ -370,8 +370,24 @@ export default function HomeScreen() {
         </div>
       )}
 
+          {/* ── AFEGIT PER A MÒBILS: Rànquing i Vídeo ── */}
+          <div className="flex flex-col gap-6 lg:hidden w-full mt-4">
+            {/* Botó Rànquings Mòbil */}
+            <Link href="/stats" className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-black uppercase tracking-widest py-4 px-6 rounded-2xl text-center text-sm shadow-lg active:scale-95 transition-all">
+              🏆 Veure Rànquings Globals
+            </Link>
+
+            {/* Vídeo Mòbil */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-3 text-center">📹 Vídeo del dia</p>
+              <div className="rounded-xl overflow-hidden shadow-lg border border-white/5">
+                <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full aspect-video object-cover bg-black" />
+              </div>
+            </div>
+          </div>
+
           {/* Footer mòbil */}
-          <div className="text-center lg:hidden">
+          <div className="text-center lg:hidden mt-6 mb-8">
             <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 2.0 · Ara amb comptes</p>
           </div>
         </div>
