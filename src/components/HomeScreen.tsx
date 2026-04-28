@@ -84,8 +84,37 @@ export default function HomeScreen() {
   // Funcions per als botons del pop-up
   const acceptInvite = async () => {
     if (!activeInvite || !user) return;
-    await remove(ref(db, `users/${user.uid}/invites/${activeInvite.roomId}`)); // Esborrem la carta
-    router.push(`/room/${activeInvite.roomId}`); // Viatgem a la sala
+    
+    const code = activeInvite.roomId;
+    const playerId = user.uid;
+    const playerNameToJoin = nickname ?? 'Convidat';
+
+    try {
+      // 1. Llegim la sala per assegurar-nos que existeix
+      const snap = await get(ref(db, `rooms/${code}`));
+      if (snap.exists()) {
+        const room = snap.val();
+        const existing = Object.keys(room.players || {});
+        
+        // 2. Si el jugador encara no hi és, l'apuntem oficialment a la sala
+        if (!existing.includes(playerId)) {
+          await set(ref(db, `rooms/${code}/players/${playerId}`), { 
+            name: playerNameToJoin, 
+            joinedAt: Date.now(), 
+            isAdmin: !!isAdmin 
+          });
+          await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
+        }
+      }
+      
+      // 3. Esborrem la carta de la bústia i viatgem a la sala
+      await remove(ref(db, `users/${user.uid}/invites/${code}`));
+      setActiveInvite(null); // Tanquem el pop-up
+      router.push(`/room/${code}`);
+      
+    } catch (error) {
+      console.error("Error en acceptar la invitació:", error);
+    }
   };
 
   const declineInvite = async () => {
