@@ -1,30 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@/lib/authContext';
 import GameRoom from '@/components/GameRoom';
 
 export default function RoomPage() {
   const params = useParams();
-  const roomId = (params.roomId as string).toUpperCase();
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const roomId = params.roomId as string;
+  const { user, isGuest, loading } = useAuth();
 
-  useEffect(() => {
-    let id = localStorage.getItem('geoPlayerId');
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('geoPlayerId', id);
-    }
-    setPlayerId(id);
-  }, []);
-
-  if (!playerId) {
+  // Esperem a saber qui és l'usuari abans de carregar el joc
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Carregant...</div>
+      <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center">
+        <div className="text-emerald-400 font-black animate-pulse uppercase tracking-widest">
+          Verificant Identitat...
+        </div>
       </div>
     );
   }
+
+  // Si no hi ha usuari ni és convidat, alguna cosa ha anat malament, tornem a inici
+  if (!user && !isGuest) {
+    window.location.href = '/';
+    return null;
+  }
+
+  // DETERMINEM EL PLAYER ID:
+  // Si està loguejat, usem el UID. Si és convidat, busquem el de sempre al localStorage.
+  const playerId = user ? user.uid : localStorage.getItem('geoPlayerId') || 'convidat';
 
   return <GameRoom roomId={roomId} playerId={playerId} />;
 }
