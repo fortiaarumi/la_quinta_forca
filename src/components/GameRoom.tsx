@@ -320,7 +320,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const modeBadge = room.gameMode === 'catalunya' ? '🔴🟡 Catalunya' : null;
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black">
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-black">
       {mapsReady && room.locations?.[room.currentRound] && (
         <StreetViewPane
           key={`sv-${room.currentRound}`}
@@ -378,11 +378,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
         })}
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+      <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
         {!hasGuessed && !showGuessMap && (
           <button
             onClick={() => setShowGuessMap(true)}
-            className="bg-green-500 hover:bg-green-400 active:scale-95 text-white font-black px-8 py-4 rounded-full shadow-2xl shadow-green-500/40 transition-all text-lg border-2 border-green-300/30"
+            className="w-full bg-green-500 hover:bg-green-400 active:scale-95 text-white font-black py-5 rounded-full shadow-[0_10px_30px_rgba(34,197,94,0.4)] transition-all text-xl border-2 border-green-300/30 uppercase tracking-wide"
           >
             📍 Endevinar
           </button>
