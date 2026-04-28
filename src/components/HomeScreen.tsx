@@ -1,23 +1,32 @@
 'use client';
- 
+
 import { useState, useEffect } from 'react';
 import { ref, set, get, query, orderByChild, endAt, remove } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
 import { GameMode } from '@/lib/types';
- 
-function getOrCreatePlayerId(): string {
+import { useAuth } from '@/lib/authContext';
+import { getUserProfile } from '@/lib/userStats';
+import Link from 'next/link';
+
+// Per a convidats: manté el localStorage ID
+function getOrCreateGuestId(): string {
   let id = localStorage.getItem('geoPlayerId');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('geoPlayerId', id);
-  }
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('geoPlayerId', id); }
   return id;
 }
- 
+
 export default function HomeScreen() {
   const router = useRouter();
+  const { user, nickname, isGuest, logout } = useAuth();
+
+  // L'ID del jugador és el UID de Firebase si està loguejat, o el localStorage si és convidat
+  const getPlayerId = () => user ? user.uid : getOrCreateGuestId();
+
+  // Nom pre-emplenat: nickname d'auth > guestNick guardat > buit
+  const defaultName = nickname ?? localStorage.getItem('geoGuestName') ?? '';
+
   const [playerName, setPlayerName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
@@ -25,33 +34,47 @@ export default function HomeScreen() {
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
- 
+
+  // Estadístiques de l'usuari autenticat per la columna dreta
+  const [myBestWorld, setMyBestWorld] = useState<number | null>(null);
+  const [myBestCat, setMyBestCat] = useState<number | null>(null);
+  const [my5k, setMy5k] = useState<number | null>(null);
+
+  useEffect(() => {
+    setPlayerName(defaultName);
+  }, [defaultName]);
+
+  // Carrega les estadístiques de l'usuari loguejat
+  useEffect(() => {
+    if (!user) return;
+    getUserProfile(user.uid).then((profile) => {
+      if (profile) {
+        setMyBestWorld(profile.bestScoreWorld);
+        setMyBestCat(profile.bestScoreCatalunya);
+        setMy5k(profile.total5k);
+      }
+    });
+  }, [user]);
+
+  // Neteja de sales antigues (>24h)
   useEffect(() => {
     const netejarBrossa = async () => {
       try {
         const unDia = 24 * 60 * 60 * 1000;
         const limitTemps = Date.now() - unDia;
-        const oldRoomsQuery = query(
-          ref(db, 'rooms'),
-          orderByChild('createdAt'),
-          endAt(limitTemps)
-        );
+        const oldRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), endAt(limitTemps));
         const snap = await get(oldRoomsQuery);
-        if (snap.exists()) {
-          snap.forEach((child) => { remove(child.ref); });
-        }
-      } catch (e) {
-        console.log('Error netejant sales antigues', e);
-      }
+        if (snap.exists()) snap.forEach((child) => { remove(child.ref); });
+      } catch (e) { console.log('Error netejant sales antigues', e); }
     };
     netejarBrossa();
   }, []);
- 
+
   const handleSolo = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true); setError('');
     try {
-      const playerId = getOrCreatePlayerId();
+      const playerId = getPlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
@@ -60,16 +83,15 @@ export default function HomeScreen() {
         isSinglePlayer: true, gameMode, timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
-      localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${roomCode}`);
     } catch { setError('Error en crear la partida.'); setLoading(false); }
   };
- 
+
   const handleCreate = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true); setError('');
     try {
-      const playerId = getOrCreatePlayerId();
+      const playerId = getPlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
@@ -78,11 +100,10 @@ export default function HomeScreen() {
         isSinglePlayer: false, gameMode, timeMode,
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
-      localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${roomCode}`);
     } catch { setError('Error en crear la sala.'); setLoading(false); }
   };
- 
+
   const handleJoin = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     if (!joinCode.trim()) return setError('Introdueix el codi de sala');
@@ -92,7 +113,7 @@ export default function HomeScreen() {
       const snap = await get(ref(db, `rooms/${code}`));
       if (!snap.exists()) { setError('Sala no trobada.'); return setLoading(false); }
       const room = snap.val();
-      const playerId = getOrCreatePlayerId();
+      const playerId = getPlayerId();
       const existing = Object.keys(room.players || {});
       if (existing.length >= 10 && !existing.includes(playerId)) {
         setError('La sala és plena (màxim 10 jugadors).'); return setLoading(false);
@@ -101,130 +122,129 @@ export default function HomeScreen() {
         await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now() });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
-      localStorage.setItem('geoPlayerName', playerName.trim());
       router.push(`/room/${code}`);
     } catch { setError('Error en unir-se.'); setLoading(false); }
   };
- 
+
   const tabs = [
     { id: 'solo' as const, label: '🧍 Individual' },
     { id: 'create' as const, label: '🏠 Crear Sala' },
     { id: 'join' as const, label: '🔗 Unir-se' },
   ];
- 
+
   return (
     <div className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden font-sans" style={{ background: '#06080f' }}>
- 
-      {/* ── Fons amb taques de color ── */}
+
+      {/* Fons amb taques de color */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        {/* Taques principals */}
         <div style={{ position: 'absolute', top: '-15%', left: '-10%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(16,185,129,0.13) 0%, transparent 70%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '60%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }} />
         <div style={{ position: 'absolute', top: '30%', right: '15%', width: '35%', height: '35%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.07) 0%, transparent 70%)', filter: 'blur(60px)' }} />
         <div style={{ position: 'absolute', bottom: '10%', left: '20%', width: '30%', height: '30%', background: 'radial-gradient(ellipse, rgba(239,68,68,0.06) 0%, transparent 70%)', filter: 'blur(50px)' }} />
- 
-        {/* Graella subtil */}
-        <div style={{
-          position: 'absolute', inset: 0, opacity: 0.025,
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)',
-          backgroundSize: '60px 60px'
-        }} />
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.025, backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       </div>
- 
-      {/* Crèdits d'autor */}
-      <div className="absolute top-6 right-8 text-right hidden lg:block z-10">
-        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '2px' }}>Projecte Alpha</p>
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px', fontStyle: 'italic' }}>Creat per: <span style={{ color: '#10b981', fontWeight: 700, fontStyle: 'normal' }}>Fortià Arumí Casals</span></p>
+
+      {/* Capçalera: info usuari + logout */}
+      <div className="absolute top-5 right-6 z-20 hidden lg:flex items-center gap-3">
+        {user ? (
+          <>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', margin: 0 }}>Connectat com</p>
+              <p style={{ color: '#10b981', fontSize: '13px', fontWeight: 800, margin: 0 }}>{nickname}</p>
+            </div>
+            <button
+              onClick={logout}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 700, padding: '7px 14px', borderRadius: '10px', cursor: 'pointer', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+            >
+              Sortir
+            </button>
+          </>
+        ) : (
+          <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase' }}>
+            Projecte Alpha · <span style={{ color: 'rgba(255,255,255,0.35)' }}>Convidat</span>
+          </p>
+        )}
       </div>
- 
-      {/* ── Layout principal ── */}
+
+      {/* Layout principal */}
       <div className="w-full max-w-6xl relative z-10 flex flex-col lg:flex-row items-start justify-center gap-10 lg:gap-14 py-12 px-6">
- 
+
         {/* ═══ COLUMNA ESQUERRA ═══ */}
         <div className="w-full max-w-xl flex flex-col gap-5 mx-auto lg:mx-0">
- 
+
           {/* Títol */}
           <div className="text-center pt-2 pb-1">
-            <div style={{ fontSize: '72px', lineHeight: 1, marginBottom: '16px', filter: 'drop-shadow(0 0 24px rgba(16,185,129,0.3))' }}>🌍</div>
-            <h1 style={{
-              fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 900, letterSpacing: '-0.03em',
-              color: 'white', lineHeight: 1, marginBottom: '8px', fontStyle: 'italic'
-            }}>
-              LA QUINTA <span style={{ color: '#10b981' }}>FORCA</span>
+            <div style={{ fontSize: '62px', marginBottom: '10px', filter: 'drop-shadow(0 0 30px rgba(16,185,129,0.35))' }}>🌍</div>
+            <h1 style={{ color: 'white', fontSize: '42px', fontWeight: 900, letterSpacing: '-0.04em', margin: 0, lineHeight: 1.1 }}>
+              La Quinta<br />
+              <span style={{ background: 'linear-gradient(135deg, #10b981, #6ee7b7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Forca</span>
             </h1>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase' }}>
-              Endevina on ets al món
+            <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', letterSpacing: '0.3em', textTransform: 'uppercase', marginTop: '10px', fontWeight: 700 }}>
+              Quin lloc del món és?
             </p>
           </div>
- 
-          {/* Nickname */}
-          <div style={{
-            background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px'
-          }}>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '14px' }}>Identificació</label>
+
+          {/* Nom del jugador */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px 24px' }}>
+            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '10px' }}>
+              {user ? 'Jugues com' : 'El teu nom'}
+            </label>
             <input
               type="text"
               value={playerName}
-              onChange={(e) => { setPlayerName(e.target.value); setError(''); }}
-              placeholder="Escriu el teu Nickname..."
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder={user ? (nickname ?? 'Nom de jugador') : 'Introdueix el teu nom'}
+              readOnly={!!user} // Si estàs loguejat, el nom ve del nickname
+              maxLength={20}
               style={{
                 width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '16px', padding: '16px 24px', color: 'white',
-                fontSize: '20px', textAlign: 'center', fontWeight: 700, outline: 'none',
-                transition: 'border-color 0.2s', boxSizing: 'border-box'
+                borderRadius: '14px', padding: '14px 18px', color: 'white', fontSize: '18px',
+                fontWeight: 800, outline: 'none', boxSizing: 'border-box',
+                opacity: user ? 0.8 : 1,
+                cursor: user ? 'default' : 'text',
               }}
-              onFocus={(e) => e.target.style.borderColor = 'rgba(16,185,129,0.5)'}
-              onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
- 
-          {/* Configuració */}
-          {tab !== 'join' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              {/* Regió */}
-              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
-                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Regió de joc</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button onClick={() => setGameMode('world')} style={{
-                    padding: '14px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                    background: gameMode === 'world' ? 'white' : 'rgba(0,0,0,0.4)',
-                    color: gameMode === 'world' ? 'black' : 'rgba(255,255,255,0.4)',
-                    transform: gameMode === 'world' ? 'scale(1.02)' : 'scale(1)',
-                    boxShadow: gameMode === 'world' ? '0 4px 20px rgba(255,255,255,0.15)' : 'none'
-                  }}>🌎 TOT EL MÓN</button>
-                  <button onClick={() => setGameMode('catalunya')} style={{
-                    padding: '14px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                    background: gameMode === 'catalunya' ? '#fbbf24' : 'rgba(0,0,0,0.4)',
-                    color: gameMode === 'catalunya' ? 'black' : 'rgba(255,255,255,0.4)',
-                    transform: gameMode === 'catalunya' ? 'scale(1.02)' : 'scale(1)',
-                    boxShadow: gameMode === 'catalunya' ? '0 4px 20px rgba(251,191,36,0.3)' : 'none'
-                  }}>🔴🟡 CATALUNYA</button>
-                </div>
-              </div>
- 
-              {/* Ritme */}
-              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
-                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Ritme de joc</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {([
-                    { id: 'bala', label: '⚡ BALA (1 min)', active: '#f59e0b', shadow: 'rgba(245,158,11,0.3)' },
-                    { id: 'normal', label: '🚶 NORMAL (5 min)', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
-                    { id: 'infinit', label: '♾️ SENSE TEMPS', active: '#6366f1', shadow: 'rgba(99,102,241,0.3)' },
-                  ] as const).map(({ id, label, active, shadow }) => (
-                    <button key={id} onClick={() => setTimeMode(id)} style={{
-                      padding: '11px 8px', fontSize: '11px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                      background: timeMode === id ? active : 'rgba(0,0,0,0.4)',
-                      color: timeMode === id ? (id === 'infinit' ? 'white' : 'black') : 'rgba(255,255,255,0.4)',
-                      transform: timeMode === id ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: timeMode === id ? `0 4px 16px ${shadow}` : 'none'
-                    }}>{label}</button>
-                  ))}
-                </div>
-              </div>
+
+          {/* Mode de joc */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Mode de joc</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {([
+                { id: 'world', label: '🌍 Món', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
+                { id: 'catalunya', label: '🔴🟡 Catalunya', active: '#ef4444', shadow: 'rgba(239,68,68,0.3)' },
+              ] as const).map(({ id, label, active, shadow }) => (
+                <button key={id} onClick={() => setGameMode(id)} style={{
+                  padding: '12px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: gameMode === id ? active : 'rgba(0,0,0,0.4)',
+                  color: gameMode === id ? 'white' : 'rgba(255,255,255,0.4)',
+                  boxShadow: gameMode === id ? `0 4px 16px ${shadow}` : 'none',
+                  transform: gameMode === id ? 'scale(1.02)' : 'scale(1)',
+                }}>{label}</button>
+              ))}
             </div>
-          )}
- 
+          </div>
+
+          {/* Ritme */}
+          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Ritme de joc</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {([
+                { id: 'bala', label: '⚡ BALA (1 min)', active: '#f59e0b', shadow: 'rgba(245,158,11,0.3)' },
+                { id: 'normal', label: '🚶 NORMAL (5 min)', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
+                { id: 'infinit', label: '♾️ SENSE TEMPS', active: '#6366f1', shadow: 'rgba(99,102,241,0.3)' },
+              ] as const).map(({ id, label, active, shadow }) => (
+                <button key={id} onClick={() => setTimeMode(id)} style={{
+                  padding: '11px 8px', fontSize: '11px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                  background: timeMode === id ? active : 'rgba(0,0,0,0.4)',
+                  color: timeMode === id ? (id === 'infinit' ? 'white' : 'black') : 'rgba(255,255,255,0.4)',
+                  transform: timeMode === id ? 'scale(1.02)' : 'scale(1)',
+                  boxShadow: timeMode === id ? `0 4px 16px ${shadow}` : 'none'
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
+
           {/* Accions */}
           <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px' }}>
             {/* Tabs */}
@@ -238,8 +258,7 @@ export default function HomeScreen() {
                 }}>{t.label}</button>
               ))}
             </div>
- 
-            {/* Botons d'acció */}
+
             {tab === 'solo' && (
               <button onClick={handleSolo} disabled={loading || !playerName.trim()} style={{
                 width: '100%', background: loading || !playerName.trim() ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
@@ -275,76 +294,102 @@ export default function HomeScreen() {
                 }}>UNIR-SE</button>
               </div>
             )}
- 
+
             {error && (
               <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#f87171', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
                 ⚠️ {error}
               </div>
             )}
           </div>
- 
+
           {/* Footer mòbil */}
           <div className="text-center lg:hidden">
-            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 1.3 · Disseny Modular</p>
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 2.0 · Ara amb comptes</p>
           </div>
         </div>
- 
-        {/* ═══ COLUMNA DRETA: Vídeo ═══ */}
+
+        {/* ═══ COLUMNA DRETA ═══ */}
         <div className="hidden lg:flex flex-col gap-4 w-full max-w-md" style={{ paddingTop: '8px' }}>
- 
-          {/* Etiqueta "vídeo del dia" */}
+
+          {/* Etiqueta vídeo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>📹 Vídeo del dia</span>
             <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
           </div>
- 
-          {/* Contenidor vídeo */}
+
+          {/* Vídeo */}
           <div style={{ position: 'relative' }}>
-            {/* Glow exterior */}
-            <div style={{
-              position: 'absolute', inset: '-2px', borderRadius: '26px', zIndex: 0,
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(99,102,241,0.2))',
-              filter: 'blur(12px)'
-            }} />
-            <div style={{
-              position: 'relative', zIndex: 1, borderRadius: '24px', overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.5)'
-            }}>
-              <video
-                src="/Rochaesquiant.mp4"
-                autoPlay loop muted playsInline
-                style={{
-                  display: 'block', width: '100%',
-                  /* Mostrem el vídeo sencer sense retallar */
-                  aspectRatio: '16/9',
-                  objectFit: 'contain',
-                  background: '#000'
-                }}
-              />
+            <div style={{ position: 'absolute', inset: '-2px', borderRadius: '26px', zIndex: 0, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(99,102,241,0.2))', filter: 'blur(12px)' }} />
+            <div style={{ position: 'relative', zIndex: 1, borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
+              <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline style={{ display: 'block', width: '100%', aspectRatio: '16/9', objectFit: 'contain', background: '#000' }} />
             </div>
           </div>
- 
-          {/* Caption del vídeo — ara visible */}
-          <div style={{
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '10px'
-          }}>
+
+          {/* Caption del vídeo */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '20px' }}>⛷️</span>
             <div>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>Roger Bernadó masterclass esquiant</p>
               <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Projecte Alpha</p>
             </div>
           </div>
- 
+
+          {/* ── BLOC D'ESTADÍSTIQUES (només si loguejat) ── */}
+          {user && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+                <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>📊 Les teves estadístiques</span>
+                <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '20px 24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <StatBox label="Millor Món" value={myBestWorld !== null ? myBestWorld.toLocaleString() : '—'} color="#10b981" />
+                  <StatBox label="Millor Cat." value={myBestCat !== null ? myBestCat.toLocaleString() : '—'} color="#ef4444" />
+                  <StatBox label="Total 5k ⭐" value={my5k !== null ? String(my5k) : '—'} color="#f59e0b" />
+                </div>
+                <Link href="/stats" style={{
+                  display: 'block', textAlign: 'center', padding: '11px', borderRadius: '12px',
+                  background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)',
+                  color: '#a5b4fc', fontSize: '12px', fontWeight: 800, textDecoration: 'none',
+                  letterSpacing: '0.05em', transition: 'all 0.2s',
+                }}>
+                  🏆 Veure Rànquings Globals →
+                </Link>
+              </div>
+            </>
+          )}
+
+          {/* Si és convidat, mostrem invitació a registrar-se */}
+          {isGuest && (
+            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '16px', padding: '16px 20px', textAlign: 'center' }}>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.6, margin: 0 }}>
+                Crea un compte per guardar les teves<br />puntuacions als rànquings globals 🏆
+              </p>
+              <Link href="/stats" style={{ display: 'inline-block', marginTop: '10px', color: '#818cf8', fontSize: '11px', fontWeight: 700, textDecoration: 'none' }}>
+                Veure rànquings →
+              </Link>
+            </div>
+          )}
+
           {/* Versió */}
           <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center' }}>
-            Versió 1.3 · Anem millorant
+            Versió 2.0 · Creat per Fortià Arumí Casals
           </p>
         </div>
- 
+
       </div>
+    </div>
+  );
+}
+
+function StatBox({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '8px', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 4px 0' }}>{label}</p>
+      <p style={{ color, fontSize: '20px', fontWeight: 900, margin: 0 }}>{value}</p>
     </div>
   );
 }

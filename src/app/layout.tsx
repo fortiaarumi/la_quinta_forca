@@ -1,13 +1,9 @@
 // src/app/layout.tsx
-// ─── FIX HIDRATACIÓ ───────────────────────────────────────────────────────────
-// L'error que surts a la foto és causat per extensions del navegador (com Bitwarden,
-// LastPass, Grammarly...) que injecten atributs al <body> ABANS que React s'hidrati.
-// La solució és afegir suppressHydrationWarning al <body>.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/lib/authContext'; // Ja ho tenies!
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,17 +19,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ca">
-      {/*
-        suppressHydrationWarning al <body> elimina l'error d'hidratació.
-        Això és segur: només suprimeix warnings causats per extensions del
-        navegador que modifiquen el DOM (bis_register, __processed_, etc.)
-        i no afecta el comportament del teu codi.
-      */}
       <body
         className={`${inter.className} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        {/* Aquí és on passa la màgia: envoltem els 'children' amb l'AuthProvider.
+          D'aquesta manera, qualsevol pàgina o component (Home, Stats, Room...)
+          tindrà accés a la informació de l'usuari.
+        */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
