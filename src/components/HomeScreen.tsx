@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, set, get, query, orderByChild, endAt, remove, onValue } from 'firebase/database';
+import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
@@ -41,6 +41,26 @@ export default function HomeScreen() {
   
   // AFEGIT: Variable per guardar la invitació que ens arriba
   const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
+
+  // ── EL GUÀRDIA DE SEGURETAT DEL LÍMIT DIARI ──
+  const MAX_DAILY_ROOMS = 500; // 👈 Pots canviar aquest límit al que tu vulguis
+
+  const checkDailyLimit = async () => {
+    // Agafem la data d'avui en format "YYYY-MM-DD" (ex: "2026-04-28")
+    const today = new Date().toISOString().split('T')[0]; 
+    const limitRef = ref(db, `dailyLimits/${today}/roomsCreated`);
+    
+    // Fem una transacció segura per sumar 1
+    const result = await runTransaction(limitRef, (currentCount) => {
+      if (currentCount >= MAX_DAILY_ROOMS) {
+        return; // Si ja estem al límit, avortem la missió (no sumem res)
+      }
+      return (currentCount || 0) + 1; // Si no, sumem 1 a la llista d'avui
+    });
+    
+    // Retorna 'true' si ens ha deixat sumar, o 'false' si ha avortat pel límit
+    return result.committed; 
+  };
 
   // AFEGIT: El radar d'invitacions (La Bústia)
   useEffect(() => {
@@ -113,6 +133,14 @@ export default function HomeScreen() {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true); setError('');
     try {
+      // 1. Demanem permís al guàrdia
+      const canCreate = await checkDailyLimit();
+      if (!canCreate) {
+        setLoading(false);
+        return setError(`S'ha arribat al límit diari de ${MAX_DAILY_ROOMS} partides. Espera a demà per seguir jugant! 🛑`);
+      }
+
+      // 2. Si hi ha permís, creem la sala
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
@@ -130,6 +158,14 @@ export default function HomeScreen() {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
     setLoading(true); setError('');
     try {
+      // 1. Demanem permís al guàrdia
+      const canCreate = await checkDailyLimit();
+      if (!canCreate) {
+        setLoading(false);
+        return setError(`S'ha arribat al límit diari de ${MAX_DAILY_ROOMS} partides. Espera a demà per seguir jugant! 🛑`);
+      }
+
+      // 2. Si hi ha permís, creem la sala
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
