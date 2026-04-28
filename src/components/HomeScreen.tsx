@@ -380,8 +380,8 @@ export default function HomeScreen() {
             {/* Vídeo Mòbil */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
               <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-3 text-center">📹 Vídeo del dia</p>
-              <div className="rounded-xl overflow-hidden shadow-lg border border-white/5">
-                <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full aspect-video object-cover bg-black" />
+              <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center">
+                <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full max-h-[60vh] object-contain" />
               </div>
             </div>
           </div>

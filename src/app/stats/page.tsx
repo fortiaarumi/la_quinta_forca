@@ -63,7 +63,7 @@ export default function StatsPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="w-full max-w-5xl mx-auto relative z-10">
         {/* Capçalera */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-8 pt-4">
           <div className="flex-1">
@@ -118,8 +118,8 @@ export default function StatsPage() {
               Carregant dades del servidor...
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="overflow-x-auto pb-4">
+              <table className="w-full text-left border-collapse min-w-[700px] whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-white/5">
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Pos</th>
