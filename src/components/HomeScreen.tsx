@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, set, get, query, orderByChild, endAt, remove } from 'firebase/database';
+import { ref, set, get, query, orderByChild, endAt, remove, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
@@ -38,6 +38,41 @@ export default function HomeScreen() {
   
   // AFEGIT: Per canviar entre menú de joc i menú d'amics
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
+  
+  // AFEGIT: Variable per guardar la invitació que ens arriba
+  const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
+
+  // AFEGIT: El radar d'invitacions (La Bústia)
+  useEffect(() => {
+    if (!user) return;
+    const invitesRef = ref(db, `users/${user.uid}/invites`);
+    
+    // Escoltem constantment la nostra carpeta d'invitacions
+    const unsub = onValue(invitesRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        // Agafem la primera invitació que trobem
+        const firstRoomId = Object.keys(data)[0];
+        setActiveInvite({ roomId: firstRoomId, from: data[firstRoomId].from });
+      } else {
+        setActiveInvite(null); // Si no hi ha res, amaguem el pop-up
+      }
+    });
+    return () => unsub();
+  }, [user]);
+
+  // Funcions per als botons del pop-up
+  const acceptInvite = async () => {
+    if (!activeInvite || !user) return;
+    await remove(ref(db, `users/${user.uid}/invites/${activeInvite.roomId}`)); // Esborrem la carta
+    router.push(`/room/${activeInvite.roomId}`); // Viatgem a la sala
+  };
+
+  const declineInvite = async () => {
+    if (!activeInvite || !user) return;
+    await remove(ref(db, `users/${user.uid}/invites/${activeInvite.roomId}`)); // Llencem la carta
+    setActiveInvite(null);
+  };
 
   // Estadístiques de l'usuari autenticat per la columna dreta
   const [myBestWorld, setMyBestWorld] = useState<number | null>(null);
@@ -414,6 +449,35 @@ export default function HomeScreen() {
         </div>
 
       </div>
+      {/* ── MODAL D'INVITACIÓ ── */}
+      {activeInvite && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#0f172a', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '24px', padding: '32px',
+            maxWidth: '360px', width: '90%', textAlign: 'center', boxShadow: '0 24px 50px rgba(99,102,241,0.2)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'bounce 2s infinite' }}>💌</div>
+            <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Invitació rebuda!</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
+              <strong style={{ color: '#818cf8', fontSize: '16px' }}>{activeInvite.from}</strong> t'ha convidat a jugar una partida.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={declineInvite} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+              }}>Rebutjar</button>
+              <button onClick={acceptInvite} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#4f46e5',
+                color: 'white', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 8px 24px rgba(79,70,229,0.4)'
+              }}>Acceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

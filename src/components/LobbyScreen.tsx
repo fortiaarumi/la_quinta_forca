@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Room } from '@/lib/types';
+import { ref, onValue, set } from 'firebase/database';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/authContext';
 
 interface Props {
   room: Room;
@@ -19,6 +22,66 @@ export default function LobbyScreen({
   const [copied, setCopied] = useState(false);
   const players = Object.entries(room.players);
   const canStart = isHost && players.length >= 2 && mapsReady && !isGenerating;
+
+  // AFEGIT: Variables per als amics i per saber si ja els hem convidat
+  const { user, nickname } = useAuth();
+  const [onlineFriends, setOnlineFriends] = useState<any[]>([]);
+  const [invited, setInvited] = useState<Record<string, boolean>>({});
+
+  // AFEGIT: Busquem només els amics que estiguin 'online'
+  useEffect(() => {
+    if (!user) return;
+    const friendsRef = ref(db, `users/${user.uid}/friends`);
+    
+    const unsubFriends = onValue(friendsRef, (snap) => {
+      if (!snap.exists()) {
+        setOnlineFriends([]);
+        return;
+      }
+      
+      const friendUids = Object.keys(snap.val());
+      const unsubList: (() => void)[] = [];
+      const friendsMap = new Map();
+
+      friendUids.forEach(uid => {
+        const userRef = ref(db, `users/${uid}`);
+        const unsub = onValue(userRef, (uSnap) => {
+          if (uSnap.exists()) {
+            const data = uSnap.val();
+            // Només ens interessen els que estan online per convidar-los ara mateix
+            if (data.status === 'online') {
+              friendsMap.set(uid, { uid, ...data });
+            } else {
+              friendsMap.delete(uid); // Si es desconnecten, els traiem de la llista
+            }
+            setOnlineFriends(Array.from(friendsMap.values()));
+          }
+        });
+        unsubList.push(unsub);
+      });
+
+      return () => unsubList.forEach(u => u());
+    });
+    
+    return () => unsubFriends();
+  }, [user]);
+
+  // AFEGIT: Funció que posa la invitació a la bústia de l'amic
+  const sendInvite = async (friendUid: string) => {
+    if (!user || !nickname) return;
+    
+    // Escrivim el codi de la sala a la carpeta "invites" de l'amic
+    await set(ref(db, `users/${friendUid}/invites/${roomId}`), {
+      from: nickname,
+      timestamp: Date.now()
+    });
+    
+    // Marquem el botó com a "Enviat" durant uns segons perquè no facis spam
+    setInvited(prev => ({ ...prev, [friendUid]: true }));
+    setTimeout(() => {
+      setInvited(prev => ({ ...prev, [friendUid]: false }));
+    }, 3000);
+  };
 
   const copyCode = () => {
     navigator.clipboard.writeText(roomId);
@@ -67,6 +130,36 @@ export default function LobbyScreen({
             ))}
           </div>
         </div>
+
+        {/* ── AFEGIT: LLISTA D'AMICS ONLINE ── */}
+        {user && onlineFriends.length > 0 && (
+          <div className="mb-8 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-5 shadow-xl">
+            <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 text-center">
+              Amics en línia ({onlineFriends.length})
+            </p>
+            <div className="space-y-2">
+              {onlineFriends.map((friend) => (
+                <div key={friend.uid} className="flex items-center justify-between bg-black/40 rounded-xl p-3 border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <span className="font-bold text-sm">{friend.nickname}</span>
+                  </div>
+                  <button
+                    onClick={() => sendInvite(friend.uid)}
+                    disabled={invited[friend.uid]}
+                    className={`text-xs px-4 py-2 rounded-lg font-black tracking-wider uppercase transition-all ${
+                      invited[friend.uid] 
+                        ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
+                    }`}
+                  >
+                    {invited[friend.uid] ? '✓ Enviat' : 'Convidar'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Botó / estat */}
         {isHost ? (
