@@ -274,8 +274,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
 
-      // 3. Enviem les dades al nostre perfil
-      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', myTotalScore, myRoundScores)
+      // 3. Enviem les dades al nostre perfil (afegim el timeMode)
+      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores)
         .then(() => console.log('Estadístiques guardades amb èxit!'))
         .catch(e => console.error('Error guardant estadístiques:', e));
     }

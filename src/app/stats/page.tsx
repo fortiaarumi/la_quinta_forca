@@ -19,16 +19,23 @@ export default function StatsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [ranking, setRanking] = useState<UserStats[]>([]);
+  const [ranking, setRanking] = useState<any[]>([]); // Canviem a any[] pels camps dinàmics
   const [mode, setMode] = useState<'world' | 'catalunya' | '5k'>('world');
+  const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala'); // 👈 AFEGIT
 
   useEffect(() => {
     const fetchRankings = async () => {
       setLoading(true);
       try {
         const usersRef = ref(db, 'users');
-        // Ordenem per la puntuació del mode triat (Firebase ordena de menys a més)
-        const field = mode === 'world' ? 'bestScoreWorld' : mode === 'catalunya' ? 'bestScoreCatalunya' : 'total5k';
+        
+        // Construïm el camp exacte que volem buscar
+        const field = mode === '5k' 
+          ? 'total5k' 
+          : mode === 'world' 
+            ? `bestScoreWorld_${timeFilter}` 
+            : `bestScoreCatalunya_${timeFilter}`;
+            
         const q = query(usersRef, orderByChild(field), limitToLast(10));
         
         const snap = await get(q);
@@ -48,7 +55,7 @@ export default function StatsPage() {
     };
 
     fetchRankings();
-  }, [mode]);
+  }, [mode, timeFilter]); // 👈 AQUÍ AFEGIM EL timeFilter
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0f1a] text-white p-6 md:p-12 overflow-x-hidden font-sans">
@@ -95,6 +102,15 @@ export default function StatsPage() {
           </button>
         </div>
 
+        {/* AFEGIT: Selector de Temps (només es mostra si no estem a Mestres 5K) */}
+        {mode !== '5k' && (
+          <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-8 gap-1 max-w-md mx-auto">
+            <button onClick={() => setTimeFilter('bala')} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeFilter === 'bala' ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>⚡ Bala</button>
+            <button onClick={() => setTimeFilter('normal')} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeFilter === 'normal' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🚶 Normal</button>
+            <button onClick={() => setTimeFilter('infinit')} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeFilter === 'infinit' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>♾️ Infinit</button>
+          </div>
+        )}
+
         {/* Taula de Rànquing */}
         <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
           {loading ? (
@@ -128,7 +144,7 @@ export default function StatsPage() {
                       {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mt-1 inline-block">Tu</span>}
                     </td>
                       <td className="p-6 text-right font-mono text-2xl font-black text-emerald-400">
-                        {mode === '5k' ? player.total5k : mode === 'world' ? player.bestScoreWorld : player.bestScoreCatalunya}
+                        {mode === '5k' ? player.total5k : player[mode === 'world' ? `bestScoreWorld_${timeFilter}` : `bestScoreCatalunya_${timeFilter}`] || 0}
                       </td>
                     </tr>
                   ))}

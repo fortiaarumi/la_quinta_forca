@@ -40,19 +40,21 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function updateUserStatsAfterGame(
   uid: string,
   gameMode: GameMode,
+  timeMode: string, // 👈 AFEGIT: Necessitem saber el temps
   totalGameScore: number,
   roundScores: number[]
 ): Promise<void> {
-  const profile = await getUserProfile(uid);
+  const profile: any = await getUserProfile(uid); // Posem any per poder llegir camps dinàmics
   if (!profile) return;
 
-  const bestField = gameMode === 'catalunya' ? 'bestScoreCatalunya' : 'bestScoreWorld';
+  // Construïm el nom de la caixa (ex: bestScoreWorld_bala)
+  const bestField = gameMode === 'catalunya' ? `bestScoreCatalunya_${timeMode}` : `bestScoreWorld_${timeMode}`;
   const currentBest = profile[bestField] ?? 0;
 
   // Rondes perfectes en aquesta partida
   const new5k = roundScores.filter((s) => s >= 5000).length;
 
-  const updates: Partial<UserProfile> = {
+  const updates: Record<string, any> = {
     total5k: (profile.total5k ?? 0) + new5k,
   };
 
