@@ -97,58 +97,80 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         />
       )}
 
+      {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
-        className={`fixed z-50 overflow-hidden transition-all duration-300 ease-out shadow-2xl 
+        className={`fixed z-50 flex flex-col items-end transition-all duration-300 ease-out
           ${isMobile 
             ? (expanded 
-                ? 'inset-x-4 top-[15vh] bottom-[20vh] rounded-3xl border-2 border-emerald-500/50' 
-                : 'bottom-6 right-6 w-32 h-32 rounded-2xl border-2 border-white/20')
+                ? 'inset-x-4 top-[12vh] bottom-[20vh]' 
+                : 'bottom-6 right-6')
             : (expanded 
-                ? 'bottom-6 right-6 w-[480px] h-[360px] rounded-2xl border border-white/20' 
-                : 'bottom-6 right-6 w-48 h-32 rounded-xl border border-white/20 cursor-pointer hover:scale-105')
+                ? 'bottom-6 right-6 w-[480px] h-[360px]' 
+                : 'bottom-6 right-6 w-48 h-32')
           }`}
         onMouseEnter={() => !isMobile && setExpanded(true)}
         onMouseLeave={() => !isMobile && !submitting && setExpanded(false)}
-        onClick={() => isMobile && !expanded && setExpanded(true)}
       >
-        {/* El contenidor del mapa de Google */}
-        <div ref={mapRef} className="w-full h-full bg-slate-800" />
-
-        {/* Overlay col·lapsat (text "Ampliar") */}
-        {!expanded && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-            <span className="text-white text-xs font-black tracking-widest drop-shadow bg-black/50 px-3 py-1.5 rounded-full uppercase border border-white/10">
-              {isMobile ? '📍 Mapa' : 'Ampliar'}
-            </span>
-          </div>
+        {/* ── BOTÓ EXPLÍCIT PER MÒBIL (A SOBRE DEL MAPA) ── */}
+        {isMobile && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className={`mb-2 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl transition-all
+              ${expanded 
+                ? 'bg-red-500 text-white hover:bg-red-400' 
+                : 'bg-blue-600 text-white animate-bounce hover:bg-blue-500'
+              }`}
+          >
+            {expanded ? '↙️ Fer mapa petit' : '↗️ Fer mapa gran'}
+          </button>
         )}
 
-        {/* Controls expandits */}
-        {expanded && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 md:p-4 flex gap-2 pt-12">
-            <button
-              onClick={(e) => { e.stopPropagation(); setExpanded(false); if(isMobile) onClose(); }}
-              className="bg-gray-700/80 hover:bg-gray-600 text-white text-sm font-bold px-4 py-3 rounded-xl flex-none transition-colors border border-white/10"
-            >
-              ✕
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
-              disabled={!pinPos || submitting}
-              className={`flex-1 text-white text-sm md:text-base font-black py-3 rounded-xl transition-all shadow-lg uppercase tracking-wider
-                ${!pinPos || submitting 
-                  ? 'bg-gray-700/50 cursor-not-allowed text-gray-400' 
-                  : 'bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.4)]'
-                }`}
-            >
-              {submitting
-                ? '⌛ Enviant...'
-                : pinPos
-                ? '✓ Confirmar Posició'
-                : '📍 Toca per posar el pin'}
-            </button>
-          </div>
-        )}
+        {/* ── EL MAPA I LA UI ── */}
+        <div className={`relative w-full overflow-hidden shadow-2xl transition-all duration-300
+          ${isMobile && !expanded ? 'w-32 h-32 rounded-2xl border-2 border-white/20 ml-auto' : 'flex-1 rounded-3xl border-2 border-emerald-500/50'}
+          ${!isMobile ? 'h-full rounded-2xl border border-white/20' : ''}
+        `}>
+          {/* El contenidor del mapa de Google */}
+          <div ref={mapRef} className="absolute inset-0 bg-slate-800" />
+
+          {/* Overlay col·lapsat (text "Ampliar" - només PC) */}
+          {!isMobile && !expanded && (
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+              <span className="text-white text-xs font-black tracking-widest drop-shadow bg-black/50 px-3 py-1.5 rounded-full uppercase border border-white/10">
+                Ampliar
+              </span>
+            </div>
+          )}
+
+          {/* Controls expandits */}
+          {expanded && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 md:p-4 flex gap-2 pt-12">
+              {!isMobile && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+                  className="bg-gray-700/80 hover:bg-gray-600 text-white text-sm font-bold px-4 py-3 rounded-xl flex-none transition-colors border border-white/10"
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
+                disabled={!pinPos || submitting}
+                className={`flex-1 text-white text-sm md:text-base font-black py-3 rounded-xl transition-all shadow-lg uppercase tracking-wider
+                  ${!pinPos || submitting 
+                    ? 'bg-gray-700/50 cursor-not-allowed text-gray-400' 
+                    : 'bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.4)]'
+                  }`}
+              >
+                {submitting
+                  ? '⌛ Enviant...'
+                  : pinPos
+                  ? '✓ Confirmar Posició'
+                  : '📍 Toca per posar el pin'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
