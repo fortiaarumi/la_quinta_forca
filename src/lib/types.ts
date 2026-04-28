@@ -40,4 +40,5 @@ export interface Room {
   createdAt: number;
   isSinglePlayer?: boolean;
   gameMode?: GameMode;
+  roundEndsAt?: number;
 }

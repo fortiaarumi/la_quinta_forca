@@ -35,6 +35,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [mapsReady, setMapsReady] = useState(false);
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
     loadGoogleMaps()
@@ -77,22 +78,52 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const isSinglePlayer = room?.isSinglePlayer ?? false;
   const isHost = room?.hostId === playerId;
 
+ // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
-    if (!room || room.hostId !== playerId || room.gameState !== 'playing') return;
+    if (!room || room.gameState !== 'playing') return;
     if (transitionedRef.current) return;
 
-    const guesses = room.rounds?.[room.currentRound]?.guesses || {};
-    const playerIds = Object.keys(room.players);
+    // Un rellotge que fa un "tick" cada mig segon
+    const interval = setInterval(() => {
+      const guesses = room.rounds?.[room.currentRound]?.guesses || {};
+      const playerIds = Object.keys(room.players);
 
-    const allGuessed = isSinglePlayer
-      ? playerIds.every((id) => guesses[id])
-      : playerIds.length >= 2 && playerIds.every((id) => guesses[id]);
+      const allGuessed = isSinglePlayer
+        ? playerIds.every((id) => guesses[id])
+        : playerIds.length >= 2 && playerIds.every((id) => guesses[id]);
 
-    if (allGuessed) {
-      transitionedRef.current = true;
-      update(ref(db, `rooms/${roomId}`), { gameState: 'roundResults' });
-    }
-  }, [room, playerId, roomId, isSinglePlayer]);
+      const endsAt = room.roundEndsAt || (Date.now() + 60000);
+      const remaining = Math.max(0, endsAt - Date.now());
+      setTimeLeft(Math.ceil(remaining / 1000));
+
+      // Si s'acaba el temps O tothom ha endevinat
+      if (remaining === 0 || allGuessed) {
+        clearInterval(interval);
+        transitionedRef.current = true;
+
+        // Tancar el mapa si a algú se li ha esgotat el temps
+        if (remaining === 0 && !hasGuessed) {
+          setShowGuessMap(false);
+          setHasGuessed(true);
+        }
+
+        // NOMÉS el Host calcula i suma els punts (per no sumar-los dues vegades)
+        if (room.hostId === playerId) {
+          const updates: Record<string, any> = { gameState: 'roundResults' };
+          
+          playerIds.forEach(id => {
+            const roundScore = guesses[id]?.score || 0; // Si no ha votat, 0 punts
+            const currentTotal = room.totalScores?.[id] || 0;
+            updates[`totalScores/${id}`] = currentTotal + roundScore;
+          });
+
+          update(ref(db, `rooms/${roomId}`), updates);
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [room, roomId, playerId, isSinglePlayer, hasGuessed]);
 
   const generateLocations = useCallback(async () => {
   if (!mapsReady || !room) return;
@@ -149,6 +180,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     currentRound: 0,
     totalScores: initialScores,
     rounds: null,
+    roundEndsAt: Date.now() + 60000,
   });
 }, [mapsReady, roomId, room]);;
 
@@ -159,6 +191,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     generateLocations();
   }, [room?.gameState, mapsReady, isSinglePlayer, isHost]);
 
+  // ── ENVIAR LA JUGADA (Sense sumar punts i activant el pànic) ────────────
   const submitGuess = useCallback(
     async (guessLat: number, guessLng: number) => {
       if (!room?.locations || hasGuessed) return;
@@ -169,19 +202,28 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       const guess: PlayerGuess = { lat: guessLat, lng: guessLng, distance, score };
 
+      // 1. Guardem la jugada de l'usuari (sense actualitzar el totalScores)
       await set(
         ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`),
         guess
       );
-      await runTransaction(
-        ref(db, `rooms/${roomId}/totalScores/${playerId}`),
-        (current) => (current ?? 0) + score
-      );
+
+      // 2. Comprovem si som els PRIMERS a endevinar
+      const existingGuesses = room.rounds?.[room.currentRound]?.guesses || {};
+      const isFirstToGuess = Object.keys(existingGuesses).length === 0;
+
+      // Si ets el primer en Multijugador, reduïm el temps de la sala a 15 segons
+      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt) {
+        const panicTime = Date.now() + 15000;
+        if (panicTime < room.roundEndsAt) {
+          await update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });
+        }
+      }
 
       setHasGuessed(true);
       setShowGuessMap(false);
     },
-    [room, roomId, playerId, hasGuessed]
+    [room, roomId, playerId, hasGuessed, isSinglePlayer]
   );
 
   const nextRound = useCallback(async () => {
@@ -193,6 +235,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       await update(ref(db, `rooms/${roomId}`), {
         currentRound: next,
         gameState: 'playing',
+        roundEndsAt: Date.now() + 60000,
       });
     }
   }, [room, isHost, roomId]);
@@ -279,6 +322,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         )}
       </div>
+      {/* ⏱️ EL RELLOTGE I ALERTA DE PÀNIC */}
+      {timeLeft !== null && room.gameState === 'playing' && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center pointer-events-none">
+          <div className={`px-6 py-3 rounded-full font-black text-3xl shadow-2xl transition-all duration-300 ${
+            timeLeft <= 15 
+              ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]' 
+              : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
+          }`}>
+            ⏱️ {timeLeft}s
+          </div>
+          
+          {/* Missatge si l'altre ha tirat i a tu et queda poc temps */}
+          {timeLeft <= 15 && !hasGuessed && !isSinglePlayer && (
+            <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
+              ⚠️ L'altre jugador ha tirat!
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
         {allPlayerIds.map((id, i) => {
@@ -311,7 +373,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         )}
         {hasGuessed && !isSinglePlayer && (
           <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl">
-            ⏳ Esperant {Object.entries(room.players).find(([id]) => id !== playerId)?.[1]?.name ?? "l'adversari"}...
+            ⏳ Esperant {Object.entries(room.players).find(([id]) => id !== playerId)?.[1]?.name ?? "l'adversari"}... ({timeLeft}s)
           </div>
         )}
         {hasGuessed && isSinglePlayer && (
