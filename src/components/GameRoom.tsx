@@ -12,6 +12,8 @@ import GuessMap from './GuessMap';
 import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
+import { useAuth } from '@/lib/authContext';
+import { updateUserStatsAfterGame } from '@/lib/userStats';
 
 interface Props {
   roomId: string;
@@ -41,6 +43,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const { user, isGuest } = useAuth();
+  const statsSavedRef = useRef(false);
 
   useEffect(() => {
     loadGoogleMaps()
@@ -253,8 +257,29 @@ export default function GameRoom({ roomId, playerId }: Props) {
         gameState: 'playing',
         roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
       });
-    }
+}
   }, [room, isHost, roomId]);
+
+  // ── GUARDAR ESTADÍSTIQUES AL FINAL DE LA PARTIDA ────────────────────────
+  useEffect(() => {
+    // Només ho fem si la partida ha acabat, si estem loguejats i si no ho hem guardat ja
+    if (room?.gameState === 'finished' && user && !isGuest && !statsSavedRef.current) {
+      statsSavedRef.current = true; // Tanquem el cadenat per evitar duplicats
+
+      // 1. Agafem la nostra puntuació total
+      const myTotalScore = room.totalScores?.[playerId] || 0;
+
+      // 2. Recopilem quants punts hem fet a cadascuna de les 5 rondes
+      const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx => 
+        room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
+      );
+
+      // 3. Enviem les dades al nostre perfil
+      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', myTotalScore, myRoundScores)
+        .then(() => console.log('Estadístiques guardades amb èxit!'))
+        .catch(e => console.error('Error guardant estadístiques:', e));
+    }
+  }, [room?.gameState, room?.totalScores, room?.rounds, room?.gameMode, user, isGuest, playerId]);
 
   if (loading) {
     return (
