@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   onGuess: (lat: number, lng: number) => Promise<void>;
   onClose: () => void;
+  gameMode?: 'world' | 'catalunya';
 }
 
-export default function GuessMap({ onGuess, onClose }: Props) {
+export default function GuessMap({ onGuess, onClose, gameMode = 'world' }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -19,15 +20,17 @@ export default function GuessMap({ onGuess, onClose }: Props) {
     if (!mapRef.current) return;
 
     const map = new google.maps.Map(mapRef.current, {
-      zoom: 1,
-      center: { lat: 20, lng: 0 },
-      disableDefaultUI: true,
-      zoomControl: true,
-      zoomControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
-      clickableIcons: false,
-      gestureHandling: 'greedy',
-      mapTypeId: google.maps.MapTypeId.TERRAIN,
-    });
+      // Si és Catalunya, fem un zoom de 7; si és el món, zoom d'1
+      zoom: gameMode === 'catalunya' ? 7 : 1,
+      // Si és Catalunya, centrem a prop de Manresa; si no, a l'equador
+      center: gameMode === 'catalunya' ? { lat: 41.5912, lng: 1.5209 } : { lat: 20, lng: 0 },
+      disableDefaultUI: true,
+      zoomControl: true,
+      zoomControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
+      clickableIcons: false,
+      gestureHandling: 'greedy',
+      mapTypeId: google.maps.MapTypeId.TERRAIN,
+    });
 
     mapInstanceRef.current = map;
 

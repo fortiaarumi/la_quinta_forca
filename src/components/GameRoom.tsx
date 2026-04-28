@@ -211,7 +211,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       const actual = room.locations[room.currentRound];
       const distance = haversineDistance(guessLat, guessLng, actual.lat, actual.lng);
-      const score = calculateScore(distance);
+      // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
+      const score = calculateScore(distance, room.gameMode);
 
       const guess: PlayerGuess = { lat: guessLat, lng: guessLng, distance, score };
 
@@ -399,7 +400,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
       </div>
 
       {showGuessMap && mapsReady && (
-        <GuessMap onGuess={submitGuess} onClose={() => setShowGuessMap(false)} />
+        <GuessMap 
+          onGuess={submitGuess} 
+          onClose={() => setShowGuessMap(false)} 
+          gameMode={room.gameMode}
+        />
       )}
     </div>
   );
