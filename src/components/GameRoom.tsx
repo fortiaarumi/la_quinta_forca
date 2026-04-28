@@ -45,6 +45,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const { user, isGuest } = useAuth();
   const statsSavedRef = useRef(false);
+  const tempPinRef = useRef<{lat: number, lng: number} | null>(null); // 👈 AFEGIT
 
   useEffect(() => {
     loadGoogleMaps()
@@ -80,6 +81,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setHasGuessed(false);
       setShowGuessMap(false);
       transitionedRef.current = false;
+      tempPinRef.current = null; // 👈 AFEGIT: Netejem el pin al canviar de ronda
       prevRoundRef.current = room.currentRound;
     }
   }, [room?.currentRound]);
@@ -118,8 +120,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
         // Tancar el mapa si a algú se li ha esgotat el temps
         if (isTimeUp && !hasGuessed) {
-          setShowGuessMap(false);
-          setHasGuessed(true);
+          if (tempPinRef.current) {
+            // 👈 AFEGIT: Si tenim un pin posat, l'enviem directament!
+            submitGuess(tempPinRef.current.lat, tempPinRef.current.lng);  
+          } else {
+            setShowGuessMap(false);
+            setHasGuessed(true);
+          }
         }
 
         // NOMÉS el Host calcula i suma els punts (per no sumar-los dues vegades)
@@ -427,6 +434,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       {showGuessMap && mapsReady && (
         <GuessMap 
           onGuess={submitGuess} 
+          onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }} // 👈 AFEGIT: Actualitza la nostra memòria en temps real
           onClose={() => setShowGuessMap(false)} 
           gameMode={room.gameMode}
         />
