@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ref, set, get } from 'firebase/database';
+import { useState, useEffect } from 'react';
+import { ref, set, get, query, orderByChild, endAt, remove } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
@@ -25,6 +25,34 @@ export default function HomeScreen() {
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Camió de les escombraries: Elimina sales de més de 24h quan algú obre la web
+  useEffect(() => {
+    const netejarBrossa = async () => {
+      try {
+        const unDia = 24 * 60 * 60 * 1000;
+        const limitTemps = Date.now() - unDia;
+        
+        // Busquem totes les sales creades abans d'ahir a aquesta mateixa hora
+        const oldRoomsQuery = query(
+          ref(db, 'rooms'), 
+          orderByChild('createdAt'), 
+          endAt(limitTemps)
+        );
+        
+        const snap = await get(oldRoomsQuery);
+        if (snap.exists()) {
+          snap.forEach((child) => {
+            remove(child.ref); // Esborra la sala
+          });
+        }
+      } catch (e) {
+        console.log('Error netejant sales antigues', e);
+      }
+    };
+
+    netejarBrossa();
+  }, []);
 
   const handleSolo = async () => {
     if (!playerName.trim()) return setError('Introdueix el teu nom');
