@@ -108,22 +108,19 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
                 ? 'bottom-6 right-6 w-[480px] h-[360px]' 
                 : 'bottom-6 right-6 w-48 h-32')
           }`}
-        onMouseEnter={() => !isMobile && setExpanded(true)}
-        onMouseLeave={() => !isMobile && !submitting && setExpanded(false)}
+
       >
-        {/* ── BOTÓ EXPLÍCIT PER MÒBIL (A SOBRE DEL MAPA) ── */}
-        {isMobile && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className={`mb-2 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl transition-all
-              ${expanded 
-                ? 'bg-red-500 text-white hover:bg-red-400' 
-                : 'bg-blue-600 text-white animate-bounce hover:bg-blue-500'
-              }`}
-          >
-            {expanded ? '↙️ Fer mapa petit' : '↗️ Fer mapa gran'}
-          </button>
-        )}
+        {/* ── BOTÓ EXPLÍCIT PER A TOTHOM (A SOBRE DEL MAPA) ── */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className={`mb-2 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl transition-all
+            ${expanded 
+              ? 'bg-red-500 text-white hover:bg-red-400' 
+              : 'bg-blue-600 text-white animate-bounce hover:bg-blue-500'
+            }`}
+        >
+          {expanded ? '↙️ Fer mapa petit' : '↗️ Fer mapa gran'}
+        </button>
 
         {/* ── EL MAPA I LA UI ── */}
         <div className={`relative w-full overflow-hidden shadow-2xl transition-all duration-300

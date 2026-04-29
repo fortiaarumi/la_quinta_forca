@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail, // 👈 AFEGIT
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { createUserProfile } from '@/lib/userStats';
@@ -13,7 +14,7 @@ interface Props {
   onGuestContinue: () => void;
 }
 
-type Panel = 'welcome' | 'login' | 'signup' | 'guest';
+type Panel = 'welcome' | 'login' | 'signup' | 'guest' | 'reset'; // 👈 AFEGIT 'reset'
 
 const GlassInput = ({
   type, placeholder, value, onChange, autoComplete,
@@ -61,10 +62,32 @@ export default function AuthScreen({ onGuestContinue }: Props) {
   // Guest
   const [guestNick, setGuestNick] = useState('');
 
+  // 👈 AFEGIT: Recuperar contrasenya
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetRepeat, setResetRepeat] = useState('');
+  const [resetMsg, setResetMsg] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const clearError = () => setError('');
+
+  // 👈 AFEGIT: Funció que demana l'email a Firebase
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim() || !resetRepeat.trim()) return setError('Emplena tots els camps');
+    if (resetEmail.trim() !== resetRepeat.trim()) return setError('Els correus no coincideixen');
+    setLoading(true); clearError(); setResetMsg('');
+    try {
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+      setResetMsg('✅ Revisa el teu correu (i la carpeta de Spam). T\'hem enviat les instruccions per restablir la contrasenya.');
+      setResetEmail('');
+      setResetRepeat('');
+    } catch (e: any) {
+      setError('Error en enviar el correu. Segur que està ben escrit?');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!loginEmail.trim() || !loginPassword) return setError('Emplena tots els camps');
@@ -244,6 +267,15 @@ export default function AuthScreen({ onGuestContinue }: Props) {
                 <GlassInput type="password" placeholder="••••••••" value={loginPassword} onChange={setLoginPassword} autoComplete="current-password" />
               </div>
             </div>
+            {/* 👈 AFEGIT: Botó per anar a recuperar-la */}
+            <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '15px' }}>
+              <button 
+                onClick={() => { setPanel('reset'); clearError(); }} 
+                style={{ background: 'none', border: 'none', color: '#10b981', fontSize: '11px', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+              >
+                Has oblidat la contrasenya?
+              </button>
+            </div>
             {error && <ErrorBox msg={error} />}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
               <button
@@ -255,6 +287,42 @@ export default function AuthScreen({ onGuestContinue }: Props) {
               </button>
               <button onClick={() => { setPanel('welcome'); clearError(); }} style={btnSecondary}>
                 ← Tornar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── AFEGIT: PANELL RECUPERAR CONTRASENYA ── */}
+        {panel === 'reset' && (
+          <div style={bg}>
+            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '8px', textAlign: 'center' }}>
+              🔒 Recuperar Contrasenya
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'center', marginBottom: '20px', lineHeight: 1.5 }}>
+              Introdueix el teu correu electrònic i t'enviarem un enllaç per crear una nova contrasenya.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div>
+                <label style={label}>Correu Electrònic</label>
+                <GlassInput type="email" placeholder="nom@exemple.com" value={resetEmail} onChange={setResetEmail} />
+              </div>
+              <div>
+                <label style={label}>Repetir Correu</label>
+                <GlassInput type="email" placeholder="Repeteix el correu" value={resetRepeat} onChange={setResetRepeat} />
+              </div>
+            </div>
+            {error && <ErrorBox msg={error} />}
+            {resetMsg && (
+              <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', color: '#34d399', fontSize: '11px', fontWeight: 700, textAlign: 'center', marginBottom: '15px' }}>
+                {resetMsg}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button onClick={handleResetPassword} disabled={loading} style={btnPrimary(loading)}>
+                {loading ? '⌛ Enviant correu...' : '📧 Enviar Correu'}
+              </button>
+              <button onClick={() => { setPanel('login'); clearError(); setResetMsg(''); }} style={btnSecondary}>
+                ← Tornar a Iniciar Sessió
               </button>
             </div>
           </div>

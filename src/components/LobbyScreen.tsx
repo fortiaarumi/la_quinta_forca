@@ -186,6 +186,28 @@ export default function LobbyScreen({
           </div>
         )}
 
+        {/* ── AFEGIT: VÍDEO DEL DIA A LA SALA D'ESPERA ── */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">📹 Entreteniment</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
+            <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3 relative">
+              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-50 pointer-events-none" />
+              <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full h-[200px] object-contain relative z-10" />
+            </div>
+            <div className="flex items-center gap-3 px-2">
+              <span className="text-xl">⛷️</span>
+              <div>
+                <p className="text-gray-300 text-xs font-bold m-0">Roger Bernadó masterclass</p>
+                <p className="text-gray-500 text-[9px] uppercase tracking-widest m-0 mt-1">Video del dia</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Botó / estat */}
         {isHost ? (
           <>
