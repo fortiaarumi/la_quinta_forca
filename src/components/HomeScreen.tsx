@@ -40,9 +40,48 @@ export default function HomeScreen() {
   // AFEGIT: Per canviar entre menú de joc i menú d'amics
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
   
+  // AFEGIT: Variables del vídeo dinàmic i suggeriments
+  const [homeVideoUrl, setHomeVideoUrl] = useState('/Rochaesquiant.mp4');
+  const [homeVideoCaption, setHomeVideoCaption] = useState('Roger Bernadó masterclass esquiant');
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [suggestLink, setSuggestLink] = useState('');
+  const [suggestMsg, setSuggestMsg] = useState({ text: '', type: '' });
+  
   // AFEGIT: Variable per guardar la invitació que ens arriba
   const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
-  const [activeFriendReq, setActiveFriendReq] = useState<{uid: string, nickname: string} | null>(null); // 👈 AFEGIT
+  const [activeFriendReq, setActiveFriendReq] = useState<{uid: string, nickname: string} | null>(null);
+
+  // ── Llegir Vídeo Dinàmic des de Firebase ──
+  useEffect(() => {
+    const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        if (data.videoUrl) setHomeVideoUrl(data.videoUrl);
+        if (data.videoCaption) setHomeVideoCaption(data.videoCaption);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // ── Enviar Suggeriment de Vídeo ──
+  const handleSuggestVideo = async () => {
+    if (!suggestLink.trim() || !user) return;
+    try {
+      const suggestId = crypto.randomUUID();
+      await set(ref(db, `suggestions/${suggestId}`), {
+        userId: user.uid,
+        userName: nickname || 'Convidat',
+        link: suggestLink.trim(),
+        timestamp: Date.now(),
+        status: 'pending'
+      });
+      setSuggestMsg({ text: '✅ Suggeriment enviat! Gràcies.', type: 'success' });
+      setSuggestLink('');
+      setTimeout(() => setShowSuggestModal(false), 2000);
+    } catch (error) {
+      setSuggestMsg({ text: '❌ Error en enviar.', type: 'error' });
+    }
+  };
 
   // ── EL GUÀRDIA DE SEGURETAT DEL LÍMIT DIARI ──
   const MAX_DAILY_ROOMS = 500; // 👈 Pots canviar aquest límit al que tu vulguis
@@ -499,20 +538,38 @@ export default function HomeScreen() {
             <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
           </div>
 
-          {/* Vídeo */}
+          {/* Vídeo Dinàmic */}
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', inset: '-2px', borderRadius: '26px', zIndex: 0, background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(99,102,241,0.2))', filter: 'blur(12px)' }} />
             <div style={{ position: 'relative', zIndex: 1, borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 24px 60px rgba(0,0,0,0.5)' }}>
-              <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline style={{ display: 'block', width: '100%', aspectRatio: '16/9', objectFit: 'contain', background: '#000' }} />
+              {/* Usem la variable homeVideoUrl en lloc del text fix */}
+              <video src={homeVideoUrl} autoPlay loop muted playsInline style={{ display: 'block', width: '100%', aspectRatio: '16/9', objectFit: 'contain', background: '#000' }} />
             </div>
           </div>
 
-          {/* Caption del vídeo */}
-          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>⛷️</span>
-            <div>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>Roger Bernadó masterclass esquiant</p>
-              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Fase Alpha</p>
+          {/* Caption i Botons d'Admin/Suggeriment */}
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '20px' }}>⛷️</span>
+              <div>
+                {/* Usem la variable homeVideoCaption */}
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>{homeVideoCaption}</p>
+                <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Fase Alpha</p>
+              </div>
+            </div>
+            
+            {/* Botó de suggerir (o Admin) */}
+            <div className="flex gap-2">
+              {isAdmin && (
+                <button onClick={() => window.location.href = '/admin'} className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 p-2 rounded-lg text-[10px] font-black uppercase transition-all" title="Panell d'Admin">
+                  ⚙️
+                </button>
+              )}
+              {user && !isAdmin && (
+                <button onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg text-[10px] font-black uppercase transition-all" title="Suggerir Vídeo">
+                  💡
+                </button>
+              )}
             </div>
           </div>
 
@@ -617,6 +674,51 @@ export default function HomeScreen() {
                 color: 'black', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s',
                 boxShadow: '0 8px 24px rgba(16,185,129,0.4)'
               }}>Acceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AFEGIT: MODAL DE SUGGERIMENT DE VÍDEO ── */}
+      {showSuggestModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px',
+            maxWidth: '400px', width: '90%', boxShadow: '0 24px 50px rgba(0,0,0,0.5)'
+          }}>
+            <h3 style={{ color: 'white', fontSize: '20px', fontWeight: 900, margin: '0 0 8px 0', textAlign: 'center' }}>💡 Suggereix un Vídeo</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>
+              Enganxa l'enllaç d'un vídeo divertit (TikTok, Reels, Youtube Shorts) i l'Admin el revisarà per posar-lo de "Vídeo del dia"!
+            </p>
+            
+            <input 
+              type="text" 
+              value={suggestLink}
+              onChange={(e) => setSuggestLink(e.target.value)}
+              placeholder="https://..."
+              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 mb-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            
+            {suggestMsg.text && (
+              <div className={`text-xs font-bold mb-4 px-3 py-2 rounded-lg text-center ${suggestMsg.type === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                {suggestMsg.text}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowSuggestModal(false)} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+              }}>Cancel·lar</button>
+              <button onClick={handleSuggestVideo} disabled={!suggestLink.trim()} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', 
+                background: suggestLink.trim() ? '#10b981' : 'rgba(16,185,129,0.2)',
+                color: suggestLink.trim() ? 'black' : 'rgba(255,255,255,0.3)', 
+                fontWeight: 900, cursor: suggestLink.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s'
+              }}>Enviar</button>
             </div>
           </div>
         </div>

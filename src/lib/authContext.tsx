@@ -45,7 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (snap.exists()) {
             const data = snap.val();
             setNickname(data.nickname);
-            setIsAdmin(data.isAdmin === true); // Si tens el rol, s'activa!
+            // 👈 AFEGIT: Si tens el rol a la DB O ets el Fortià, s'activa!
+            setIsAdmin(data.isAdmin === true || u.email === 'fortiaarumi@gmail.com'); 
+          } else if (u.email === 'fortiaarumi@gmail.com') {
+            // 👈 AFEGIT: Per si de cas no tinguessis el perfil creat per un error, t'assegures entrar
+            setIsAdmin(true);
           }
 
           // 2. SISTEMA DE PRESÈNCIA (Nou radar)
