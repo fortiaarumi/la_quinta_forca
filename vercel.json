@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/rotate-video",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
