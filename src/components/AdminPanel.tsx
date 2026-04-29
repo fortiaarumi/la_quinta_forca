@@ -17,6 +17,7 @@ export default function AdminPanel() {
   const [videoCaption, setVideoCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
+  const [suggestions, setSuggestions] = useState<any[]>([]); // 👈 AFEGIT: Memòria de suggeriments
 
   // 👈 AFEGIT: Estats i funcions per a les Sales
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
@@ -119,6 +120,33 @@ export default function AdminPanel() {
     };
     fetchConfig();
   }, [isAdmin]);
+
+  // 👈 AFEGIT: Escoltar la bústia de suggeriments
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'app') return;
+    const sugRef = ref(db, 'suggestions');
+    const unsub = onValue(sugRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const arr = Object.entries(data).map(([id, val]: [string, any]) => ({ id, ...val }));
+        arr.sort((a, b) => b.timestamp - a.timestamp); // Els més nous primer
+        setSuggestions(arr);
+      } else {
+        setSuggestions([]);
+      }
+    });
+    return () => unsub();
+  }, [isAdmin, activeTab]);
+
+  const handleDeleteSuggestion = async (id: string) => {
+    await remove(ref(db, `suggestions/${id}`));
+  };
+
+  const handleUseSuggestion = (link: string, userName: string, id: string) => {
+    setVideoUrl(link);
+    setVideoCaption(`Vídeo suggerit per ${userName}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Guardar els canvis del vídeo/text a la base de dades
   const handleSaveAppConfig = async () => {
@@ -249,6 +277,43 @@ export default function AdminPanel() {
                 </div>
               </div>
             </div>
+
+            {/* 👈 AFEGIT: LA BÚSTIA DE SUGGERIMENTS VISUAL */}
+            <div className="mt-12 pt-8 border-t border-white/10">
+              <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
+                💡 Bústia de Suggeriments <span className="bg-emerald-500 text-black text-xs px-2 py-1 rounded-full">{suggestions.length}</span>
+              </h3>
+              
+              {suggestions.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No hi ha cap suggeriment pendent.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {suggestions.map((sug) => (
+                    <div key={sug.id} className="bg-black/40 border border-white/5 p-4 rounded-xl flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-emerald-400 text-xs font-bold">{sug.userName}</p>
+                          <p className="text-gray-500 text-[10px]">{new Date(sug.timestamp).toLocaleString('ca-ES')}</p>
+                        </div>
+                        <button onClick={() => handleDeleteSuggestion(sug.id)} className="text-red-400 hover:bg-red-500/10 p-1 rounded transition-colors text-xs" title="Esborrar sense publicar">
+                          🗑️
+                        </button>
+                      </div>
+                      <a href={sug.link} target="_blank" rel="noreferrer" className="text-blue-400 text-xs truncate block hover:underline">
+                        {sug.link}
+                      </a>
+                      <button 
+                        onClick={() => handleUseSuggestion(sug.link, sug.userName, sug.id)}
+                        className="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 rounded-lg transition-colors mt-auto border border-white/10"
+                      >
+                        Aplicar a dalt i posar "Suggerit per {sug.userName}"
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
