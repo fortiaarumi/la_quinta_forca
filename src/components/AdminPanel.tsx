@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, get, set, update, onValue, remove } from 'firebase/database'; // 👈 AFEGITS onValue i remove
-import { db } from '@/lib/firebase';
+import { ref, get, set, update, onValue, remove } from 'firebase/database';
+import { db, auth } from '@/lib/firebase'; // 👈 AFEGIT: auth
+import { sendPasswordResetEmail } from 'firebase/auth'; // 👈 AFEGIT: Enviar correus
 import { useAuth } from '@/lib/authContext';
 
 type AdminTab = 'users' | 'rooms' | 'app';
@@ -47,6 +48,61 @@ export default function AdminPanel() {
   const handleClearAllRooms = async () => {
     if (confirm("🚨 ATENCIÓ: Això tancarà TOTES les partides actuals i farà fora els jugadors. N'estàs segur?")) {
       await remove(ref(db, 'rooms'));
+    }
+  };
+
+  // 👈 AFEGIT: Estats i funcions per als Usuaris
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'users') return;
+    const usersRef = ref(db, 'users');
+    const unsub = onValue(usersRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const uArray = Object.entries(data).map(([uid, val]: [string, any]) => ({ uid, ...val }));
+        // Ordenem alfabèticament pel nom
+        uArray.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+        setUsersList(uArray);
+      } else {
+        setUsersList([]);
+      }
+    });
+    return () => unsub();
+  }, [isAdmin, activeTab]);
+
+  const handleResetUserPassword = async (email: string) => {
+    if (!email) return alert("⚠️ Aquest usuari no té el correu guardat a la base de dades.");
+    if (confirm(`Vols enviar un correu de restabliment de contrasenya a ${email}?`)) {
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert('✅ Correu enviat amb èxit!');
+      } catch (e: any) {
+        alert('❌ Error enviant el correu: ' + e.message);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (uid: string, nickname: string) => {
+    if (confirm(`🚨 Segur que vols ESBORRAR el perfil de ${nickname}? No podrà jugar fins que es torni a registrar.`)) {
+      await remove(ref(db, `users/${uid}`));
+    }
+  };
+
+  const handleSaveUserEdit = async () => {
+    if (!editingUser) return;
+    try {
+      await update(ref(db, `users/${editingUser.uid}`), {
+        nickname: editingUser.nickname,
+        bestScoreWorld: Number(editingUser.bestScoreWorld) || 0,
+        bestScoreCatalunya: Number(editingUser.bestScoreCatalunya) || 0,
+        total5k: Number(editingUser.total5k) || 0,
+      });
+      setEditingUser(null);
+      alert('✅ Dades de l\'usuari actualitzades!');
+    } catch (e: any) {
+      alert('❌ Error guardant: ' + e.message);
     }
   };
 
@@ -196,12 +252,110 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── CONTINGUT PESTANYA USUARIS (Ho farem a la Fase 3) ── */}
+        {/* ── CONTINGUT PESTANYA USUARIS (Fase 3 Completada!) ── */}
         {activeTab === 'users' && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center animate-fade-in-up">
-            <h2 className="text-2xl font-black text-white mb-2">Base de Dades de Jugadors</h2>
-            <p className="text-gray-400">Aquí carregarem tota la llista d'usuaris per editar stats, noms i forçar el restabliment de contrasenyes.</p>
-            <div className="mt-6 text-emerald-400 font-bold uppercase tracking-widest text-sm">Això ho programarem al proper pas! 🛠️</div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 animate-fade-in-up">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-black text-emerald-400">Base de Dades de Jugadors</h2>
+                <p className="text-[11px] text-gray-400 uppercase tracking-widest mt-1">Total Registrats: {usersList.length}</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/10">
+                    <th className="pb-3 font-black">Jugador</th>
+                    <th className="pb-3 font-black">Estat</th>
+                    <th className="pb-3 font-black">Rècords (Món / Cat)</th>
+                    <th className="pb-3 font-black">5K ⭐</th>
+                    <th className="pb-3 font-black text-right">Accions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.map((u) => (
+                    <tr key={u.uid} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="py-3">
+                        <div className="font-bold text-white flex items-center gap-2">
+                          {u.nickname || 'Sense Nom'} 
+                          {u.isAdmin && <span className="text-[8px] bg-red-600 px-2 py-0.5 rounded text-white uppercase tracking-widest">Admin</span>}
+                        </div>
+                        <div className="text-xs text-gray-500">{u.email || 'Sense correu'}</div>
+                      </td>
+                      <td className="py-3">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${u.status === 'online' ? 'text-emerald-400' : 'text-gray-600'}`}>
+                          {u.status === 'online' ? 'En línia' : 'Offline'}
+                        </span>
+                      </td>
+                      <td className="py-3 font-mono text-gray-300">
+                        <span className="text-emerald-400">{u.bestScoreWorld || 0}</span> / <span className="text-red-400">{u.bestScoreCatalunya || 0}</span>
+                      </td>
+                      <td className="py-3 font-bold text-yellow-400">{u.total5k || 0}</td>
+                      <td className="py-3 text-right space-x-2">
+                        <button 
+                          onClick={() => setEditingUser(u)}
+                          className="bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-400 p-2 rounded-lg transition-colors"
+                          title="Editar Estadístiques i Nom"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          onClick={() => handleResetUserPassword(u.email)}
+                          className="bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 p-2 rounded-lg transition-colors"
+                          title="Enviar correu de restabliment de contrasenya"
+                        >
+                          🔑
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteUser(u.uid, u.nickname)}
+                          disabled={u.isAdmin} // Protegim els admins perquè no t'esborris a tu mateix!
+                          className="bg-red-500/10 hover:bg-red-500/30 text-red-400 p-2 rounded-lg transition-colors disabled:opacity-20"
+                          title="Esborrar/Banejar Perfil"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL D'EDICIÓ D'USUARIS ── */}
+        {editingUser && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-[#0f172a] border border-indigo-500/30 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+              <h3 className="text-xl font-black text-white mb-4 border-b border-white/10 pb-2">Editar Usuari</h3>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nom (Nickname)</label>
+                  <input type="text" value={editingUser.nickname || ''} onChange={(e) => setEditingUser({...editingUser, nickname: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Rècord Món</label>
+                    <input type="number" value={editingUser.bestScoreWorld || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreWorld: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-emerald-500 font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Rècord Cat.</label>
+                    <input type="number" value={editingUser.bestScoreCatalunya || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-red-500 font-mono" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Total 5K (Plens al centre)</label>
+                  <input type="number" value={editingUser.total5k || 0} onChange={(e) => setEditingUser({...editingUser, total5k: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-yellow-500 font-mono" />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setEditingUser(null)} className="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 py-3 rounded-xl font-bold transition-colors">Cancel·lar</button>
+                <button onClick={handleSaveUserEdit} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-black transition-colors shadow-lg shadow-indigo-500/20">💾 Guardar</button>
+              </div>
+            </div>
           </div>
         )}
 
