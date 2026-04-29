@@ -513,18 +513,31 @@ export default function HomeScreen() {
               🏆 Veure Rànquings Globals
             </Link>
 
-            {/* Vídeo Mòbil */}
+            {/* Vídeo Mòbil Dinàmic */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-3 text-center">📹 Vídeo del dia</p>
-              <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center">
-                <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full max-h-[60vh] object-contain" />
+              <div className="flex justify-between items-center mb-3 px-1">
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] m-0">📹 Vídeo del dia</p>
+                <div className="flex gap-2">
+                  {isAdmin && <button onClick={() => window.location.href = '/admin'} className="text-emerald-400 text-lg">⚙️</button>}
+                  {user && <button onClick={() => setShowSuggestModal(true)} className="text-yellow-400 text-lg">💡</button>}
+                </div>
               </div>
+              <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center">
+                <video src={homeVideoUrl} autoPlay loop muted playsInline className="w-full max-h-[60vh] object-contain" />
+              </div>
+              <p className="text-[11px] text-center mt-3 text-gray-300 font-bold">{homeVideoCaption}</p>
             </div>
           </div>
 
           {/* Footer mòbil */}
-          <div className="text-center lg:hidden mt-6 mb-8">
-            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 2.0 · Ara amb comptes</p>
+          <div className="text-center lg:hidden mt-6 mb-8 flex flex-col items-center gap-3">
+            {user && (
+              <div className="flex flex-col items-center gap-1 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
+                <span className="text-[10px] font-bold text-emerald-400">Connectat com {nickname} {isAdmin && '👑'}</span>
+                <button onClick={logout} className="text-[10px] text-gray-400 hover:text-white uppercase tracking-wider font-black">Sortir de la sessió</button>
+              </div>
+            )}
+            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Versió 3.0 · Ara amb comptes</p>
           </div>
         </div>
 
@@ -565,7 +578,7 @@ export default function HomeScreen() {
                   ⚙️
                 </button>
               )}
-              {user && !isAdmin && (
+              {user && (
                 <button onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg text-[10px] font-black uppercase transition-all" title="Suggerir Vídeo">
                   💡
                 </button>

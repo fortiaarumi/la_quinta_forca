@@ -96,8 +96,12 @@ export default function AdminPanel() {
     try {
       await update(ref(db, `users/${editingUser.uid}`), {
         nickname: editingUser.nickname,
-        bestScoreWorld: Number(editingUser.bestScoreWorld) || 0,
-        bestScoreCatalunya: Number(editingUser.bestScoreCatalunya) || 0,
+        bestScoreWorld_bala: Number(editingUser.bestScoreWorld_bala) || 0,
+        bestScoreWorld_normal: Number(editingUser.bestScoreWorld_normal) || 0,
+        bestScoreWorld_infinit: Number(editingUser.bestScoreWorld_infinit) || 0,
+        bestScoreCatalunya_bala: Number(editingUser.bestScoreCatalunya_bala) || 0,
+        bestScoreCatalunya_normal: Number(editingUser.bestScoreCatalunya_normal) || 0,
+        bestScoreCatalunya_infinit: Number(editingUser.bestScoreCatalunya_infinit) || 0,
         total5k: Number(editingUser.total5k) || 0,
       });
       setEditingUser(null);
@@ -354,7 +358,7 @@ export default function AdminPanel() {
                         </span>
                       </td>
                       <td className="py-3 font-mono text-gray-300">
-                        <span className="text-emerald-400">{u.bestScoreWorld || 0}</span> / <span className="text-red-400">{u.bestScoreCatalunya || 0}</span>
+                        <span className="text-emerald-400">{Math.max(u.bestScoreWorld_bala||0, u.bestScoreWorld_normal||0, u.bestScoreWorld_infinit||0)}</span> / <span className="text-red-400">{Math.max(u.bestScoreCatalunya_bala||0, u.bestScoreCatalunya_normal||0, u.bestScoreCatalunya_infinit||0)}</span>
                       </td>
                       <td className="py-3 font-bold text-yellow-400">{u.total5k || 0}</td>
                       <td className="py-3 text-right space-x-2">
@@ -402,12 +406,20 @@ export default function AdminPanel() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Rècord Món</label>
-                    <input type="number" value={editingUser.bestScoreWorld || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreWorld: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-emerald-500 font-mono" />
+                    <label className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 border-b border-emerald-900/50 pb-1">Món</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScoreWorld_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreWorld_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScoreWorld_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreWorld_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScoreWorld_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreWorld_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Rècord Cat.</label>
-                    <input type="number" value={editingUser.bestScoreCatalunya || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-red-500 font-mono" />
+                    <label className="block text-[10px] font-black text-red-400 uppercase tracking-widest mb-1 border-b border-red-900/50 pb-1">Catalunya</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScoreCatalunya_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScoreCatalunya_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScoreCatalunya_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
                   </div>
                 </div>
                 <div>
