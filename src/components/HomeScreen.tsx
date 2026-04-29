@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction } from 'firebase/database';
+import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction, update } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
@@ -43,8 +43,10 @@ export default function HomeScreen() {
   // AFEGIT: Variables del vídeo dinàmic i suggeriments
   const [homeVideoUrl, setHomeVideoUrl] = useState('/Rochaesquiant.mp4');
   const [homeVideoCaption, setHomeVideoCaption] = useState('Roger Bernadó masterclass esquiant');
+  const [homeVideoSuggestedBy, setHomeVideoSuggestedBy] = useState(''); // 👈 AFEGIT: Nom de l'amic
   const [showSuggestModal, setShowSuggestModal] = useState(false);
-  const [suggestLink, setSuggestLink] = useState('');
+  const [suggestTitle, setSuggestTitle] = useState(''); // Títol del vídeo
+  const [videoFile, setVideoFile] = useState<File | null>(null); // El fitxer .mp4
   const [suggestMsg, setSuggestMsg] = useState({ text: '', type: '' });
   
   // AFEGIT: Variable per guardar la invitació que ens arriba
@@ -58,6 +60,7 @@ export default function HomeScreen() {
         const data = snap.val();
         if (data.videoUrl) setHomeVideoUrl(data.videoUrl);
         if (data.videoCaption) setHomeVideoCaption(data.videoCaption);
+        if (data.suggestedBy) setHomeVideoSuggestedBy(data.suggestedBy); else setHomeVideoSuggestedBy(''); // 👈 Llegeix qui ho ha suggerit
       }
     });
     return () => unsub();
@@ -65,21 +68,65 @@ export default function HomeScreen() {
 
   // ── Enviar Suggeriment de Vídeo ──
   const handleSuggestVideo = async () => {
-    if (!suggestLink.trim() || !user) return;
+    if (!videoFile || !suggestTitle.trim() || !user) return;
+    
+    setLoading(true);
+    setSuggestMsg({ text: '⌛ Comprovant límit diari...', type: '' });
+
     try {
-      const suggestId = crypto.randomUUID();
-      await set(ref(db, `suggestions/${suggestId}`), {
-        userId: user.uid,
-        userName: nickname || 'Convidat',
-        link: suggestLink.trim(),
-        timestamp: Date.now(),
-        status: 'pending'
+      const today = new Date().toISOString().split('T')[0];
+      const userRef = ref(db, `users/${user.uid}`);
+      const userSnap = await get(userRef);
+      const userData = userSnap.val();
+
+      // 1. LÍMIT DIARI: Comprovem si ja ha pujat un vídeo avui
+      if (userData?.lastVideoUploadDate === today) {
+        setLoading(false);
+        setSuggestMsg({ text: '✋ Ja has pujat un vídeo avui. Torna demà!', type: 'error' });
+        return;
+      }
+
+      setSuggestMsg({ text: '🚀 Pujant vídeo a Cloudinary... (això pot trigar)', type: '' });
+
+      // 2. PUJADA A CLOUDINARY
+      const formData = new FormData();
+      formData.append('file', videoFile);
+      formData.append('upload_preset', 'la_quinta_forca_videos'); // El teu preset
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/ddvvk5jii/video/upload`, {
+        method: 'POST',
+        body: formData,
       });
-      setSuggestMsg({ text: '✅ Suggeriment enviat! Gràcies.', type: 'success' });
-      setSuggestLink('');
-      setTimeout(() => setShowSuggestModal(false), 2000);
-    } catch (error) {
-      setSuggestMsg({ text: '❌ Error en enviar.', type: 'error' });
+
+      const cloudinaryData = await res.json();
+      if (!cloudinaryData.secure_url) throw new Error('Error en la pujada');
+
+      // 3. GUARDAR A LA CUA DE FIREBASE
+      const queueRef = ref(db, 'videoQueue');
+      const newVideoRef = ref(db, `videoQueue/${crypto.randomUUID()}`);
+      
+      await set(newVideoRef, {
+        url: cloudinaryData.secure_url,
+        title: suggestTitle.trim(),
+        suggestedBy: nickname || 'Un amic',
+        userEmail: user.email,
+        userId: user.uid,
+        timestamp: Date.now()
+      });
+
+      // 4. MARCAR DATA DE PUJADA A L'USUARI
+      await update(userRef, { lastVideoUploadDate: today });
+
+      setSuggestMsg({ text: '✅ Vídeo enviat! Si és triat, rebràs un correu.', type: 'success' });
+      setVideoFile(null);
+      setSuggestTitle('');
+      setTimeout(() => setShowSuggestModal(false), 3000);
+      
+    } catch (error: any) {
+      console.error(error);
+      setSuggestMsg({ text: '❌ Error: ' + error.message, type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -525,7 +572,14 @@ export default function HomeScreen() {
               <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center">
                 <video src={homeVideoUrl} autoPlay loop muted playsInline className="w-full max-h-[60vh] object-contain" />
               </div>
-              <p className="text-[11px] text-center mt-3 text-gray-300 font-bold">{homeVideoCaption}</p>
+              <div className="text-center mt-3">
+                <p className="text-[11px] text-gray-300 font-bold m-0">{homeVideoCaption}</p>
+                {homeVideoSuggestedBy && (
+                  <p className="text-[9px] text-gray-500 uppercase tracking-widest m-0 mt-1">
+                    Suggerit per <span className="text-emerald-400 font-black">{homeVideoSuggestedBy}</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -565,9 +619,14 @@ export default function HomeScreen() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '20px' }}>⛷️</span>
               <div>
-                {/* Usem la variable homeVideoCaption */}
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: 700, margin: 0 }}>{homeVideoCaption}</p>
-                <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Fase Alpha</p>
+                <p style={{ color: 'white', fontSize: '13px', fontWeight: 800, margin: 0 }}>{homeVideoCaption}</p>
+                {homeVideoSuggestedBy ? (
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '9px', margin: 0, marginTop: '2px', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '0.05em' }}>
+                    Suggerit per <span style={{ color: '#10b981' }}>{homeVideoSuggestedBy}</span>
+                  </p>
+                ) : (
+                  <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px', margin: 0, marginTop: '2px' }}>Contingut exclusiu · Fase Alpha</p>
+                )}
               </div>
             </div>
             
@@ -692,46 +751,38 @@ export default function HomeScreen() {
         </div>
       )}
 
-      {/* ── AFEGIT: MODAL DE SUGGERIMENT DE VÍDEO ── */}
+      {/* ── MODAL DE PUJADA DE VÍDEO (Cloudinary) ── */}
       {showSuggestModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <div style={{
-            background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px',
-            maxWidth: '400px', width: '90%', boxShadow: '0 24px 50px rgba(0,0,0,0.5)'
-          }}>
-            <h3 style={{ color: 'white', fontSize: '20px', fontWeight: 900, margin: '0 0 8px 0', textAlign: 'center' }}>💡 Suggereix un Vídeo</h3>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '20px', textAlign: 'center' }}>
-              Enganxa l'enllaç d'un vídeo divertit (TikTok, Reels, Youtube Shorts) i l'Admin el revisarà per posar-lo de "Vídeo del dia"!
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.2s' }}>
+          <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '32px', maxWidth: '400px', width: '95%' }}>
+            <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, marginBottom: '8px', textAlign: 'center' }}>🎬 Proposa el Vídeo del Dia</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '24px', textAlign: 'center', lineHeight: 1.5 }}>
+              Tria un vídeo divertit de la teva galeria. El sistema en triarà un cada nit!
             </p>
             
-            <input 
-              type="text" 
-              value={suggestLink}
-              onChange={(e) => setSuggestLink(e.target.value)}
-              placeholder="https://..."
-              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 mb-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
-            />
-            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px' }}>Títol del vídeo</label>
+                <input type="text" value={suggestTitle} onChange={(e) => setSuggestTitle(e.target.value)} placeholder="Ex: El Roger fent un picao" style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: 'white', outline: 'none' }} />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px' }}>Arxiu de vídeo (.mp4)</label>
+                <input type="file" accept="video/mp4,video/quicktime" onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)} style={{ width: '100%', fontSize: '12px', color: 'rgba(255,255,255,0.6)' }} />
+              </div>
+            </div>
+
             {suggestMsg.text && (
-              <div className={`text-xs font-bold mb-4 px-3 py-2 rounded-lg text-center ${suggestMsg.type === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+              <div style={{ padding: '12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, textAlign: 'center', marginBottom: '20px', background: suggestMsg.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)', color: suggestMsg.type === 'error' ? '#f87171' : '#34d399', border: '1px solid currentColor' }}>
                 {suggestMsg.text}
               </div>
             )}
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setShowSuggestModal(false)} style={{
-                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
-                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
-              }}>Cancel·lar</button>
-              <button onClick={handleSuggestVideo} disabled={!suggestLink.trim()} style={{
-                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', 
-                background: suggestLink.trim() ? '#10b981' : 'rgba(16,185,129,0.2)',
-                color: suggestLink.trim() ? 'black' : 'rgba(255,255,255,0.3)', 
-                fontWeight: 900, cursor: suggestLink.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s'
-              }}>Enviar</button>
+              <button onClick={() => setShowSuggestModal(false)} disabled={loading} style={{ flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer' }}>Cancel·lar</button>
+              <button onClick={handleSuggestVideo} disabled={loading || !videoFile || !suggestTitle.trim()} style={{ flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#10b981', color: 'black', fontWeight: 900, cursor: 'pointer', opacity: (loading || !videoFile || !suggestTitle.trim()) ? 0.5 : 1 }}>
+                {loading ? '⌛ PUJANT...' : '🚀 ENVIAR'}
+              </button>
             </div>
           </div>
         </div>
