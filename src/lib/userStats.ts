@@ -8,6 +8,14 @@ export interface UserProfile {
   bestScoreWorld: number;
   bestScoreCatalunya: number;
   total5k: number;
+  // 👈 AFEGIT: Les modalitats noves i el control de vídeos
+  bestScoreWorld_bala?: number;
+  bestScoreWorld_normal?: number;
+  bestScoreWorld_infinit?: number;
+  bestScoreCatalunya_bala?: number;
+  bestScoreCatalunya_normal?: number;
+  bestScoreCatalunya_infinit?: number;
+  lastVideoUploadDate?: string;
 }
 
 export interface LeaderboardEntry {

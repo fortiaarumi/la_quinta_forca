@@ -255,8 +255,20 @@ export default function HomeScreen() {
     if (!user) return;
     getUserProfile(user.uid).then((profile) => {
       if (profile) {
-        setMyBestWorld(profile.bestScoreWorld);
-        setMyBestCat(profile.bestScoreCatalunya);
+        // Busquem la puntuació més alta de les 3 modalitats
+        const maxWorld = Math.max(
+          profile.bestScoreWorld_bala || 0, 
+          profile.bestScoreWorld_normal || 0, 
+          profile.bestScoreWorld_infinit || 0
+        );
+        const maxCat = Math.max(
+          profile.bestScoreCatalunya_bala || 0, 
+          profile.bestScoreCatalunya_normal || 0, 
+          profile.bestScoreCatalunya_infinit || 0
+        );
+        
+        setMyBestWorld(maxWorld);
+        setMyBestCat(maxCat);
         setMy5k(profile.total5k);
       }
     });
