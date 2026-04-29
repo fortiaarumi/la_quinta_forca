@@ -298,8 +298,11 @@ export default function AuthScreen({ onGuestContinue }: Props) {
             <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '8px', textAlign: 'center' }}>
               🔒 Recuperar Contrasenya
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'center', marginBottom: '20px', lineHeight: 1.5 }}>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'center', marginBottom: '10px', lineHeight: 1.5 }}>
               Introdueix el teu correu electrònic i t'enviarem un enllaç per crear una nova contrasenya.
+            </p>
+            <p style={{ color: '#f59e0b', fontSize: '10px', textAlign: 'center', marginBottom: '20px', fontWeight: 700 }}>
+              ⚠️ Revisa la carpeta de Correu Brossa (Spam) si triga a arribar.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
               <div>

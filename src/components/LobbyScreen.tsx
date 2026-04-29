@@ -31,6 +31,22 @@ export default function LobbyScreen({
   const [myFriends, setMyFriends] = useState<string[]>([]); // 👈 AFEGIT
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({}); // 👈 AFEGIT
 
+  // AFEGIT: Vídeo dinàmic de la sala d'espera
+  const [lobbyVideo, setLobbyVideo] = useState({ url: '/Rochaesquiant.mp4', caption: 'Vídeo del dia' });
+
+  useEffect(() => {
+    const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        setLobbyVideo({
+          url: data.videoUrl || '/Rochaesquiant.mp4',
+          caption: data.videoCaption || 'Vídeo del dia'
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
   // AFEGIT: Busquem només els amics que estiguin 'online'
   useEffect(() => {
     if (!user) return;
@@ -196,12 +212,14 @@ export default function LobbyScreen({
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
             <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3 relative">
               <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-50 pointer-events-none" />
-              <video src="/Rochaesquiant.mp4" autoPlay loop muted playsInline className="w-full h-[200px] object-contain relative z-10" />
+              {/* Usem lobbyVideo.url */}
+              <video src={lobbyVideo.url} autoPlay loop muted playsInline className="w-full h-[200px] object-contain relative z-10" />
             </div>
             <div className="flex items-center gap-3 px-2">
               <span className="text-xl">⛷️</span>
               <div>
-                <p className="text-gray-300 text-xs font-bold m-0">Roger Bernadó masterclass</p>
+                {/* Usem lobbyVideo.caption */}
+                <p className="text-gray-300 text-xs font-bold m-0">{lobbyVideo.caption}</p>
                 <p className="text-gray-500 text-[9px] uppercase tracking-widest m-0 mt-1">Video del dia</p>
               </div>
             </div>

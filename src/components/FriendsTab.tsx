@@ -22,6 +22,22 @@ export default function FriendsTab() {
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [friends, setFriends] = useState<FriendData[]>([]);
   const [requests, setRequests] = useState<RequestData[]>([]);
+  
+  // AFEGIT: Vídeo de la pestanya d'amics
+  const [friendVideo, setFriendVideo] = useState({ url: '/Rochaesquiant.mp4', caption: 'Vídeo del dia' });
+
+  useEffect(() => { 
+    const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        setFriendVideo({
+          url: data.videoUrl || '/Rochaesquiant.mp4',
+          caption: data.videoCaption || 'Vídeo del dia'
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // 1. Carregar amics en temps real (per veure online/offline)
   useEffect(() => {
@@ -176,6 +192,20 @@ export default function FriendsTab() {
           </div>
         )}
       </div>
+
+      {/* ── NOU: VÍDEO DEL DIA A LA PESTANYA AMICS ── */}
+      <div className="mt-8 pt-6 border-t border-white/10">
+        <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-4 text-center">Mentre esperes els amics...</h3>
+        <div className="bg-black/30 rounded-2xl p-3 border border-white/5">
+          <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3">
+            <video src={friendVideo.url} autoPlay loop muted playsInline className="w-full h-[150px] object-contain" />
+          </div>
+          <div className="text-center px-2">
+            <p className="text-gray-300 text-xs font-bold m-0">{friendVideo.caption}</p>
+          </div>
+        </div>
+      </div>
+      
     </div>
   );
 }

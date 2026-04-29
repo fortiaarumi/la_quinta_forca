@@ -566,7 +566,6 @@ export default function HomeScreen() {
                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] m-0">📹 Vídeo del dia</p>
                 <div className="flex gap-2">
                   {isAdmin && <button onClick={() => window.location.href = '/admin'} className="text-emerald-400 text-lg">⚙️</button>}
-                  {user && <button onClick={() => setShowSuggestModal(true)} className="text-yellow-400 text-lg">💡</button>}
                 </div>
               </div>
               <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center">
@@ -580,6 +579,20 @@ export default function HomeScreen() {
                   </p>
                 )}
               </div>
+              
+              {/* 👈 NOU BOTÓ GEGANT MÒBIL */}
+              {user && (
+                <button 
+                  onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }}
+                  className="w-full mt-5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 p-4 rounded-xl transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="text-2xl">💡</span>
+                  <div className="text-left">
+                    <p className="text-yellow-400 font-black text-xs uppercase tracking-widest m-0">Vols sortir aquí?</p>
+                    <p className="text-gray-400 text-[9px] m-0 mt-1">Puja un vídeo i sigues el protagonista!</p>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -630,20 +643,35 @@ export default function HomeScreen() {
               </div>
             </div>
             
-            {/* Botó de suggerir (o Admin) */}
+            {/* Botó de Admin */}
             <div className="flex gap-2">
               {isAdmin && (
                 <button onClick={() => window.location.href = '/admin'} className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 p-2 rounded-lg text-[10px] font-black uppercase transition-all" title="Panell d'Admin">
                   ⚙️
                 </button>
               )}
-              {user && (
-                <button onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg text-[10px] font-black uppercase transition-all" title="Suggerir Vídeo">
-                  💡
-                </button>
-              )}
             </div>
           </div>
+
+          {/* 👈 NOU BOTÓ GEGANT PC */}
+          {user && (
+            <button 
+              onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }}
+              style={{
+                width: '100%', marginTop: '4px', padding: '16px', borderRadius: '16px', border: '1px solid rgba(245,158,11,0.3)',
+                background: 'linear-gradient(to right, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'linear-gradient(to right, rgba(245,158,11,0.15), rgba(245,158,11,0.1))'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'linear-gradient(to right, rgba(245,158,11,0.1), rgba(245,158,11,0.05))'}
+            >
+              <span style={{ fontSize: '32px' }}>💡</span>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ color: '#fbbf24', fontSize: '12px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 4px 0' }}>Vols sortir aquí dalt?</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', margin: 0 }}>Puja un vídeo divertit i sigues el protagonista de demà!</p>
+              </div>
+            </button>
+          )}
 
           {/* ── BLOC D'ESTADÍSTIQUES (només si loguejat) ── */}
           {user && (
