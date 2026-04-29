@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, set, update, onValue, remove } from 'firebase/database'; // 👈 AFEGITS onValue i remove
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 
@@ -16,6 +16,39 @@ export default function AdminPanel() {
   const [videoCaption, setVideoCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
+
+  // 👈 AFEGIT: Estats i funcions per a les Sales
+  const [activeRooms, setActiveRooms] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'rooms') return;
+    const roomsRef = ref(db, 'rooms');
+    const unsub = onValue(roomsRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        // Convertim l'objecte en un array per poder-lo llistar
+        const roomsArray = Object.entries(data).map(([id, val]: [string, any]) => ({ id, ...val }));
+        // Ordenem de més noves a més velles
+        roomsArray.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        setActiveRooms(roomsArray);
+      } else {
+        setActiveRooms([]);
+      }
+    });
+    return () => unsub();
+  }, [isAdmin, activeTab]);
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (confirm(`Segur que vols esborrar la sala ${roomId}?`)) {
+      await remove(ref(db, `rooms/${roomId}`));
+    }
+  };
+
+  const handleClearAllRooms = async () => {
+    if (confirm("🚨 ATENCIÓ: Això tancarà TOTES les partides actuals i farà fora els jugadors. N'estàs segur?")) {
+      await remove(ref(db, 'rooms'));
+    }
+  };
 
   // Carregar la configuració actual de l'App quan obrim el panell
   useEffect(() => {
@@ -172,12 +205,73 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* ── CONTINGUT PESTANYA SALES (Ho farem a la Fase 2) ── */}
+        {/* ── CONTINGUT PESTANYA SALES (Fase 2 completada!) ── */}
         {activeTab === 'rooms' && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center animate-fade-in-up">
-            <h2 className="text-2xl font-black text-white mb-2">Control del Servidor</h2>
-            <p className="text-gray-400">Aquí veuràs les partides en curs i un botó per esborrar sales fantasma i alliberar espai.</p>
-            <div className="mt-6 text-emerald-400 font-bold uppercase tracking-widest text-sm">En construcció! 🛠️</div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 animate-fade-in-up">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-black text-emerald-400">Control del Servidor</h2>
+                <p className="text-[11px] text-gray-400 uppercase tracking-widest mt-1">Sales Actives: {activeRooms.length}</p>
+              </div>
+              {activeRooms.length > 0 && (
+                <button 
+                  onClick={handleClearAllRooms}
+                  className="bg-red-500/20 hover:bg-red-500/40 text-red-400 font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-widest transition-all"
+                >
+                  🚨 Buidar totes les sales
+                </button>
+              )}
+            </div>
+
+            {activeRooms.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 font-bold uppercase tracking-widest text-sm bg-black/40 rounded-xl border border-white/5">
+                No hi ha cap partida en curs.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/10">
+                      <th className="pb-3 font-black">Codi</th>
+                      <th className="pb-3 font-black">Estat</th>
+                      <th className="pb-3 font-black">Mode</th>
+                      <th className="pb-3 font-black">Jugadors</th>
+                      <th className="pb-3 font-black text-right">Acció</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeRooms.map((room) => {
+                      const playersCount = room.players ? Object.keys(room.players).length : 0;
+                      // Donem colors als estats perquè es vegi clar
+                      const stateColor = room.gameState === 'playing' ? 'text-emerald-400' 
+                                       : room.gameState === 'finished' ? 'text-gray-500' 
+                                       : 'text-yellow-400';
+
+                      return (
+                        <tr key={room.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                          <td className="py-3 font-mono font-bold text-white">{room.id}</td>
+                          <td className={`py-3 font-bold ${stateColor}`}>{room.gameState}</td>
+                          <td className="py-3 text-gray-300">
+                            {room.gameMode === 'catalunya' ? '🔴🟡 CAT' : '🌍 Món'} <br/>
+                            <span className="text-[9px] text-gray-500">{room.timeMode}</span>
+                          </td>
+                          <td className="py-3 font-bold text-gray-300">{playersCount} / 10</td>
+                          <td className="py-3 text-right">
+                            <button 
+                              onClick={() => handleDeleteRoom(room.id)}
+                              className="bg-red-500/10 hover:bg-red-500/30 text-red-400 p-2 rounded-lg transition-colors"
+                              title="Esborrar sala"
+                            >
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
