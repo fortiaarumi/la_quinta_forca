@@ -380,6 +380,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
   if (room.gameState === 'finished') {
     return <FinalResults 
+      roomId={roomId}
       room={room} 
       playerId={playerId} 
       onRestart={generateLocations} 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, update } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest } from '@/lib/friendUtils';
@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
 
 interface Props {
+  roomId: string;
   room: Room;
   playerId: string;
   onRestart: () => void; // 👈 AFEGIT: Funció per reiniciar la partida
@@ -19,11 +20,15 @@ interface Props {
 
 const MAX_SCORE = 25000;
 
-export default function FinalResults({ room, playerId, onRestart, isHost }: Props) {
+export default function FinalResults({ roomId, room, playerId, onRestart, isHost }: Props) {
   const { user } = useAuth();
   const router = useRouter();
   const [myFriends, setMyFriends] = useState<string[]>([]);
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
+  const [songVolume, setSongVolume] = useState(1);
+  const { playCelebration, playDecepcion, stopAllMusic } = useAudio();
+  const [grayscale, setGrayscale] = useState(false);
+  const songRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -83,6 +88,95 @@ export default function FinalResults({ room, playerId, onRestart, isHost }: Prop
       return () => clearTimeout(timeout);
     }
   }, [iWon, playCelebration, playDecepcion, stopAllMusic]);
+
+  // Lògica de la Cançó Satírica
+  const handleGenerateSong = async () => {
+    if (!isHost) return;
+    try {
+      await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_lyrics', error: null });
+      
+      // Recopilar les pitjors tirades per al prompt
+      const guesses = Object.entries(room.players).map(([id, p]) => {
+        let maxDist = 0;
+        for (let i = 0; i < 5; i++) {
+          const dist = room.rounds?.[i]?.guesses?.[id]?.distance || 0;
+          if (dist > maxDist) maxDist = dist;
+        }
+        return `${p.name} ha arribat a fallar per ${Math.round(maxDist)} km.`;
+      }).join('\\n');
+
+      const res = await fetch('/api/generate-song', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guesses })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Error desconegut al generar la cançó');
+
+      await update(ref(db, `rooms/${roomId}/songState`), { 
+        status: 'generating_music', 
+        lyrics: data.lyrics,
+        genre: data.genre,
+        clipId: data.clipId
+      });
+    } catch (err: any) {
+      await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: err.message });
+    }
+  };
+
+  // Polling quan s'està generant la música
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    const clipId = (room as any).songState?.clipId;
+    const status = room.songState?.status;
+
+    if (status === 'generating_music' && clipId) {
+      interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/suno-status?clipId=${clipId}`);
+          const data = await res.json();
+          if (res.ok && (data.status === 'complete' || data.status === 'COMPLETE' || data.status === 'streaming')) {
+            await update(ref(db, `rooms/${roomId}/songState`), { 
+              status: 'ready', 
+              audioUrl: data.audioUrl 
+            });
+            clearInterval(interval);
+          } else if (res.ok && (data.status === 'error' || data.status === 'ERROR')) {
+            await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: 'Error a Suno' });
+            clearInterval(interval);
+          }
+        } catch (err) {
+          console.error("Polling error", err);
+        }
+      }, 5000); // Poll cada 5 segons
+    }
+
+    return () => clearInterval(interval);
+  }, [room.songState?.status, (room as any).songState?.clipId, roomId]);
+
+  const handlePlaySong = async () => {
+    if (!isHost) return;
+    await update(ref(db, `rooms/${roomId}/songState`), { status: 'playing' });
+  };
+
+  // Sincronització de la reproducció per a tots
+  useEffect(() => {
+    if (room.songState?.status === 'playing' && room.songState?.audioUrl) {
+      stopAllMusic(); // Parem la música de fons
+      if (!songRef.current) {
+        songRef.current = new Audio(room.songState.audioUrl);
+      }
+      songRef.current.volume = songVolume;
+      songRef.current.play().catch(e => console.error("Auto-play prevengut pel navegador", e));
+    } else if (songRef.current) {
+      songRef.current.pause();
+    }
+  }, [room.songState?.status, room.songState?.audioUrl, stopAllMusic, songVolume]);
+
+  useEffect(() => {
+    if (songRef.current) songRef.current.volume = songVolume;
+  }, [songVolume]);
 
   return (
     <div 
@@ -161,8 +255,77 @@ export default function FinalResults({ room, playerId, onRestart, isHost }: Prop
           })}
         </div>
 
-        {/* ── NOU: GRUP DE BOTONS ── */}
+        {/* ── NOU: GRUP DE BOTONS I CANÇÓ ── */}
         <div className="flex flex-col gap-3">
+          
+          {/* SECCIÓ CANÇÓ SATÍRICA */}
+          <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 mt-2 text-center shadow-inner">
+            {!room.songState || room.songState.status === 'idle' ? (
+              isHost ? (
+                <button
+                  onClick={handleGenerateSong}
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold py-3 rounded-lg text-sm transition-all uppercase tracking-wider shadow-lg"
+                >
+                  🎵 Generar Cançó Satírica (Gratis)
+                </button>
+              ) : (
+                <div className="text-gray-500 text-xs italic">El Host pot generar una cançó satírica de la partida.</div>
+              )
+            ) : null}
+
+            {room.songState?.status === 'generating_lyrics' && (
+              <div className="text-indigo-400 font-bold animate-pulse text-sm">✍️ Escrivint lletra satírica...</div>
+            )}
+
+            {room.songState?.status === 'generating_music' && (
+              <div className="text-purple-400 font-bold animate-pulse text-sm flex flex-col items-center gap-2">
+                <span>🎧 Composant la música ({room.songState.genre})...</span>
+                <span className="text-xs text-gray-500">Això pot trigar uns minuts!</span>
+              </div>
+            )}
+
+            {room.songState?.status === 'ready' && isHost && (
+              <button
+                onClick={handlePlaySong}
+                className="w-full bg-green-600 hover:bg-green-500 active:scale-95 text-white font-bold py-3 rounded-lg text-sm transition-all uppercase tracking-wider shadow-lg shadow-green-500/20"
+              >
+                ▶️ Reproduir Cançó
+              </button>
+            )}
+            
+            {room.songState?.status === 'ready' && !isHost && (
+              <div className="text-green-400 font-bold text-sm">🎵 La cançó està llesta! Esperant que el Host la reprodueixi...</div>
+            )}
+
+            {room.songState?.status === 'playing' && (
+              <div className="text-left w-full mt-2 bg-black/40 p-4 rounded-lg">
+                <div className="text-green-400 font-bold text-center mb-2 animate-pulse">🔊 Sonant ara: Sàtira {room.songState.genre}</div>
+                <div className="flex items-center gap-2 mb-4 justify-center">
+                  <span className="text-xs text-gray-400">Volum:</span>
+                  <input 
+                    type="range" 
+                    min="0" max="1" step="0.01" 
+                    value={songVolume} 
+                    onChange={(e) => setSongVolume(parseFloat(e.target.value))}
+                    className="w-24 accent-purple-500"
+                  />
+                  {room.songState.audioUrl && (
+                    <a href={room.songState.audioUrl} download="satira.mp3" target="_blank" rel="noopener noreferrer" className="ml-2 text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded text-white transition-colors">
+                      ⬇️ MP3
+                    </a>
+                  )}
+                </div>
+                <div className="text-gray-300 text-xs italic whitespace-pre-line text-center">
+                  {room.songState.lyrics}
+                </div>
+              </div>
+            )}
+
+            {room.songState?.status === 'error' && (
+              <div className="text-red-400 text-xs">❌ Error: {room.songState.error}</div>
+            )}
+          </div>
+
           {isHost ? (
             <button
               onClick={onRestart}

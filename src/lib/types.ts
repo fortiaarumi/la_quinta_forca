@@ -46,4 +46,11 @@ export interface Room {
   gameMode?: GameMode;
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
   roundEndsAt?: number;
+  songState?: {
+    status: 'idle' | 'generating_lyrics' | 'generating_music' | 'ready' | 'playing' | 'error';
+    lyrics?: string;
+    audioUrl?: string;
+    genre?: string;
+    error?: string;
+  };
 }
