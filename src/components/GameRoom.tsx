@@ -47,13 +47,16 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const { user, isGuest } = useAuth();
   const statsSavedRef = useRef(false);
   const tempPinRef = useRef<{lat: number, lng: number} | null>(null); // 👈 AFEGIT
+  const [showAlert, setShowAlert] = useState(false);
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic } = useAudio();
   const tickTockRef = useRef<HTMLAudioElement | null>(null);
+  const alertaRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     tickTockRef.current = new Audio('/sounds/tick-tock.mp3');
+    alertaRef.current = new Audio('/sounds/alerta.mp3');
   }, []);
 
   useEffect(() => {
@@ -133,6 +136,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
         // 👈 AFEGIT: Si queden exactament 10 segons, disparem el so
         if (secondsLeft === 10 && tickTockRef.current && tickTockRef.current.paused) {
           tickTockRef.current.play().catch(e => console.log('Error àudio', e));
+          if (alertaRef.current) {
+            alertaRef.current.play().catch(e => console.log('Error alerta', e));
+          }
+          setShowAlert(true);
+          setTimeout(() => setShowAlert(false), 3000);
         }
 
         if (remaining === 0) isTimeUp = true;
@@ -431,6 +439,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
               ⚠️ L'altre jugador ha tirat!
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── ALERTA GEGANT 10 SEGONS ── */}
+      {showAlert && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          pointerEvents: 'none', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.9)', backdropFilter: 'blur(10px)', border: '4px solid #fca5a5', 
+            borderRadius: '30px', padding: '40px 60px', textAlign: 'center', boxShadow: '0 0 100px rgba(239, 68, 68, 1)',
+            animation: 'pulse 0.5s infinite'
+          }}>
+            <div style={{ fontSize: '80px', marginBottom: '10px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))' }}>⚠️</div>
+            <h2 style={{ color: 'white', fontSize: '48px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '4px', margin: 0, textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+              ALERTA! QUEDEN 10 SEGONS!
+            </h2>
+          </div>
         </div>
       )}
 

@@ -418,34 +418,6 @@ export default function HomeScreen() {
 
           {/* Títol i Toggle de Música */}
           <div className="text-center pt-2 pb-1 relative">
-            
-            {/* Toggle de música per a mòbil i PC */}
-            <div className="absolute top-0 right-0 flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full transition-all">
-              <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest hidden sm:block">
-                Música {isMuted ? 'Desactivada' : 'Activada'}
-              </span>
-              <button
-                onClick={toggleMute}
-                className={`p-2 rounded-full transition-all duration-300 transform active:scale-90 ${
-                  isMuted 
-                    ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
-                    : 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                }`}
-                title={isMuted ? 'Activar música' : 'Desactivar música'}
-              >
-                {isMuted ? (
-                  <svg className="w-5 h-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-
             <div style={{ fontSize: '62px', marginBottom: '10px', filter: 'drop-shadow(0 0 30px rgba(16,185,129,0.35))' }}>🌍</div>
             <h1 style={{ color: 'white', fontSize: '42px', fontWeight: 900, letterSpacing: '-0.04em', margin: 0, lineHeight: 1.1 }}>
               La Quinta<br />
@@ -454,6 +426,36 @@ export default function HomeScreen() {
             <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '11px', letterSpacing: '0.3em', textTransform: 'uppercase', marginTop: '10px', fontWeight: 700 }}>
               Quin lloc del món és?
             </p>
+
+            {/* Toggle de música centralitzat */}
+            <div className="flex items-center justify-center gap-3 mt-6 mb-2">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full transition-all duration-300">
+                {isMuted ? (
+                  <svg className="w-4 h-4 text-red-400 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-emerald-400 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+                <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest transition-all duration-300">
+                  Música: {isMuted ? 'Desactivada' : 'Activada'}
+                </span>
+              </div>
+              
+              <button
+                onClick={toggleMute}
+                className={`px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all duration-300 transform active:scale-95 ${
+                  isMuted 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                    : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                }`}
+              >
+                {isMuted ? 'Activar' : 'Desactivar'}
+              </button>
+            </div>
           </div>
 
           {/* TABS DE NAVEGACIÓ (PLAY / FRIENDS) */}

@@ -8,6 +8,7 @@ import { sendFriendRequest } from '@/lib/friendUtils';
 import { Room } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
 import confetti from 'canvas-confetti';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   room: Room;
@@ -20,6 +21,7 @@ const MAX_SCORE = 25000;
 
 export default function FinalResults({ room, playerId, onRestart, isHost }: Props) {
   const { user } = useAuth();
+  const router = useRouter();
   const [myFriends, setMyFriends] = useState<string[]>([]);
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
 
@@ -175,7 +177,7 @@ export default function FinalResults({ room, playerId, onRestart, isHost }: Prop
           )}
 
           <button
-            onClick={() => (window.location.href = '/')}
+            onClick={() => router.push('/')}
             className="w-full bg-gray-800 hover:bg-gray-700 border border-gray-700 active:scale-95 text-white font-bold py-4 rounded-xl text-sm transition-all uppercase tracking-widest text-gray-400 hover:text-white"
           >
             🏠 Tornar a l'inici

@@ -27,6 +27,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
+  // Llegim de sessionStorage al carregar
+  useEffect(() => {
+    const interacted = sessionStorage.getItem('geoAudioInteracted');
+    if (interacted === 'true') {
+      setHasInteracted(true);
+    }
+  }, []);
+
+  // Actualitzem sessionStorage quan canvia l'estat
+  const handleSetInteracted = (val: boolean) => {
+    setHasInteracted(val);
+    sessionStorage.setItem('geoAudioInteracted', String(val));
+  };
+
   // Inicialitzem els àudios només quan carregui el navegador (client-side)
   useEffect(() => {
     menuAudioRef.current = new Audio('/sounds/menu-bgm.mp3');
@@ -114,7 +128,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   return (
     <AudioContext.Provider value={{ 
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
-      hasInteracted, setHasInteracted, playCelebration, playDecepcion, playSiu 
+      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu 
     }}>
       {children}
     </AudioContext.Provider>
