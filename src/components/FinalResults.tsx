@@ -109,7 +109,10 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       });
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || 'Error desconegut al generar la cançó');
+      if (!res.ok) {
+        const errorMsg = data.details ? `${data.error} (Detall: ${data.details})` : (data.error || 'Error desconegut al generar la cançó');
+        throw new Error(errorMsg);
+      }
 
       await update(ref(db, `rooms/${roomId}/songState`), { 
         status: 'generating_music', 
