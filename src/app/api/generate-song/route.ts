@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // 1. Demanar Lletra a Groq (Llama 3)
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama3-8b-8192',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.8,
     });
 
