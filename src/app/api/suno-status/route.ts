@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { Api } from 'pql-suno-api';
+// @ts-ignore
+import { Api } from 'suno-api';
 
 export async function GET(request: Request) {
   try {

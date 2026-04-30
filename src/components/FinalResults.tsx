@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ref, onValue, update } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
@@ -50,9 +50,6 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
 
   const winner = sorted[0];
   const iWon = winner?.id === playerId;
-
-  const { playCelebration, playDecepcion, stopAllMusic } = useAudio();
-  const [grayscale, setGrayscale] = useState(false);
 
   useEffect(() => {
     // Aturem la música general
