@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Room } from '@/lib/types';
+import { useAudio } from '@/lib/AudioContext';
 
 interface Props {
   room: Room;
@@ -19,6 +20,27 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   const actual = room.locations?.[round];
   const guesses = room.rounds?.[round]?.guesses ?? {};
   const playerIds = Object.keys(room.players);
+
+  const { playSiu } = useAudio();
+  const [perfectScorer, setPerfectScorer] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Buscar si algú ha fet 5000 punts en aquesta ronda
+    let foundPerfect = null;
+    for (const pid of playerIds) {
+      if (guesses[pid] && guesses[pid].score === 5000) {
+        foundPerfect = room.players[pid]?.name;
+        break; // Només agafem el primer per l'animació (o podríem posar múltiples)
+      }
+    }
+
+    if (foundPerfect) {
+      setPerfectScorer(foundPerfect);
+      playSiu();
+      // L'animació desapareix després de 5 segons
+      setTimeout(() => setPerfectScorer(null), 5000);
+    }
+  }, [guesses, playerIds, playSiu, room.players]);
 
   useEffect(() => {
     if (!mapRef.current || !mapsReady || !actual) return;
@@ -92,7 +114,30 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   if (!actual) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900">
+    <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
+      
+      {/* ── AFEGIT: Animació de 5K ── */}
+      {perfectScorer && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', animation: 'fadeIn 0.3s ease-out'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', border: '2px solid #60a5fa', borderRadius: '30px', 
+            padding: '40px', textAlign: 'center', boxShadow: '0 0 100px rgba(59, 130, 246, 0.8)',
+            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          }}>
+            <div style={{ fontSize: '80px', marginBottom: '10px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))', animation: 'pulse 1s infinite' }}>🐐</div>
+            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+              SIUUUUU!
+            </h2>
+            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: 0 }}>
+              Felicitats! El jugador <span style={{ color: '#fcd34d', fontSize: '24px' }}>{perfectScorer}</span> ha fet 5K punts!!!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Mapa de resultats */}
       <div ref={mapRef} className="flex-1 min-h-0" />
 

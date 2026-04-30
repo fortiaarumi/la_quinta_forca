@@ -24,12 +24,14 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, nickname, isAdmin, isGuest, logout } = useAuth();
 
-  // 👈 AFEGIT: Agafem la funció per reproduir la música del menú
-  const { playMenuMusic } = useAudio();
+  // 👈 AFEGIT: Agafem la funció per reproduir la música del menú i gestionar l'estat d'interacció
+  const { playMenuMusic, isMuted, toggleMute, hasInteracted, setHasInteracted } = useAudio();
 
   useEffect(() => {
-    playMenuMusic();
-  }, [playMenuMusic]);
+    if (hasInteracted) {
+      playMenuMusic();
+    }
+  }, [playMenuMusic, hasInteracted]);
 
   // L'ID del jugador és el UID de Firebase si està loguejat, o el localStorage si és convidat
   const getPlayerId = () => user ? user.uid : getOrCreateGuestId();
@@ -414,8 +416,36 @@ export default function HomeScreen() {
         {/* ═══ COLUMNA ESQUERRA ═══ */}
         <div className="w-full max-w-xl flex flex-col gap-5 mx-auto lg:mx-0">
 
-          {/* Títol */}
-          <div className="text-center pt-2 pb-1">
+          {/* Títol i Toggle de Música */}
+          <div className="text-center pt-2 pb-1 relative">
+            
+            {/* Toggle de música per a mòbil i PC */}
+            <div className="absolute top-0 right-0 flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-full transition-all">
+              <span className="text-[9px] font-bold text-white/50 uppercase tracking-widest hidden sm:block">
+                Música {isMuted ? 'Desactivada' : 'Activada'}
+              </span>
+              <button
+                onClick={toggleMute}
+                className={`p-2 rounded-full transition-all duration-300 transform active:scale-90 ${
+                  isMuted 
+                    ? 'bg-red-500/20 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                    : 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                }`}
+                title={isMuted ? 'Activar música' : 'Desactivar música'}
+              >
+                {isMuted ? (
+                  <svg className="w-5 h-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+
             <div style={{ fontSize: '62px', marginBottom: '10px', filter: 'drop-shadow(0 0 30px rgba(16,185,129,0.35))' }}>🌍</div>
             <h1 style={{ color: 'white', fontSize: '42px', fontWeight: 900, letterSpacing: '-0.04em', margin: 0, lineHeight: 1.1 }}>
               La Quinta<br />
@@ -798,6 +828,49 @@ export default function HomeScreen() {
           </div>
         </div>
       )}
+
+      {/* ── MODAL DE MÚSICA (NOMÉS EL PRIMER COP) ── */}
+      {!hasInteracted && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', animation: 'fadeIn 0.4s ease-out'
+        }}>
+          <div style={{
+            background: 'linear-gradient(145deg, #0f172a, #1e293b)', border: '1px solid rgba(16,185,129,0.4)', 
+            borderRadius: '28px', padding: '36px', maxWidth: '400px', width: '90%', textAlign: 'center', 
+            boxShadow: '0 30px 60px rgba(16,185,129,0.25)', transform: 'translateY(0)', transition: 'all 0.3s'
+          }}>
+            <div style={{ fontSize: '56px', marginBottom: '20px', filter: 'drop-shadow(0 0 20px rgba(251,191,36,0.4))' }}>🎵</div>
+            <h3 style={{ color: 'white', fontSize: '26px', fontWeight: 900, margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>Benvingut/da!</h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', marginBottom: '32px', lineHeight: 1.6 }}>
+              Vols activar la música d'aquest joc?<br/>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'block', marginTop: '8px' }}>
+                Si canvies d'opinió més endavant, aquesta opció la podràs canviar a la pàgina d'inici.
+              </span>
+            </p>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <button onClick={() => { 
+                if(!isMuted) toggleMute(); 
+                setHasInteracted(true); 
+              }} style={{
+                flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                textTransform: 'uppercase', letterSpacing: '0.05em'
+              }}>No, gràcies</button>
+              
+              <button onClick={() => { 
+                if(isMuted) toggleMute(); 
+                setHasInteracted(true); 
+              }} style={{
+                flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white', fontWeight: 900, fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 8px 24px rgba(16,185,129,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em'
+              }}>Sí, si us plau!</button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ── MODAL DE PUJADA DE VÍDEO (Cloudinary) ── */}
       {showSuggestModal && (

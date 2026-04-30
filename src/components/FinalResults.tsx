@@ -6,6 +6,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest } from '@/lib/friendUtils';
 import { Room } from '@/lib/types';
+import { useAudio } from '@/lib/AudioContext';
+import confetti from 'canvas-confetti';
 
 interface Props {
   room: Room;
@@ -42,8 +44,49 @@ export default function FinalResults({ room, playerId, onRestart, isHost }: Prop
   const winner = sorted[0];
   const iWon = winner?.id === playerId;
 
+  const { playCelebration, playDecepcion, stopAllMusic } = useAudio();
+  const [grayscale, setGrayscale] = useState(false);
+
+  useEffect(() => {
+    // Aturem la música general
+    stopAllMusic();
+
+    if (iWon) {
+      playCelebration();
+      // Confeti durant 5 segons
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const interval: any = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+      }, 250);
+      
+      return () => clearInterval(interval);
+    } else {
+      playDecepcion();
+      // Blanc i negre durant 5 segons
+      setGrayscale(true);
+      const timeout = setTimeout(() => {
+        setGrayscale(false);
+      }, 5000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [iWon, playCelebration, playDecepcion, stopAllMusic]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 text-white flex flex-col items-center justify-center p-8">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 text-white flex flex-col items-center justify-center p-8 transition-all duration-1000"
+      style={{ filter: grayscale ? 'grayscale(100%)' : 'grayscale(0%)' }}
+    >
       <div className="w-full max-w-md">
         {/* Capçalera */}
         <div className="text-center mb-10">
