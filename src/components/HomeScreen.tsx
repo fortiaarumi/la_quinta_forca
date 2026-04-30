@@ -11,6 +11,7 @@ import { getUserProfile } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils'; // 👈 AFEGIT
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
+import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
 
 // Per a convidats: manté el localStorage ID
 function getOrCreateGuestId(): string {
@@ -22,6 +23,13 @@ function getOrCreateGuestId(): string {
 export default function HomeScreen() {
   const router = useRouter();
   const { user, nickname, isAdmin, isGuest, logout } = useAuth();
+
+  // 👈 AFEGIT: Agafem la funció per reproduir la música del menú
+  const { playMenuMusic } = useAudio();
+
+  useEffect(() => {
+    playMenuMusic();
+  }, [playMenuMusic]);
 
   // L'ID del jugador és el UID de Firebase si està loguejat, o el localStorage si és convidat
   const getPlayerId = () => user ? user.uid : getOrCreateGuestId();

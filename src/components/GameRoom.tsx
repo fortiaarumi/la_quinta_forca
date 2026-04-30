@@ -14,6 +14,7 @@ import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
 import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame } from '@/lib/userStats';
+import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
 
 interface Props {
   roomId: string;
@@ -46,6 +47,24 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const { user, isGuest } = useAuth();
   const statsSavedRef = useRef(false);
   const tempPinRef = useRef<{lat: number, lng: number} | null>(null); // 👈 AFEGIT
+
+  // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
+  const { playGameMusic, playMenuMusic } = useAudio();
+  const tickTockRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    tickTockRef.current = new Audio('/sounds/tick-tock.mp3');
+  }, []);
+
+  useEffect(() => {
+    if (!room) return;
+    if (room.gameState === 'playing' || room.gameState === 'roundResults') {
+      playGameMusic();
+    } else if (room.gameState === 'finished') {
+      playMenuMusic();
+    }
+  }, [room?.gameState, playGameMusic, playMenuMusic]);
+  // ───────────────────────────────────
 
   useEffect(() => {
     loadGoogleMaps()
@@ -105,9 +124,17 @@ export default function GameRoom({ roomId, playerId }: Props) {
       let isTimeUp = false;
 
       // Només calculem el temps si NO estem en mode infinit i tenim una data límit
+      // Només calculem el temps si NO estem en mode infinit i tenim una data límit
       if (room.timeMode !== 'infinit' && room.roundEndsAt) {
         const remaining = Math.max(0, room.roundEndsAt - Date.now());
-        setTimeLeft(Math.ceil(remaining / 1000));
+        const secondsLeft = Math.ceil(remaining / 1000);
+        setTimeLeft(secondsLeft);
+        
+        // 👈 AFEGIT: Si queden exactament 10 segons, disparem el so
+        if (secondsLeft === 10 && tickTockRef.current && tickTockRef.current.paused) {
+          tickTockRef.current.play().catch(e => console.log('Error àudio', e));
+        }
+
         if (remaining === 0) isTimeUp = true;
       } else {
         setTimeLeft(null); // Mode infinit: amaguem el rellotge

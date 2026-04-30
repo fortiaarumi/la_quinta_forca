@@ -3,7 +3,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/lib/authContext'; // Ja ho tenies!
+import { AuthProvider } from '@/lib/authContext';
+import { AudioProvider } from '@/lib/AudioContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,12 +24,10 @@ export default function RootLayout({
         className={`${inter.className} antialiased`}
         suppressHydrationWarning
       >
-        {/* Aquí és on passa la màgia: envoltem els 'children' amb l'AuthProvider.
-          D'aquesta manera, qualsevol pàgina o component (Home, Stats, Room...)
-          tindrà accés a la informació de l'usuari.
-        */}
         <AuthProvider>
-          {children}
+          <AudioProvider>
+            {children}
+          </AudioProvider>
         </AuthProvider>
       </body>
     </html>
