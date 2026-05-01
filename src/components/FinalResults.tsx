@@ -481,7 +481,27 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
             )}
 
             {room.songState?.status === 'error' && (
-              <div className="text-red-400 text-xs">❌ Error: {room.songState.error}</div>
+              <div className="flex flex-col gap-3 w-full text-left bg-black/40 p-4 rounded-lg border border-red-500/30 mt-2">
+                <div className="text-red-400 font-bold text-sm text-center mb-1">❌ El bot de Suno ha fallat</div>
+                <div className="text-gray-400 text-xs text-center italic mb-2">{room.songState.error}</div>
+                
+                {room.songState.lyrics && (
+                  <>
+                    <div className="text-indigo-300 text-xs text-center border-t border-white/10 pt-3 mb-2">
+                      No pateixis! Aquí tens la lletra i l'estil per crear-la tu mateix a Suno.com:
+                    </div>
+                    <div className="bg-gray-900 p-3 rounded border border-gray-700">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-black">Estil Musical (Style of Music):</div>
+                      <div className="text-sm text-emerald-400 font-bold mb-3 select-all cursor-pointer hover:bg-emerald-400/10 p-1 rounded transition-colors">{room.songState.genre}</div>
+                      
+                      <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-black">Lletra (Lyrics):</div>
+                      <div className="text-xs text-gray-300 italic whitespace-pre-line select-all cursor-pointer font-mono bg-black/50 p-2 rounded hover:bg-black/80 transition-colors">
+                        {room.songState.lyrics}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
