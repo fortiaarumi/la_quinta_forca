@@ -31,11 +31,11 @@ async function getSunoToken(cookie: string) {
 
 export async function POST(request: Request) {
   try {
-    const missingVars = [];
-    if (!process.env.GROQ_API_KEY) missingVars.push('GROQ_API_KEY');
-    if (!process.env.SUNO_COOKIES) missingVars.push('SUNO_COOKIES');
-    if (missingVars.length > 0) {
-      return new Response(JSON.stringify({ error: `Variables NOT FOUND a Vercel: ${missingVars.join(', ')}` }), { status: 500 });
+    if (!process.env.GROQ_API_KEY || !process.env.SUNO_COOKIES) {
+      const missing = [];
+      if (!process.env.GROQ_API_KEY) missing.push('GROQ_API_KEY');
+      if (!process.env.SUNO_COOKIES) missing.push('SUNO_COOKIES');
+      return new Response(JSON.stringify({ error: `Variables NOT FOUND a Vercel: ${missing.join(', ')}` }), { status: 500 });
     }
 
     const { guesses } = await request.json();
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const lyrics = chatCompletion.choices[0]?.message?.content || 'Quin desastre de geògrafs, no trobeu ni casa vostra.';
 
     // 2. Provar Cookies de Suno amb Fetch (Edge Runtime)
-    const cookies = process.env.SUNO_COOKIES.split(',').map(c => c.trim());
+    const cookies = process.env.SUNO_COOKIES!.split(',').map(c => c.trim());
     let clipId = null;
     let errorSuno = null;
 
