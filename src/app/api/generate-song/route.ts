@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
-import { Api } from 'suno-api';
 import Groq from 'groq-sdk';
+
+export const runtime = 'edge';
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || '',
@@ -12,10 +13,26 @@ const genres = [
   'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre'
 ];
 
+async function getSunoToken(cookie: string) {
+  const clerkVersion = '5.26.1';
+  const headers = { 'Cookie': cookie, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
+  
+  const clientRes = await fetch(`https://clerk.suno.com/v1/client?_clerk_js_version=${clerkVersion}`, { headers });
+  if (!clientRes.ok) throw new Error('Clerk client error');
+  const clientData = await clientRes.json();
+  const sessionId = clientData.response?.lastActiveSessionId;
+  if (!sessionId) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
+
+  const tokenRes = await fetch(`https://clerk.suno.com/v1/sessions/${sessionId}/tokens?_clerk_js_version=${clerkVersion}`, { method: 'POST', headers });
+  if (!tokenRes.ok) throw new Error('Clerk token error');
+  const tokenData = await tokenRes.json();
+  return tokenData.jwt;
+}
+
 export async function POST(request: Request) {
   try {
     if (!process.env.GROQ_API_KEY || !process.env.SUNO_COOKIES) {
-      return NextResponse.json({ error: 'Falten les claus de l\'API o cookies a .env.local' }, { status: 500 });
+      return new Response(JSON.stringify({ error: "Falten les claus de l'API o cookies a .env.local" }), { status: 500 });
     }
 
     const { guesses } = await request.json();
@@ -40,54 +57,57 @@ export async function POST(request: Request) {
 
     const lyrics = chatCompletion.choices[0]?.message?.content || 'Quin desastre de geògrafs, no trobeu ni casa vostra.';
 
-    // 2. Provar Cookies de Suno
+    // 2. Provar Cookies de Suno amb Fetch (Edge Runtime)
     const cookies = process.env.SUNO_COOKIES.split(',').map(c => c.trim());
     let clipId = null;
     let errorSuno = null;
 
     for (let i = 0; i < cookies.length; i++) {
       try {
-        const sunoApi = new Api(cookies[i]);
+        const token = await getSunoToken(cookies[i]);
         
         const payload = {
           prompt: lyrics,
           title: 'Sátira Geogràfica',
           tags: genre,
+          makeInstrumental: false,
+          mv: 'chirp-v3-5'
         };
 
-        const options = {
-          wait: false // No esperem, sinó Vercel donarà timeout
-        };
+        const generateRes = await fetch('https://studio-api.suno.ai/api/generate/v2/', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          },
+          body: JSON.stringify(payload)
+        });
 
-        // Pot retornar un array de clips (normalment 2)
-        const clips = await sunoApi.generateClips(payload, options);
+        if (!generateRes.ok) throw new Error(`Suno API error: ${generateRes.status}`);
+        const generateData = await generateRes.json();
         
-        if (clips && clips.length > 0) {
-          clipId = clips[0].id;
+        if (generateData.clips && generateData.clips.length > 0) {
+          clipId = generateData.clips[0].id;
           break; // Sortim del bucle, ja tenim el clip!
         }
       } catch (err: any) {
         console.error(`Suno Cookie ${i + 1} va fallar:`, err.message);
         errorSuno = err.message;
-        // Continuem amb la següent cookie
       }
     }
 
     if (!clipId) {
-      return NextResponse.json({ 
+      return new Response(JSON.stringify({ 
         error: 'Totes les cookies de Suno han fallat o no tenen crèdits.', 
         details: errorSuno 
-      }, { status: 500 });
+      }), { status: 500 });
     }
 
-    return NextResponse.json({
-      clipId,
-      lyrics,
-      genre
-    });
+    return new Response(JSON.stringify({ clipId, lyrics, genre }), { status: 200 });
 
   } catch (error: any) {
     console.error('Error a /api/generate-song:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
