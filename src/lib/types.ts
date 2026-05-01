@@ -47,10 +47,11 @@ export interface Room {
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
   roundEndsAt?: number;
   songState?: {
-    status: 'idle' | 'generating_lyrics' | 'generating_music' | 'ready' | 'playing' | 'error';
+    status: 'idle' | 'generating_lyrics' | 'waiting_for_bot' | 'generating_music' | 'ready' | 'playing' | 'error';
     lyrics?: string;
     audioUrl?: string;
     genre?: string;
+    prompt?: string;
     error?: string;
   };
 }
