@@ -101,7 +101,7 @@ async function processSongRequest(roomId, songState) {
           mv: 'chirp-v3-5'
         };
 
-        const generateRes = await fetch('https://studio-api.suno.ai/api/generate/v2/', {
+        const generateRes = await fetch('https://studio-api-prod.suno.com/api/generate/v2-web/', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -138,7 +138,7 @@ async function processSongRequest(roomId, songState) {
       attempts++;
       
       const token = extractSessionToken(cookies[0]); // Usem la primera cookie per consultar
-      const feedRes = await fetch(`https://studio-api.suno.ai/api/feed/v2?ids=${clipId}`, {
+      const feedRes = await fetch(`https://studio-api-prod.suno.com/api/feed/v2?ids=${clipId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'User-Agent': 'Mozilla/5.0'
