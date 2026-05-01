@@ -13,20 +13,11 @@ const genres = [
   'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre'
 ];
 
-async function getSunoToken(cookie: string) {
-  const clerkVersion = '5.26.1';
-  const headers = { 'Cookie': cookie, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
-  
-  const clientRes = await fetch(`https://clerk.suno.com/v1/client?_clerk_js_version=${clerkVersion}`, { headers });
-  if (!clientRes.ok) throw new Error('Clerk client error');
-  const clientData = await clientRes.json();
-  const sessionId = clientData.response?.lastActiveSessionId;
-  if (!sessionId) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
-
-  const tokenRes = await fetch(`https://clerk.suno.com/v1/sessions/${sessionId}/tokens?_clerk_js_version=${clerkVersion}`, { method: 'POST', headers });
-  if (!tokenRes.ok) throw new Error('Clerk token error');
-  const tokenData = await tokenRes.json();
-  return tokenData.jwt;
+function extractSessionToken(cookie: string): string {
+  // El __session JA és el JWT Bearer token, no cal cridar Clerk
+  const match = cookie.match(/__session=([^;]+)/);
+  if (!match) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
+  return match[1].trim();
 }
 
 export async function POST(request: Request) {
@@ -67,7 +58,7 @@ export async function POST(request: Request) {
 
     for (let i = 0; i < cookies.length; i++) {
       try {
-        const token = await getSunoToken(cookies[i]);
+        const token = extractSessionToken(cookies[i]);
         
         const payload = {
           prompt: lyrics,

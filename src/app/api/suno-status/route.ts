@@ -1,19 +1,9 @@
 export const runtime = 'edge';
 
-async function getSunoToken(cookie: string) {
-  const clerkVersion = '5.26.1';
-  const headers = { 'Cookie': cookie, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
-  
-  const clientRes = await fetch(`https://clerk.suno.com/v1/client?_clerk_js_version=${clerkVersion}`, { headers });
-  if (!clientRes.ok) throw new Error('Clerk client error');
-  const clientData = await clientRes.json();
-  const sessionId = clientData.response?.lastActiveSessionId;
-  if (!sessionId) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
-
-  const tokenRes = await fetch(`https://clerk.suno.com/v1/sessions/${sessionId}/tokens?_clerk_js_version=${clerkVersion}`, { method: 'POST', headers });
-  if (!tokenRes.ok) throw new Error('Clerk token error');
-  const tokenData = await tokenRes.json();
-  return tokenData.jwt;
+function extractSessionToken(cookie: string): string {
+  const match = cookie.match(/__session=([^;]+)/);
+  if (!match) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
+  return match[1].trim();
 }
 
 export async function GET(request: Request) {
@@ -33,10 +23,9 @@ export async function GET(request: Request) {
     let clipInfo = null;
     let lastError = null;
 
-    // Intentar amb totes les cookies fins que alguna ens doni resposta
     for (let i = 0; i < cookies.length; i++) {
       try {
-        const token = await getSunoToken(cookies[i]);
+        const token = extractSessionToken(cookies[i]);
         
         // Crida a l'endpoint de feed utilitzant fetch
         const res = await fetch(`https://studio-api.suno.ai/api/feed/v2?ids=${clipId}`, {
