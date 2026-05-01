@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Room } from '@/lib/types';
-import { ref, onValue, set } from 'firebase/database';
+import { ref, onValue, set, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
-import { sendFriendRequest } from '@/lib/friendUtils'; // 👈 AFEGIT
+import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 
 interface Props {
   room: Room;
@@ -24,15 +24,17 @@ export default function LobbyScreen({
   const players = Object.entries(room.players);
   const canStart = isHost && players.length >= 2 && mapsReady && !isGenerating;
 
-  // AFEGIT: Variables per als amics i per saber si ja els hem convidat
   const { user, nickname } = useAuth();
   const [onlineFriends, setOnlineFriends] = useState<any[]>([]);
   const [invited, setInvited] = useState<Record<string, boolean>>({});
-  const [myFriends, setMyFriends] = useState<string[]>([]); // 👈 AFEGIT
-  const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({}); // 👈 AFEGIT
+  const [myFriends, setMyFriends] = useState<string[]>([]);
+  const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
 
-  // AFEGIT: Vídeo dinàmic de la sala d'espera
+  // Vídeo dinàmic de la sala d'espera
   const [lobbyVideo, setLobbyVideo] = useState({ url: '/Rochaesquiant.mp4', caption: 'Vídeo del dia' });
+
+  // ── NOU: Petició d'amistat en temps real al lobby ──
+  const [activeFriendReq, setActiveFriendReq] = useState<{ uid: string; nickname: string } | null>(null);
 
   useEffect(() => {
     const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
@@ -47,7 +49,36 @@ export default function LobbyScreen({
     return () => unsub();
   }, []);
 
-  // AFEGIT: Busquem només els amics que estiguin 'online'
+  // ── NOU: Radar de peticions d'amistat al lobby ──
+  useEffect(() => {
+    if (!user) return;
+    const reqRef = ref(db, `users/${user.uid}/friendRequests`);
+    const unsub = onValue(reqRef, async (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const firstUid = Object.keys(data)[0];
+        const uSnap = await get(ref(db, `users/${firstUid}/nickname`));
+        setActiveFriendReq({ uid: firstUid, nickname: uSnap.exists() ? uSnap.val() : 'Un explorador' });
+      } else {
+        setActiveFriendReq(null);
+      }
+    });
+    return () => unsub();
+  }, [user]);
+
+  const acceptFriend = async () => {
+    if (!activeFriendReq || !user) return;
+    await acceptFriendRequest(user.uid, activeFriendReq.uid);
+    setActiveFriendReq(null);
+  };
+
+  const declineFriend = async () => {
+    if (!activeFriendReq || !user) return;
+    await rejectFriendRequest(user.uid, activeFriendReq.uid);
+    setActiveFriendReq(null);
+  };
+
+  // Busquem els amics que estiguin 'online'
   useEffect(() => {
     if (!user) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
@@ -55,12 +86,12 @@ export default function LobbyScreen({
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) {
         setOnlineFriends([]);
-        setMyFriends([]); // 👈 AFEGIT
+        setMyFriends([]);
         return;
       }
       
       const friendUids = Object.keys(snap.val());
-      setMyFriends(friendUids); // 👈 AFEGIT: Guardem tots els teus amics
+      setMyFriends(friendUids);
       const unsubList: (() => void)[] = [];
       const friendsMap = new Map();
 
@@ -69,11 +100,10 @@ export default function LobbyScreen({
         const unsub = onValue(userRef, (uSnap) => {
           if (uSnap.exists()) {
             const data = uSnap.val();
-            // Només ens interessen els que estan online per convidar-los ara mateix
             if (data.status === 'online') {
               friendsMap.set(uid, { uid, ...data });
             } else {
-              friendsMap.delete(uid); // Si es desconnecten, els traiem de la llista
+              friendsMap.delete(uid);
             }
             setOnlineFriends(Array.from(friendsMap.values()));
           }
@@ -87,17 +117,12 @@ export default function LobbyScreen({
     return () => unsubFriends();
   }, [user]);
 
-  // AFEGIT: Funció que posa la invitació a la bústia de l'amic
   const sendInvite = async (friendUid: string) => {
     if (!user || !nickname) return;
-    
-    // Escrivim el codi de la sala a la carpeta "invites" de l'amic
     await set(ref(db, `users/${friendUid}/invites/${roomId}`), {
       from: nickname,
       timestamp: Date.now()
     });
-    
-    // Marquem el botó com a "Enviat" durant uns segons perquè no facis spam
     setInvited(prev => ({ ...prev, [friendUid]: true }));
     setTimeout(() => {
       setInvited(prev => ({ ...prev, [friendUid]: false }));
@@ -149,7 +174,6 @@ export default function LobbyScreen({
                       HOST
                     </span>
                   )}
-                  {/* 👈 AFEGIT: Botó d'afegir amic a desconeguts */}
                   {user && id !== playerId && !myFriends.includes(id) && (
                     <button
                       onClick={async () => {
@@ -170,7 +194,7 @@ export default function LobbyScreen({
           </div>
         </div>
 
-        {/* ── AFEGIT: LLISTA D'AMICS ONLINE ── */}
+        {/* Amics online */}
         {user && onlineFriends.length > 0 && (
           <div className="mb-8 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-5 shadow-xl">
             <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 text-center">
@@ -202,7 +226,7 @@ export default function LobbyScreen({
           </div>
         )}
 
-        {/* ── AFEGIT: VÍDEO DEL DIA A LA SALA D'ESPERA ── */}
+        {/* Vídeo del dia */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1 bg-white/10" />
@@ -212,13 +236,11 @@ export default function LobbyScreen({
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
             <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3 relative">
               <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-50 pointer-events-none" />
-              {/* Usem lobbyVideo.url */}
               <video src={lobbyVideo.url} autoPlay loop muted playsInline className="w-full h-[200px] object-contain relative z-10" />
             </div>
             <div className="flex items-center gap-3 px-2">
               <span className="text-xl">⛷️</span>
               <div>
-                {/* Usem lobbyVideo.caption */}
                 <p className="text-gray-300 text-xs font-bold m-0">{lobbyVideo.caption}</p>
                 <p className="text-gray-500 text-[9px] uppercase tracking-widest m-0 mt-1">Video del dia</p>
               </div>
@@ -258,6 +280,37 @@ export default function LobbyScreen({
           </div>
         )}
       </div>
+
+      {/* ── POP-UP DE PETICIÓ D'AMISTAT AL LOBBY ── */}
+      {activeFriendReq && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+        }}>
+          <div style={{
+            background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '32px',
+            maxWidth: '360px', width: '90%', textAlign: 'center', boxShadow: '0 24px 50px rgba(16,185,129,0.2)',
+            animation: 'none'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>👋</div>
+            <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Nou Amic!</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
+              <strong style={{ color: '#34d399', fontSize: '16px' }}>{activeFriendReq.nickname}</strong> vol afegir-te a la seva pinya.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={declineFriend} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
+              }}>Rebutjar</button>
+              <button onClick={acceptFriend} style={{
+                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#10b981',
+                color: 'black', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: '0 8px 24px rgba(16,185,129,0.4)'
+              }}>Acceptar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
