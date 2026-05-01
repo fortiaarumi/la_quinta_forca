@@ -30,6 +30,10 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
   const [grayscale, setGrayscale] = useState(false);
   const songRef = useRef<HTMLAudioElement | null>(null);
 
+  // Manual d'instal·lació
+  const [showManual, setShowManual] = useState(false);
+  const [manualTab, setManualTab] = useState<'windows' | 'mac' | 'linux'>('windows');
+
   // Estat del bot de comunitat
   const [botAlive, setBotAlive] = useState(false);
   const [botCredits, setBotCredits] = useState<number | null>(null);
@@ -283,15 +287,15 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                         <span>💡</span> Vols generar cançons tu mateix?
                       </p>
                       <p className="text-xs opacity-80 mb-2">
-                        Aquest joc és open-source! Qualsevol jugador pot fer de servidor per generar música:
+                        Aquest joc és open-source! Qualsevol jugador pot fer de servidor per generar música.
                       </p>
-                      <ol className="text-xs list-decimal pl-4 space-y-1 text-indigo-300">
-                        <li>Crea un compte gratis a <strong>suno.com</strong> i copia'n la cookie.</li>
-                        <li>Descarrega el projecte del nostre <a href="#" className="underline">GitHub Oficial</a>.</li>
-                        <li>Afegeix la teva cookie al <code>.env.local</code>.</li>
-                        <li>Executa <code>npm run bot</code> al teu PC.</li>
-                      </ol>
-                      <p className="text-[10px] mt-2 italic text-center text-indigo-400">
+                      <button 
+                        onClick={() => setShowManual(true)}
+                        className="text-[10px] bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-md font-black uppercase tracking-widest transition-all active:scale-95 mb-2"
+                      >
+                        📖 Llegir Manual d'Instal·lació
+                      </button>
+                      <p className="text-[10px] italic text-indigo-400">
                         Un cop engegat, aquest botó es posarà verd per a tothom automàticament!
                       </p>
                     </div>
@@ -303,6 +307,110 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                 </div>
               )
             ) : null}
+
+            {/* MODAL MANUAL D'INSTAL·LACIÓ */}
+            {showManual && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+                <div className="bg-slate-900 border border-indigo-500/30 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-indigo-500/20">
+                  <div className="p-6 border-b border-white/10 flex justify-between items-center bg-indigo-900/20">
+                    <h2 className="text-2xl font-black text-white">Manual d'Instal·lació del Bot 🤖</h2>
+                    <button onClick={() => setShowManual(false)} className="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+                  </div>
+                  
+                  <div className="flex bg-slate-800/50 p-1 m-4 rounded-xl border border-white/5">
+                    {(['windows', 'mac', 'linux'] as const).map(os => (
+                      <button
+                        key={os}
+                        onClick={() => setManualTab(os)}
+                        className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${manualTab === os ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                      >
+                        {os}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-6 pt-0 text-left space-y-6 text-gray-300 text-sm leading-relaxed">
+                    <section>
+                      <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1 rounded">1</span> Requisits Previs
+                      </h3>
+                      <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-3">
+                        {manualTab === 'windows' && (
+                          <>
+                            <p>• <strong>Node.js:</strong> Descarrega l'instal·lador "LTS" a <a href="https://nodejs.org/" target="_blank" className="text-emerald-400 underline">nodejs.org</a> i instal·la'l (següent, següent...).</p>
+                            <p>• <strong>Git:</strong> Descarrega Git a <a href="https://git-scm.com/download/win" target="_blank" className="text-emerald-400 underline">git-scm.com</a>.</p>
+                          </>
+                        )}
+                        {manualTab === 'mac' && (
+                          <>
+                            <p>• <strong>Node.js:</strong> Instal·la'l des de <a href="https://nodejs.org/" target="_blank" className="text-emerald-400 underline">nodejs.org</a> (pkg) o via Homebrew (<code>brew install node</code>).</p>
+                            <p>• <strong>Git:</strong> Normalment ja ve amb Xcode, si no: <code>brew install git</code>.</p>
+                          </>
+                        )}
+                        {manualTab === 'linux' && (
+                          <>
+                            <p>• <strong>Node.js:</strong> <code>sudo apt update && sudo apt install nodejs npm</code></p>
+                            <p>• <strong>Git:</strong> <code>sudo apt install git</code></p>
+                          </>
+                        )}
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1 rounded">2</span> Descarregar el Repositori
+                      </h3>
+                      <p>Obre la teva terminal (CMD o PowerShell a Windows, Terminal a Mac/Linux) i escriu:</p>
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400 overflow-x-auto">
+                        git clone https://github.com/fortiaarumi/la_quinta_forca.git{"\n"}
+                        cd la_quinta_forca{"\n"}
+                        npm install
+                      </pre>
+                    </section>
+
+                    <section>
+                      <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1 rounded">3</span> Configurar les Cookies de Suno
+                      </h3>
+                      <div className="space-y-3">
+                        <p>Aquest és el pas més important:</p>
+                        <ol className="list-decimal pl-5 space-y-2">
+                          <li>Ves a <a href="https://suno.com" target="_blank" className="text-emerald-400 underline">suno.com</a> i inicia sessió.</li>
+                          <li>Prem <code>F12</code> (o clic dret → Inspeccionar) i ves a la pestanya <strong>Network</strong> (Xarxa).</li>
+                          <li>Genera una cançó o refresca la pàgina. Busca una petició que es digui <code>client</code> o <code>feed</code>.</li>
+                          <li>A la secció <strong>Headers</strong>, busca <strong>Cookie</strong>. Copia tot el text llarg que hi surt.</li>
+                        </ol>
+                        <p>Ara, a la carpeta del projecte, crea un fitxer anomenat <code>.env.local</code> i posa-hi:</p>
+                        <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-indigo-300">
+                          SUNO_COOKIES="aquí_enganxa_les_teves_cookies"{"\n"}
+                          NEXT_PUBLIC_FIREBASE_API_KEY="..." (copia les dades de Firebase del repo)
+                        </pre>
+                      </div>
+                    </section>
+
+                    <section>
+                      <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
+                        <span className="bg-indigo-500/20 p-1 rounded">4</span> Executar el Bot
+                      </h3>
+                      <p>Torna a la terminal i posa el bot en marxa:</p>
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400">
+                        npm run bot
+                      </pre>
+                      <p className="text-xs text-gray-500 mt-2 italic">⚠️ No tanquis la terminal mentre vulguis que el bot estigui actiu!</p>
+                    </section>
+                  </div>
+                  
+                  <div className="p-6 border-t border-white/10 bg-indigo-900/10 flex justify-center">
+                    <button 
+                      onClick={() => setShowManual(false)}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-10 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-500/30 uppercase tracking-widest text-xs"
+                    >
+                      Entès, ho tinc! 🚀
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {room.songState?.status === 'generating_lyrics' && (
               <div className="text-indigo-400 font-bold animate-pulse text-sm">✍️ Escrivint lletra satírica...</div>

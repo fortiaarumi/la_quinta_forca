@@ -63,6 +63,43 @@ export default function HomeScreen() {
   const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
   const [activeFriendReq, setActiveFriendReq] = useState<{uid: string, nickname: string} | null>(null);
 
+  // ── XAT NOTIFICACIONS ──
+  const [chatToast, setChatToast] = useState<{ from: string, text: string } | null>(null);
+
+  useEffect(() => {
+    if (!user || isGuest) return;
+    
+    // 1. Obtenim la llista d'amics
+    const friendsRef = ref(db, `users/${user.uid}/friends`);
+    const unsubFriends = onValue(friendsRef, (snap) => {
+      if (!snap.exists()) return;
+      const friendUids = Object.keys(snap.val());
+      
+      // 2. Per cada amic, escoltem el seu xat
+      friendUids.forEach(fUid => {
+        const chatId = [user.uid, fUid].sort().join('_');
+        // Només escoltem l'últim missatge per no carregar tot l'historial
+        const lastMsgQuery = query(ref(db, `chats/${chatId}/messages`), orderByChild('timestamp'), endAt(Date.now() + 10000));
+        
+        onValue(ref(db, `chats/${chatId}/messages`), (mSnap) => {
+          if (!mSnap.exists()) return;
+          const msgs = mSnap.val();
+          const lastMsgId = Object.keys(msgs).pop();
+          const lastMsg = msgs[lastMsgId!];
+          
+          // Si el missatge és nou (fa menys de 5 segons) i no és nostre
+          if (lastMsg.from !== user.uid && !lastMsg.read && (Date.now() - lastMsg.timestamp < 5000)) {
+            setChatToast({ from: lastMsg.fromNickname || 'Un amic', text: lastMsg.text });
+            // Amaguem el toast després de 4 segons
+            setTimeout(() => setChatToast(null), 4000);
+          }
+        });
+      });
+    });
+
+    return () => unsubFriends();
+  }, [user, isGuest]);
+
   // ── Llegir Vídeo Dinàmic des de Firebase ──
   useEffect(() => {
     const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
@@ -378,6 +415,21 @@ export default function HomeScreen() {
 
   return (
     <div className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden font-sans" style={{ background: '#06080f' }}>
+      
+      {/* ── TOAST DE XAT (NOTIFICACIÓ) ── */}
+      {chatToast && (
+        <div 
+          onClick={() => setActiveMenu('friends')}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-[320px] bg-slate-900/90 backdrop-blur-xl border border-indigo-500/40 rounded-2xl p-4 shadow-2xl shadow-indigo-500/20 flex items-center gap-4 cursor-pointer hover:scale-105 transition-all animate-in slide-in-from-top-full duration-500"
+        >
+          <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-xl shadow-lg">💬</div>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">{chatToast.from}</p>
+            <p className="text-white text-sm font-bold truncate">{chatToast.text}</p>
+          </div>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        </div>
+      )}
 
       {/* Fons amb taques de color */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
