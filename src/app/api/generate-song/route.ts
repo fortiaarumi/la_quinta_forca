@@ -31,8 +31,11 @@ async function getSunoToken(cookie: string) {
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.GROQ_API_KEY || !process.env.SUNO_COOKIES) {
-      return new Response(JSON.stringify({ error: "Falten les claus de l'API o cookies a .env.local" }), { status: 500 });
+    const missingVars = [];
+    if (!process.env.GROQ_API_KEY) missingVars.push('GROQ_API_KEY');
+    if (!process.env.SUNO_COOKIES) missingVars.push('SUNO_COOKIES');
+    if (missingVars.length > 0) {
+      return new Response(JSON.stringify({ error: `Variables NOT FOUND a Vercel: ${missingVars.join(', ')}` }), { status: 500 });
     }
 
     const { guesses } = await request.json();
