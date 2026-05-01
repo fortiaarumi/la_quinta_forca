@@ -30,6 +30,37 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
   const [grayscale, setGrayscale] = useState(false);
   const songRef = useRef<HTMLAudioElement | null>(null);
 
+  // Estat del bot de comunitat
+  const [botAlive, setBotAlive] = useState(false);
+  const [botCredits, setBotCredits] = useState<number | null>(null);
+
+  // Escolta l'estat del bot a Firebase
+  useEffect(() => {
+    const botStatusRef = ref(db, 'system/bot_status');
+    const unsub = onValue(botStatusRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const now = Date.now();
+        // Bot actiu si el last_seen és de fa menys de 30 segons
+        const isAlive = data.last_seen && (now - data.last_seen < 30000);
+        setBotAlive(isAlive);
+        setBotCredits(data.credits ?? null);
+      } else {
+        setBotAlive(false);
+      }
+    });
+
+    // Validació cada 5 segons per si el bot mor de cop i Firebase no canvia
+    const interval = setInterval(() => {
+      setBotAlive(prev => prev); // Forçar re-avaluació si cal, encara que el listener ho fa
+    }, 5000);
+
+    return () => {
+      unsub();
+      clearInterval(interval);
+    };
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
@@ -110,50 +141,22 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       const data = await res.json();
 
       if (!res.ok) {
-        const errorMsg = data.details ? `${data.error} (Detall: ${data.details})` : (data.error || 'Error desconegut al generar la cançó');
-        throw new Error(errorMsg);
+        throw new Error(data.error || 'Error desconegut al generar la cançó');
       }
 
       await update(ref(db, `rooms/${roomId}/songState`), { 
-        status: 'generating_music', 
+        status: 'waiting_for_bot', 
         lyrics: data.lyrics,
         genre: data.genre,
-        clipId: data.clipId
+        prompt: guesses // Passem el prompt original per si el bot el necessita
       });
     } catch (err: any) {
       await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: err.message });
     }
   };
 
-  // Polling quan s'està generant la música
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    const clipId = (room as any).songState?.clipId;
-    const status = room.songState?.status;
+  // Polling ja no cal, el bot actualitzarà Firebase directament
 
-    if (status === 'generating_music' && clipId) {
-      interval = setInterval(async () => {
-        try {
-          const res = await fetch(`/api/suno-status?clipId=${clipId}`);
-          const data = await res.json();
-          if (res.ok && (data.status === 'complete' || data.status === 'COMPLETE' || data.status === 'streaming')) {
-            await update(ref(db, `rooms/${roomId}/songState`), { 
-              status: 'ready', 
-              audioUrl: data.audioUrl 
-            });
-            clearInterval(interval);
-          } else if (res.ok && (data.status === 'error' || data.status === 'ERROR')) {
-            await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: 'Error a Suno' });
-            clearInterval(interval);
-          }
-        } catch (err) {
-          console.error("Polling error", err);
-        }
-      }, 5000); // Poll cada 5 segons
-    }
-
-    return () => clearInterval(interval);
-  }, [room.songState?.status, (room as any).songState?.clipId, roomId]);
 
   const handlePlaySong = async () => {
     if (!isHost) return;
@@ -262,19 +265,54 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
           <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 mt-2 text-center shadow-inner">
             {!room.songState || room.songState.status === 'idle' ? (
               isHost ? (
-                <button
-                  onClick={handleGenerateSong}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold py-3 rounded-lg text-sm transition-all uppercase tracking-wider shadow-lg"
-                >
-                  🎵 Generar Cançó Satírica (Gratis)
-                </button>
+                botAlive && (botCredits === null || botCredits > 0) ? (
+                  <button
+                    onClick={handleGenerateSong}
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold py-3 rounded-lg text-sm transition-all uppercase tracking-wider shadow-lg"
+                  >
+                    🎵 Generar Cançó Satírica (Gratis)
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button disabled className="w-full bg-gray-700 text-gray-500 font-bold py-3 rounded-lg text-sm uppercase tracking-wider cursor-not-allowed">
+                      {!botAlive ? '💤 Bot Apagat (Terminal no activa)' : '💳 Bot Sense Crèdits a Suno'}
+                    </button>
+                    
+                    <div className="mt-3 p-3 bg-indigo-900/40 border border-indigo-700/50 rounded-lg text-left text-sm text-indigo-200">
+                      <p className="font-bold mb-1 flex items-center gap-2">
+                        <span>💡</span> Vols generar cançons tu mateix?
+                      </p>
+                      <p className="text-xs opacity-80 mb-2">
+                        Aquest joc és open-source! Qualsevol jugador pot fer de servidor per generar música:
+                      </p>
+                      <ol className="text-xs list-decimal pl-4 space-y-1 text-indigo-300">
+                        <li>Crea un compte gratis a <strong>suno.com</strong> i copia'n la cookie.</li>
+                        <li>Descarrega el projecte del nostre <a href="#" className="underline">GitHub Oficial</a>.</li>
+                        <li>Afegeix la teva cookie al <code>.env.local</code>.</li>
+                        <li>Executa <code>npm run bot</code> al teu PC.</li>
+                      </ol>
+                      <p className="text-[10px] mt-2 italic text-center text-indigo-400">
+                        Un cop engegat, aquest botó es posarà verd per a tothom automàticament!
+                      </p>
+                    </div>
+                  </div>
+                )
               ) : (
-                <div className="text-gray-500 text-xs italic">El Host pot generar una cançó satírica de la partida.</div>
+                <div className="text-gray-500 text-xs italic">
+                  El Host pot generar una cançó satírica si el Bot està actiu.
+                </div>
               )
             ) : null}
 
             {room.songState?.status === 'generating_lyrics' && (
               <div className="text-indigo-400 font-bold animate-pulse text-sm">✍️ Escrivint lletra satírica...</div>
+            )}
+
+            {room.songState?.status === 'waiting_for_bot' && (
+              <div className="text-blue-400 font-bold animate-pulse text-sm flex flex-col items-center gap-2">
+                <span>🤖 Enviant instruccions al Bot de la Comunitat...</span>
+                <span className="text-xs text-gray-500">Comprovant connexió local</span>
+              </div>
             )}
 
             {room.songState?.status === 'generating_music' && (

@@ -13,20 +13,12 @@ const genres = [
   'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre'
 ];
 
-function extractSessionToken(cookie: string): string {
-  // El __session JA és el JWT Bearer token, no cal cridar Clerk
-  const match = cookie.match(/__session=([^;]+)/);
-  if (!match) throw new Error('No hi ha cap sessió activa (Cookie caducada)');
-  return match[1].trim();
-}
+
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.GROQ_API_KEY || !process.env.SUNO_COOKIES) {
-      const missing = [];
-      if (!process.env.GROQ_API_KEY) missing.push('GROQ_API_KEY');
-      if (!process.env.SUNO_COOKIES) missing.push('SUNO_COOKIES');
-      return new Response(JSON.stringify({ error: `Variables NOT FOUND a Vercel: ${missing.join(', ')}` }), { status: 500 });
+    if (!process.env.GROQ_API_KEY) {
+      return new Response(JSON.stringify({ error: 'Variable GROQ_API_KEY NOT FOUND a Vercel' }), { status: 500 });
     }
 
     const { guesses } = await request.json();
@@ -51,57 +43,12 @@ export async function POST(request: Request) {
 
     const lyrics = chatCompletion.choices[0]?.message?.content || 'Quin desastre de geògrafs, no trobeu ni casa vostra.';
 
-    // 2. Provar Cookies de Suno amb Fetch (Edge Runtime)
-    const cookies = process.env.SUNO_COOKIES!.split(',').map(c => c.trim());
-    let clipId = null;
-    let errorSuno = null;
-
-    for (let i = 0; i < cookies.length; i++) {
-      try {
-        const token = extractSessionToken(cookies[i]);
-        
-        const payload = {
-          prompt: lyrics,
-          title: 'Sátira Geogràfica',
-          tags: genre,
-          makeInstrumental: false,
-          mv: 'chirp-v3-5'
-        };
-
-        const generateRes = await fetch('https://studio-api.suno.ai/api/generate/v2/', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!generateRes.ok) throw new Error(`Suno API error: ${generateRes.status}`);
-        const generateData = await generateRes.json();
-        
-        if (generateData.clips && generateData.clips.length > 0) {
-          clipId = generateData.clips[0].id;
-          break; // Sortim del bucle, ja tenim el clip!
-        }
-      } catch (err: any) {
-        console.error(`Suno Cookie ${i + 1} va fallar:`, err.message);
-        errorSuno = err.message;
-      }
-    }
-
-    if (!clipId) {
-      return new Response(JSON.stringify({ 
-        error: 'Totes les cookies de Suno han fallat o no tenen crèdits.', 
-        details: errorSuno 
-      }), { status: 500 });
-    }
-
-    return new Response(JSON.stringify({ clipId, lyrics, genre }), { status: 200 });
+    // Retornem només la lletra i el gènere, el bot local s'encarregarà de cridar a Suno
+    return new Response(JSON.stringify({ lyrics, genre }), { status: 200 });
 
   } catch (error: any) {
     console.error('Error a /api/generate-song:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
+
