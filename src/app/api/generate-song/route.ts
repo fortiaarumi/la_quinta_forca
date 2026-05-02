@@ -33,13 +33,19 @@ export async function POST(request: Request) {
       
       ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i ELS PAÏSOS REALS on era la foto i on han tirat ells.
       Fes sàtira fent servir aquests noms de països reals per riure-te'n de com algú pot confondre X amb Y.
+      Menciona ELS PAÏSOS EXACTES que et passo en la teva lletra.
       
       Aquests han estat els errors reals d'aquesta partida:
       ${guesses}
       
       La cançó ha de ser 100% en català molt col·loquial (pots fer servir algun insult lleu com 'tros de soca', 'inútils', 'cecs', 'poca-soltes').
-      NO posis títols ni indicacions com [Verse] o [Chorus]. Només la lletra de la cançó perquè es pugui cantar directament.
+      NO posis títols ni indicacions com [Verse] o [Chorus]. 
+      RETORNA ÚNICAMENT I EXCLUSIVAMENT LA LLETRA DE LA CANÇÓ. NO FACIS CAP COMENTARI PREVI NI POSTERIOR, CAP SALUTACIÓ, NOMÉS LA LLETRA.
     `;
+
+    console.log("=== PROMPT GEOGRÀFIC ENVIAT A L'LLM ===");
+    console.log(guesses);
+    console.log("=======================================");
 
     // 1. Demanar Lletra a Groq (Llama 3)
     const chatCompletion = await groq.chat.completions.create({
@@ -48,7 +54,11 @@ export async function POST(request: Request) {
       temperature: 0.8,
     });
 
-    const lyrics = chatCompletion.choices[0]?.message?.content || 'Quin desastre de geògrafs, no trobeu ni casa vostra.';
+    let lyrics = chatCompletion.choices[0]?.message?.content || 'Quin desastre de geògrafs, no trobeu ni casa vostra.';
+    
+    // Netejar possible brossa conversacional si l'LLM es despista
+    lyrics = lyrics.replace(/tens una idea molt divertida/i, '').trim();
+    lyrics = lyrics.replace(/^Aquí tens.*?:/gim, '').trim();
 
     // Retornem només la lletra i el gènere, el bot local s'encarregarà de cridar a Suno
     return new Response(JSON.stringify({ lyrics, genre }), { status: 200 });
