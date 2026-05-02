@@ -370,25 +370,13 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
 
                     <section>
                       <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
-                        <span className="bg-indigo-500/20 p-1 rounded">3</span> Configurar les Cookies de Suno i Firebase
+                        <span className="bg-indigo-500/20 p-1 rounded">3</span> Configurar la connexió
                       </h3>
                       <div className="space-y-3">
-                        <p><strong>Com aconseguir la teva Cookie de Suno:</strong></p>
-                        <ol className="list-decimal pl-5 space-y-2">
-                          <li>Obre Google Chrome i ves a <a href="https://suno.com" target="_blank" className="text-emerald-400 underline font-bold">suno.com</a>. Inicia la teva sessió.</li>
-                          <li>Prem la tecla <code>F12</code> del teu teclat (o fes clic dret a qualsevol lloc de la pàgina → Inspeccionar).</li>
-                          <li>A la finestra que s'obre (Eines per a desenvolupadors), clica a la pestanya de dalt que diu <strong>Network</strong> (Xarxa).</li>
-                          <li>Al quadre de cerca (Filtre), escriu la paraula <code>client</code> o <code>feed</code>.</li>
-                          <li>Torna a carregar la pàgina (prement F5) o posa a reproduir qualsevol cançó de la pàgina. Veureu que apareixen línies noves.</li>
-                          <li>Fes clic a una d'aquestes línies (per exemple, una que es digui `client?_clerk_js_version...`).</li>
-                          <li>A la dreta, s'obrirà un panell. Baixa fins a trobar la secció <strong>Request Headers</strong>.</li>
-                          <li>A dins hi haurà una línia que comença per <strong>cookie:</strong>. Fes clic dret al damunt del valor enorme que hi ha al costat i tria <strong>Copy Value</strong> (Copiar valor). Assegura't de copiar TOT el text, que és molt llarg i conté la paraula <code>__session=</code>.</li>
-                        </ol>
-                        <p className="mt-4">Ara, a la carpeta del joc que has descarregat, crea un fitxer nou i anomena'l <strong>exactament</strong> <code>.env.local</code>. Obre'l amb el bloc de notes i enganxa-hi això (substituint la cookie):</p>
+                        <p>Aquesta nova versió del bot no necessita cookies complicades, sinó que <strong>obrirà el navegador sol per tu</strong>!</p>
+                        <p className="mt-4">A la carpeta del joc, crea un fitxer nou i anomena'l <strong>exactament</strong> <code>.env.local</code>. Obre'l i enganxa-hi això (les teves claus de Firebase de la partida):</p>
                         <pre className="bg-black p-3 rounded-lg border border-white/10 text-[10px] text-indigo-300 overflow-x-auto whitespace-pre">
-{`SUNO_COOKIES="ENGANXA_AQUÍ_TOTA_LA_TEVA_COOKIE_COPIADA"
-
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58
+{`NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=onsom-dade5.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://onsom-dade5-default-rtdb.europe-west1.firebasedatabase.app
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=onsom-dade5
@@ -396,19 +384,23 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=onsom-dade5.firebasestorage.app
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=812916118386
 NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                         </pre>
-                        <p className="text-xs text-yellow-400 mt-2 italic">⚠️ Avís: Les cookies de Suno caduquen cada poca estona (normalment 1 hora). Si el bot deixa de generar cançons, hauràs de repetir aquest procés i tornar a engegar el bot.</p>
                       </div>
                     </section>
 
-
                     <section>
                       <h3 className="text-indigo-400 font-black uppercase tracking-wider text-xs mb-3 flex items-center gap-2">
-                        <span className="bg-indigo-500/20 p-1 rounded">4</span> Executar el Bot
+                        <span className="bg-indigo-500/20 p-1 rounded">4</span> Executar el Bot de Navegador Automàtic
                       </h3>
-                      <p>Torna a la terminal i posa el bot en marxa:</p>
+                      <p>Torna a la terminal i posa el bot en marxa amb aquest comandament:</p>
                       <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400">
-                        npm run bot
+                        node suno-puppeteer.mjs
                       </pre>
+                      <p className="text-xs text-yellow-400 mt-2 font-bold">⚠️ EL PRIMER COP QUE L'OBRIS:</p>
+                      <ol className="text-xs text-gray-400 list-decimal pl-5 space-y-1">
+                        <li>S'obrirà una finestra de Google Chrome automàticament.</li>
+                        <li>Has d'anar-hi i iniciar sessió a Suno.com manualment.</li>
+                        <li>A partir de llavors, ja pots minimitzar-la. El bot mourà el ratolí sol quan calgui fer una cançó!</li>
+                      </ol>
                       <p className="text-xs text-gray-500 mt-2 italic">⚠️ No tanquis la terminal mentre vulguis que el bot estigui actiu!</p>
                     </section>
                   </div>

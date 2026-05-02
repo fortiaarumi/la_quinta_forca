@@ -26,12 +26,16 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un expert compositor de cançons satíriques. Escriu una lletra de 4 o 6 línies (sense ponts ni dobles tornades, només lletra directa) molt directa, extremadament satírica, humorística i una mica agressiva (com si fossis un amic rient-te d'ells) sobre la seva pèssima habilitat geogràfica. 
-      Els errors més greus d'aquesta partida han estat:
+      Ets un amic molt cabró i sarcàstic que acaba de jugar a "La Quinta Forca" (un joc de localitzar llocs al mapa). 
+      Escriu la lletra d'una cançó per riure't sense pietat a la cara dels jugadors per la seva ignorància geogràfica.
+      La lletra ha de tenir entre 8 i 12 línies ben rítmiques i que RIMIN de forma clara i directa.
+      IMPORTANT: Sigues descriptiu, directe i molt brètol amb els errors concrets. NO siguis filosòfic ni poètic. Has de ser molt col·loquial, insultant la seva pèssima orientació i detallant els quilòmetres que han fallat tal com t'indico aquí.
+      
+      Aquests han estat els errors reals d'aquesta partida:
       ${guesses}
       
-      La cançó ha de ser en català col·loquial.
-      NO posis títols ni indicacions com [Verse] o [Chorus]. Només la lletra de la cançó.
+      La cançó ha de ser 100% en català molt col·loquial (pots fer servir algun insult lleu com 'tros de soca', 'inútils', 'cecs', etc.).
+      NO posis títols ni indicacions com [Verse] o [Chorus]. Només la lletra de la cançó perquè es pugui cantar directament.
     `;
 
     // 1. Demanar Lletra a Groq (Llama 3)
