@@ -31,12 +31,19 @@ let isProcessing = false;
 
 async function initBrowser() {
   if (browser) return;
-  console.log("🚀 Iniciant navegador Chrome...");
+  console.log("🚀 Iniciant navegador Chrome (Això pot trigar una mica el primer cop)...");
   browser = await puppeteer.launch({
     headless: false, // Ha de ser false per evitar bloquejos i permetre a l'usuari fer el primer login
     userDataDir: './suno-chrome-profile', // Guarda la sessió per no haver de fer login cada cop
     defaultViewport: null,
-    args: ['--start-maximized']
+    timeout: 60000, // Donem 60 segons en lloc de 30 per si l'ordinador va lent
+    args: [
+      '--start-maximized',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu'
+    ]
   });
   
   page = await browser.newPage();
