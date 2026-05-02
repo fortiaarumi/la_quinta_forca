@@ -26,39 +26,24 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un brillant lletrista de música satírica cantant en un concert. Acabes de veure una partida del joc "La Quinta Forca" i els jugadors han fet el ridícul.
-      La teva missió és escriure la lletra d'una CANÇÓ COMPLETA burlant-te dels seus errors geogràfics.
-      
-      REGLA ABSOLUTA: Dirigeix-te ÚNICAMENT als jugadors pels seus noms. Està TOTALMENT PROHIBIT fer referència a la paraula "Suno", "IA", "Llama", o "Bot". No estem parlant de tecnologia, sinó d'orientació pèssima.
-      ESTRUCTURA OBLIGATÒRIA DE LA CANÇÓ:
-      Has de seguir EXACTAMENT aquesta estructura. Cada part ha de tenir estrofes de 4 línies que rimin de forma clara i rítmica:
-      [Intro]
-      [Verse]
-      [Pre-Chorus]
-      [Chorus]
-      [Verse]
-      [Pre-Chorus]
-      [Chorus]
-      [Bridge]
-      [Chorus]
-      [Outro]
+      Ets un lletrista brillant, sarcàstic i humorístic. Has d'escriure la lletra d'una CANÇÓ SATÍRICA per riure't d'uns jugadors que han fet una partida pèssima a un joc d'endevinar on s'ha fet una foto al mapa.
 
-      REGLES CRÍTIQUES DE FORMAT:
-      1. Has d'incloure els tags de dalt (ex: [Chorus]) perquè el cantant sàpiga quan canviar el ritme.
-      2. Posa veus secundàries/cors entre parèntesis. Exemple: "(no hi toques!)".
-      3. Fes servir un català molt col·loquial, directe, ple de sàtira i amb insults lleus adreçats al Jugador.
+      REGLES ESTRICTES DE FORMAT (CRÍTIQUES PER PODER-HO CANTAR BÉ):
+      1. MAI, SOTA CAP CONCEPTE, facis servir números en dígits (ex: 32, 100, 5000). Escriu-los SEMPRE TOT EN LLETRES (ex: trenta-dos, cent, cinc mil).
+      2. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
+      3. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà". Parla només dels jugadors i els seus errors de geografia.
+      4. El to ha de ser una sàtira intel·ligent, irònica i divertida en català col·loquial, sense caure en insults infantils o repetitius. Fes rimes enginyoses.
+
+      CONTEXT DEL JOC:
+      Riu-te de com el jugador ha confós el "Lloc de la foto real" amb "On ha posat el pin el jugador". Fes befa de la distància cega en quilòmetres.
       
-      CONTEXT DEL JOC (MOLT IMPORTANT):
-      A continuació rebràs una llista de jugadors i el seu pitjor error a la partida. Veureu exactament ON estava la foto (Lloc de la foto) i ON han posat ells el dit al mapa (On han posat el pin). 
-      El teu objectiu és ser mordaç i cruel sobre com és possible confondre aquests DOS llocs.
-      
-      ATENCIÓ - PROHIBIT INVENTAR-SE LLOCS: 
-      Només pots esmentar el nom del Jugador i els llocs exactes que t'indico a continuació. Si algú ha posat el pin al "Mig de l'oceà", burla't de que han ofegat el pin. Si han confós "Torelló" amb "Moscou", riu-te d'aquesta distància en quilòmetres. No t'inventis cap altra ciutat per fer rima.
-      
-      Aquests han estat els resultats d'aquesta partida:
+      DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis ciutats noves per fer rima):
       ${guesses}
+
+      ESTRUCTURA OBLIGATÒRIA:
+      Fes servir els tags: [Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], [Outro].
       
-      RETORNA ÚNICAMENT I EXCLUSIVAMENT LA LLETRA DE LA CANÇÓ AMB ELS TAGS. NO FACIS CAP COMENTARI PREVI NI POSTERIOR. NOMÉS LA LLETRA.
+      RETORNA ÚNICAMENT LA LLETRA DE LA CANÇÓ. CAP COMENTARI.
     `;
 
     console.log("=== PROMPT GEOGRÀFIC ENVIAT A L'LLM ===");

@@ -162,8 +162,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
           const guessObj = freshRounds[i]?.guesses?.[id];
           if (guessObj && guessObj.distance > maxDist) {
             maxDist = guessObj.distance;
-            worstGuessCountry = guessObj.guessCountry || "l'oceà més proper (lloc desconegut)";
-            worstActualCountry = guessObj.actualCountry || "algun punt perdut del món";
+            worstGuessCountry = guessObj.guessCountry || "un lloc completament desconegut";
+            worstActualCountry = guessObj.actualCountry || "enmig del no-res";
           }
         }
         if (maxDist > 0) {
