@@ -49,10 +49,11 @@ export async function POST(request: Request) {
       3. Fes servir un català molt col·loquial, directe, ple de sàtira i amb insults lleus adreçats al Jugador.
       
       CONTEXT DEL JOC (MOLT IMPORTANT):
-      Els jugadors han vist una foto (Lloc Real) i han posat un pin al mapa (On han posat el pin). El teu objectiu és riure't d'ells per confondre aquests dos llocs. Si el lloc és "Mig de l'oceà", riu-te de com han tirat el pin a l'aigua en lloc de terra ferma.
+      A continuació rebràs una llista de jugadors i el seu pitjor error a la partida. Veureu exactament ON estava la foto (Lloc de la foto) i ON han posat ells el dit al mapa (On han posat el pin). 
+      El teu objectiu és ser mordaç i cruel sobre com és possible confondre aquests DOS llocs.
       
       ATENCIÓ - PROHIBIT INVENTAR-SE LLOCS: 
-      Només pots esmentar el nom del Jugador i els llocs que t'indico aquí sota. No t'inventis cap altra ciutat per fer rima.
+      Només pots esmentar el nom del Jugador i els llocs exactes que t'indico a continuació. Si algú ha posat el pin al "Mig de l'oceà", burla't de que han ofegat el pin. Si han confós "Torelló" amb "Moscou", riu-te d'aquesta distància en quilòmetres. No t'inventis cap altra ciutat per fer rima.
       
       Aquests han estat els resultats d'aquesta partida:
       ${guesses}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest } from '@/lib/friendUtils';
@@ -99,7 +99,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-      const interval: any = setInterval(function() {
+      const interval: any = setInterval(function () {
         const timeLeft = animationEnd - Date.now();
 
         if (timeLeft <= 0) {
@@ -109,7 +109,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
         const particleCount = 50 * (timeLeft / duration);
         confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
       }, 250);
-      
+
       return () => clearInterval(interval);
     } else {
       playDecepcion();
@@ -118,7 +118,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       const timeout = setTimeout(() => {
         setGrayscale(false);
       }, 5000);
-      
+
       return () => clearTimeout(timeout);
     }
   }, [iWon, playCelebration, playDecepcion, stopAllMusic]);
@@ -147,23 +147,28 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
     if (!isHost) return;
     try {
       await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_lyrics', error: null });
-      
+
+      // Anem a la font més fresca per no perdre dades asíncrones
+      const roundsSnap = await get(ref(db, `rooms/${roomId}/rounds`));
+      const freshRounds = roundsSnap.val() || room.rounds || [];
+
       // Recopilar les pitjors tirades per al prompt
       const guesses = Object.entries(room.players).map(([id, p]) => {
         let maxDist = 0;
         let worstGuessCountry = '';
         let worstActualCountry = '';
+
         for (let i = 0; i < 5; i++) {
-          const guessObj = room.rounds?.[i]?.guesses?.[id];
+          const guessObj = freshRounds[i]?.guesses?.[id];
           if (guessObj && guessObj.distance > maxDist) {
             maxDist = guessObj.distance;
-            worstGuessCountry = guessObj.guessCountry || "lloc desconegut";
-            worstActualCountry = guessObj.actualCountry || "lloc desconegut";
+            worstGuessCountry = guessObj.guessCountry || "l'oceà més proper (lloc desconegut)";
+            worstActualCountry = guessObj.actualCountry || "algun punt perdut del món";
           }
         }
         if (maxDist > 0) {
           const distWords = numberToCatalan(Math.round(maxDist));
-          return `- Jugador: ${p.name}\n  Lloc de la foto: ${worstActualCountry}\n  On ha posat el pin: ${worstGuessCountry}\n  Distància de l'error: ${distWords} quilòmetres\n`;
+          return `- Jugador: ${p.name}\n  Lloc de la foto real: ${worstActualCountry}\n  On ha posat el pin el jugador: ${worstGuessCountry}\n  L'error ha estat de: ${distWords} quilòmetres\n`;
         }
         return `- Jugador: ${p.name} (ha jugat perfecte i no ha fallat gens)\n`;
       }).join('\\n');
@@ -179,8 +184,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
         throw new Error(data.error || 'Error desconegut al generar la cançó');
       }
 
-      await update(ref(db, `rooms/${roomId}/songState`), { 
-        status: 'waiting_for_bot', 
+      await update(ref(db, `rooms/${roomId}/songState`), {
+        status: 'waiting_for_bot',
         lyrics: data.lyrics,
         genre: data.genre,
         prompt: guesses // Passem el prompt original per si el bot el necessita
@@ -205,18 +210,18 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       if (!songRef.current) {
         songRef.current = new Audio(room.songState.audioUrl);
       }
-      
+
       const audio = songRef.current;
-      
+
       const updateTime = () => setSongCurrentTime(audio.currentTime);
       const updateDuration = () => setSongDuration(audio.duration);
-      
+
       audio.addEventListener('timeupdate', updateTime);
       audio.addEventListener('loadedmetadata', updateDuration);
-      
+
       audio.volume = songVolume;
       audio.play().catch(e => console.error("Auto-play prevengut pel navegador", e));
-      
+
       return () => {
         audio.removeEventListener('timeupdate', updateTime);
         audio.removeEventListener('loadedmetadata', updateDuration);
@@ -238,7 +243,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 text-white flex flex-col items-center justify-center p-8 transition-all duration-1000"
       style={{ filter: grayscale ? 'grayscale(100%)' : 'grayscale(0%)' }}
     >
@@ -263,18 +268,17 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
             return (
               <div
                 key={p.id}
-                className={`rounded-2xl p-5 transition-all ${
-                  isMe
-                    ? 'bg-gradient-to-r from-yellow-500/15 to-green-500/15 border-2 border-yellow-500/40 shadow-xl'
-                    : 'bg-gray-800 border border-gray-700'
-                }`}
+                className={`rounded-2xl p-5 transition-all ${isMe
+                  ? 'bg-gradient-to-r from-yellow-500/15 to-green-500/15 border-2 border-yellow-500/40 shadow-xl'
+                  : 'bg-gray-800 border border-gray-700'
+                  }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <span className="text-4xl">{medals[i] ?? '🎮'}</span>
                     <div>
                       <div className="font-black text-xl flex items-center gap-2">
-                        {p.name} 
+                        {p.name}
                         {p.isAdmin && <span className="text-[10px] bg-red-600 text-white px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
                       </div>
                       {isMe && <div className="text-xs text-gray-400">Tu</div>}
@@ -286,9 +290,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                             setFriendReqSent(prev => ({ ...prev, [p.id]: true }));
                           }}
                           disabled={friendReqSent[p.id]}
-                          className={`mt-1 text-[9px] uppercase font-black px-2 py-1 rounded transition-all ${
-                            friendReqSent[p.id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
-                          }`}
+                          className={`mt-1 text-[9px] uppercase font-black px-2 py-1 rounded transition-all ${friendReqSent[p.id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
+                            }`}
                         >
                           {friendReqSent[p.id] ? '✓ Petició Enviada' : '+ Afegir Amic'}
                         </button>
@@ -316,7 +319,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
 
         {/* ── NOU: GRUP DE BOTONS I CANÇÓ ── */}
         <div className="flex flex-col gap-3">
-          
+
           {/* SECCIÓ CANÇÓ SATÍRICA */}
           <div className="bg-gray-800/80 p-4 rounded-xl border border-gray-700 mt-2 text-center shadow-inner">
             {!room.songState || room.songState.status === 'idle' ? (
@@ -333,7 +336,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                     <button disabled className="w-full bg-gray-700 text-gray-500 font-bold py-3 rounded-lg text-sm uppercase tracking-wider cursor-not-allowed">
                       {!botAlive ? '💤 Bot Apagat (Terminal no activa)' : '💳 Bot Sense Crèdits a Suno'}
                     </button>
-                    
+
                     <div className="mt-3 p-3 bg-indigo-900/40 border border-indigo-700/50 rounded-lg text-left text-sm text-indigo-200">
                       <p className="font-bold mb-1 flex items-center gap-2">
                         <span>💡</span> Vols generar cançons tu mateix?
@@ -341,7 +344,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                       <p className="text-xs opacity-80 mb-2">
                         Aquest joc és open-source! Qualsevol jugador pot fer de servidor per generar música.
                       </p>
-                      <button 
+                      <button
                         onClick={() => setShowManual(true)}
                         className="text-[10px] bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-1.5 rounded-md font-black uppercase tracking-widest transition-all active:scale-95 mb-2"
                       >
@@ -368,7 +371,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                     <h2 className="text-2xl font-black text-white">Manual d'Instal·lació del Bot 🤖</h2>
                     <button onClick={() => setShowManual(false)} className="text-gray-400 hover:text-white text-3xl leading-none">×</button>
                   </div>
-                  
+
                   <div className="flex bg-slate-800/50 p-1 m-4 rounded-xl border border-white/5">
                     {(['windows', 'mac', 'linux'] as const).map(os => (
                       <button
@@ -428,7 +431,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
                         <p>Aquesta nova versió del bot no necessita cookies complicades, sinó que <strong>obrirà el navegador sol per tu</strong>!</p>
                         <p className="mt-4">A la carpeta del joc, crea un fitxer nou i anomena'l <strong>exactament</strong> <code>.env.local</code>. Obre'l i enganxa-hi això (les teves claus de Firebase de la partida):</p>
                         <pre className="bg-black p-3 rounded-lg border border-white/10 text-[10px] text-indigo-300 overflow-x-auto whitespace-pre">
-{`NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58
+                          {`NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=onsom-dade5.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://onsom-dade5-default-rtdb.europe-west1.firebasedatabase.app
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=onsom-dade5
@@ -456,9 +459,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                       <p className="text-xs text-gray-500 mt-2 italic">⚠️ No tanquis la terminal mentre vulguis que el bot estigui actiu!</p>
                     </section>
                   </div>
-                  
+
                   <div className="p-6 border-t border-white/10 bg-indigo-900/10 flex justify-center">
-                    <button 
+                    <button
                       onClick={() => setShowManual(false)}
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-10 py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-indigo-500/30 uppercase tracking-widest text-xs"
                     >
@@ -495,7 +498,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                 ▶️ Reproduir Cançó
               </button>
             )}
-            
+
             {room.songState?.status === 'ready' && !isHost && (
               <div className="text-green-400 font-bold text-sm">🎵 La cançó està llesta! Esperant que el Host la reprodueixi...</div>
             )}
@@ -503,7 +506,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
             {room.songState?.status === 'playing' && (
               <div className="text-left w-full mt-2 bg-black/40 p-4 rounded-lg">
                 <div className="text-green-400 font-bold text-center mb-2 animate-pulse">🔊 Sonant ara: Sàtira {room.songState.genre}</div>
-                
+
                 {/* Progress bar */}
                 <div className="mb-4">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
@@ -511,7 +514,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                     <span>{formatTime(songDuration)}</span>
                   </div>
                   <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="bg-green-500 h-full transition-all duration-300 ease-linear"
                       style={{ width: `${songDuration > 0 ? (songCurrentTime / songDuration) * 100 : 0}%` }}
                     />
@@ -519,7 +522,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                 </div>
 
                 <div className="flex items-center gap-2 mb-4 justify-center">
-                  <button 
+                  <button
                     onClick={() => {
                       if (songRef.current) {
                         songRef.current.currentTime = 0;
@@ -532,10 +535,10 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                     🔄 Repetir
                   </button>
                   <span className="text-xs text-gray-400">Volum:</span>
-                  <input 
-                    type="range" 
-                    min="0" max="1" step="0.01" 
-                    value={songVolume} 
+                  <input
+                    type="range"
+                    min="0" max="1" step="0.01"
+                    value={songVolume}
                     onChange={(e) => setSongVolume(parseFloat(e.target.value))}
                     className="w-24 accent-purple-500"
                   />
@@ -555,7 +558,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
               <div className="flex flex-col gap-3 w-full text-left bg-black/40 p-4 rounded-lg border border-red-500/30 mt-2">
                 <div className="text-red-400 font-bold text-sm text-center mb-1">❌ El bot de Suno ha fallat</div>
                 <div className="text-gray-400 text-xs text-center italic mb-2">{room.songState.error}</div>
-                
+
                 {room.songState.lyrics && (
                   <>
                     <div className="text-indigo-300 text-xs text-center border-t border-white/10 pt-3 mb-2">
@@ -564,7 +567,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                     <div className="bg-gray-900 p-3 rounded border border-gray-700">
                       <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-black">Estil Musical (Style of Music):</div>
                       <div className="text-sm text-emerald-400 font-bold mb-3 select-all cursor-pointer hover:bg-emerald-400/10 p-1 rounded transition-colors">{room.songState.genre}</div>
-                      
+
                       <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1 font-black">Lletra (Lyrics):</div>
                       <div className="text-xs text-gray-300 italic whitespace-pre-line select-all cursor-pointer font-mono bg-black/50 p-2 rounded hover:bg-black/80 transition-colors">
                         {room.songState.lyrics}

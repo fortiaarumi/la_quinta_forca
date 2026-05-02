@@ -159,22 +159,23 @@ async function processSongRequest(roomId, songState) {
       try {
         const url = response.url();
         if (url.includes('/api/feed') || url.includes('/api/generate')) {
-          const clips = await response.json().catch(() => null);
-          if (Array.isArray(clips) && clips.length > 0) {
-            // Busquem exclusivament clips que estiguin TOTALMENT COMPLETATS i no siguin silenci
-            const completedClip = clips.find(c =>
-              (c.status === 'complete' || c.status === 'COMPLETE') &&
-              c.audio_url &&
-              !c.audio_url.includes('sil-100')
-            );
+          const text = await response.text().catch(() => '');
+          if (!text) return;
 
-            if (completedClip) {
-              audioUrl = completedClip.audio_url;
-            } else {
-              // Si encara s'està generant, ignorem i esperem al proper "poll" que fa la web de Suno
-              const streamingClip = clips.find(c => c.status === 'streaming');
-              if (streamingClip) {
-                console.log("  ...Suno està generant (streaming)... esperant la versió completa.");
+          let data;
+          try { data = JSON.parse(text); } catch (e) { }
+
+          if (data) {
+            // Amb aquesta línia, agafem la llista de cançons sigui quin sigui el format que enviï Suno
+            const clips = Array.isArray(data) ? data : (data.clips || []);
+
+            for (const c of clips) {
+              // Només donem per bo l'MP3 si l'estat és EXACTAMENT 'complete'
+              if (c && c.status && (c.status.toLowerCase() === 'complete') && c.audio_url && !c.audio_url.includes('sil-100')) {
+                audioUrl = c.audio_url;
+                break;
+              } else if (c && c.status && c.status.toLowerCase() === 'streaming') {
+                console.log("  ...Suno està generant (streaming)... esperant.");
               }
             }
           }
@@ -184,10 +185,11 @@ async function processSongRequest(roomId, songState) {
 
     page.on('response', responseHandler);
 
-    console.log("⏳ Esperant la música (pot trigar fins a 2 minuts)...");
+    console.log("⏳ Esperant la música (pot trigar fins a 4-5 minuts)...");
 
     let attempts = 0;
-    while (attempts < 60 && !audioUrl) {
+    // Pugem de 60 a 90 intents. 90 intents * 4 segons = 6 minuts de marge màxim d'espera.
+    while (attempts < 90 && !audioUrl) {
       attempts++;
       await new Promise(r => setTimeout(r, 4000));
 

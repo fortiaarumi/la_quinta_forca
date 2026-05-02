@@ -46,7 +46,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const { user, isGuest } = useAuth();
   const statsSavedRef = useRef(false);
-  const tempPinRef = useRef<{lat: number, lng: number} | null>(null); // 👈 AFEGIT
+  const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
   const [showAlert, setShowAlert] = useState(false);
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
@@ -111,7 +111,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const isSinglePlayer = room?.isSinglePlayer ?? false;
   const isHost = room?.hostId === playerId;
 
- // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
+  // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
     if (!room || room.gameState !== 'playing') return;
     if (transitionedRef.current) return;
@@ -132,7 +132,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const remaining = Math.max(0, room.roundEndsAt - Date.now());
         const secondsLeft = Math.ceil(remaining / 1000);
         setTimeLeft(secondsLeft);
-        
+
         // 👈 AFEGIT: Si queden exactament 10 segons, disparem el so
         if (secondsLeft === 10 && tickTockRef.current && tickTockRef.current.paused) {
           tickTockRef.current.play().catch(e => console.log('Error àudio', e));
@@ -174,7 +174,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
               const finalGuesses = snap.val() || {};
 
               const updates: Record<string, any> = { gameState: 'roundResults' };
-              
+
               playerIds.forEach(id => {
                 const roundScore = finalGuesses[id]?.score || 0; // Fem servir les dades fresques!
                 const currentTotal = room.totalScores?.[id] || 0;
@@ -195,66 +195,66 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }, [room, roomId, playerId, isSinglePlayer, hasGuessed]);
 
   const generateLocations = useCallback(async () => {
-  if (!mapsReady || !room) return;
-  await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
+    if (!mapsReady || !room) return;
+    await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
 
-  const service = new (google.maps as any).StreetViewService();
-  const locations: { lat: number; lng: number; panoId: string }[] = [];
-  let attempts = 0;
+    const service = new (google.maps as any).StreetViewService();
+    const locations: { lat: number; lng: number; panoId: string }[] = [];
+    let attempts = 0;
 
-  // Aquest bucle s'assegura que cada ubicació tingui foto real
-  while (locations.length < 5 && attempts < 150) {
-    attempts++;
-    
-    // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
-    const coords = room.gameMode === 'catalunya' 
-      ? randomCatalunyaCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
-      : randomBiasedCoords();
+    // Aquest bucle s'assegura que cada ubicació tingui foto real
+    while (locations.length < 5 && attempts < 150) {
+      attempts++;
 
-    await new Promise<void>((resolve) => {
-      service.getPanorama(
-        {
-          location: coords,
-          radius: room.gameMode === 'catalunya' ? 1000 : 50000, // Radi més petit a CAT per ser més precís
-          source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
-          preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
-        },
-        (data: any, status: any) => {
-          // NOMÉS afegim la ubicació si Google ens confirma que l'estat és OK
-          if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
-            locations.push({
-              lat: data.location.latLng.lat(),
-              lng: data.location.latLng.lng(),
-              panoId: data.location.pano || '',
-            });
+      // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
+      const coords = room.gameMode === 'catalunya'
+        ? randomCatalunyaCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
+        : randomBiasedCoords();
+
+      await new Promise<void>((resolve) => {
+        service.getPanorama(
+          {
+            location: coords,
+            radius: room.gameMode === 'catalunya' ? 1000 : 50000, // Radi més petit a CAT per ser més precís
+            source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
+            preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
+          },
+          (data: any, status: any) => {
+            // NOMÉS afegim la ubicació si Google ens confirma que l'estat és OK
+            if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+              locations.push({
+                lat: data.location.latLng.lat(),
+                lng: data.location.latLng.lng(),
+                panoId: data.location.pano || '',
+              });
+            }
+            resolve();
           }
-          resolve();
-        }
-      );
+        );
+      });
+    }
+
+    // Si després de 150 intents no n'hi ha 5 (molt difícil), usem els fallbacks
+    while (locations.length < 5) {
+      locations.push(FALLBACK_LOCATIONS[locations.length]);
+    }
+
+    const initialScores = Object.fromEntries(
+      Object.keys(room.players).map((id) => [id, 0])
+    );
+
+    const tSettings = getTimeSettings(room.timeMode);
+
+    await update(ref(db, `rooms/${roomId}`), {
+      locations,
+      gameState: 'playing',
+      currentRound: 0,
+      totalScores: initialScores,
+      rounds: null,
+      songState: null,
+      roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
     });
-  }
-
-  // Si després de 150 intents no n'hi ha 5 (molt difícil), usem els fallbacks
-  while (locations.length < 5) {
-    locations.push(FALLBACK_LOCATIONS[locations.length]);
-  }
-
-  const initialScores = Object.fromEntries(
-    Object.keys(room.players).map((id) => [id, 0])
-  );
-
-  const tSettings = getTimeSettings(room.timeMode);
-
-  await update(ref(db, `rooms/${roomId}`), {
-    locations,
-    gameState: 'playing',
-    currentRound: 0,
-    totalScores: initialScores,
-    rounds: null,
-    songState: null,
-    roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
-  });
-}, [mapsReady, roomId, room]);;
+  }, [mapsReady, roomId, room]);;
 
   useEffect(() => {
     if (!room || !mapsReady || !isHost) return;
@@ -270,7 +270,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
         if (status === 'OK' && results && results.length > 0) {
           const components = results[0].address_components;
-          
+
           if (gameMode === 'catalunya') {
             let comarca = '';
             let locality = '';
@@ -307,24 +307,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
       // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
       const score = calculateScore(distance, room.gameMode);
 
-      // Obtenim les zones asíncronament segons el mode de joc
-      const guessCountry = await getLocationName(guessLat, guessLng, room.gameMode || 'world');
-      const actualCountry = await getLocationName(actual.lat, actual.lng, room.gameMode || 'world');
-
-      const guess: PlayerGuess = { 
-        lat: guessLat, 
-        lng: guessLng, 
-        distance, 
-        score,
-        guessCountry,
-        actualCountry
+      // 1. Guardem l'estimació BASE ràpidament per no bloquejar el joc
+      const baseGuess: PlayerGuess = {
+        lat: guessLat,
+        lng: guessLng,
+        distance,
+        score
       };
 
-      // 1. Guardem la jugada de l'usuari (sense actualitzar el totalScores)
-      await set(
-        ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`),
-        guess
-      );
+      const guessRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`);
+      await set(guessRef, baseGuess);
+
+      // 2. En segon pla (sense bloquejar), calculem les ciutats i les afegim.
+      // Així el joc pot continuar, però la IA tindrà les dades per a la cançó final.
+      Promise.all([
+        getLocationName(guessLat, guessLng, room.gameMode || 'world'),
+        getLocationName(actual.lat, actual.lng, room.gameMode || 'world')
+      ]).then(([guessCountry, actualCountry]) => {
+        update(guessRef, { guessCountry, actualCountry }).catch(e => console.log('Error actualitzant zones', e));
+      });
 
       // 2. Comprovem si som els PRIMERS a endevinar
       const existingGuesses = room.rounds?.[room.currentRound]?.guesses || {};
@@ -357,7 +358,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         gameState: 'playing',
         roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
       });
-}
+    }
   }, [room, isHost, roomId]);
 
   // ── GUARDAR ESTADÍSTIQUES AL FINAL DE LA PARTIDA ────────────────────────
@@ -370,7 +371,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const myTotalScore = room.totalScores?.[playerId] || 0;
 
       // 2. Recopilem quants punts hem fet a cadascuna de les 5 rondes
-      const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx => 
+      const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx =>
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
 
@@ -425,12 +426,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }
 
   if (room.gameState === 'finished') {
-    return <FinalResults 
+    return <FinalResults
       roomId={roomId}
-      room={room} 
-      playerId={playerId} 
-      onRestart={generateLocations} 
-      isHost={isHost} 
+      room={room}
+      playerId={playerId}
+      onRestart={generateLocations}
+      isHost={isHost}
     />;
   }
 
@@ -472,14 +473,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
       {/* ⏱️ EL RELLOTGE I ALERTA DE PÀNIC */}
       {timeLeft !== null && room.gameState === 'playing' && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center pointer-events-none">
-          <div className={`px-6 py-3 rounded-full font-black text-3xl shadow-2xl transition-all duration-300 ${
-            timeLeft <= 15 
-              ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]' 
-              : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
-          }`}>
+          <div className={`px-6 py-3 rounded-full font-black text-3xl shadow-2xl transition-all duration-300 ${timeLeft <= 15
+            ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]'
+            : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
+            }`}>
             ⏱️ {timeLeft}s
           </div>
-          
+
           {/* Missatge si l'altre ha tirat i a tu et queda poc temps */}
           {timeLeft <= 15 && !hasGuessed && !isSinglePlayer && (
             <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
@@ -496,7 +496,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           pointerEvents: 'none', animation: 'fadeIn 0.2s ease-out'
         }}>
           <div style={{
-            background: 'rgba(239, 68, 68, 0.9)', backdropFilter: 'blur(10px)', border: '4px solid #fca5a5', 
+            background: 'rgba(239, 68, 68, 0.9)', backdropFilter: 'blur(10px)', border: '4px solid #fca5a5',
             borderRadius: '30px', padding: '40px 60px', textAlign: 'center', boxShadow: '0 0 100px rgba(239, 68, 68, 1)',
             animation: 'pulse 0.5s infinite'
           }}>
@@ -550,10 +550,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
       </div>
 
       {showGuessMap && mapsReady && (
-        <GuessMap 
-          onGuess={submitGuess} 
+        <GuessMap
+          onGuess={submitGuess}
           onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }} // 👈 AFEGIT: Actualitza la nostra memòria en temps real
-          onClose={() => setShowGuessMap(false)} 
+          onClose={() => setShowGuessMap(false)}
           gameMode={room.gameMode}
         />
       )}
