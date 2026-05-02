@@ -123,6 +123,25 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
     }
   }, [iWon, playCelebration, playDecepcion, stopAllMusic]);
 
+  // Funció per convertir números a text en català perquè Suno els canti bé
+  const numberToCatalan = (n: number): string => {
+    if (n === 0) return 'zero';
+    const units = ['', 'un', 'dos', 'tres', 'quatre', 'cinc', 'sis', 'set', 'vuit', 'nou'];
+    const tens = ['', 'deu', 'vint', 'trenta', 'quaranta', 'cinquanta', 'seixanta', 'setanta', 'vuitanta', 'noranta'];
+    const specials: Record<number, string> = {
+      11: 'onze', 12: 'dotze', 13: 'tretze', 14: 'catorze', 15: 'quinze', 16: 'setze', 17: 'disset', 18: 'divuit', 19: 'dinou',
+      21: 'vint-i-un', 22: 'vint-i-dos', 23: 'vint-i-tres', 24: 'vint-i-quatre', 25: 'vint-i-cinc', 26: 'vint-i-sis', 27: 'vint-i-set', 28: 'vint-i-vuit', 29: 'vint-i-nou'
+    };
+    if (n < 10) return units[n];
+    if (n <= 29 && specials[n]) return specials[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? '-' + units[n % 10] : '');
+    if (n === 100) return 'cent';
+    if (n < 1000) return (Math.floor(n / 100) === 1 ? 'cent' : units[Math.floor(n / 100)] + '-cents') + (n % 100 !== 0 ? ' ' + numberToCatalan(n % 100) : '');
+    if (n === 1000) return 'mil';
+    if (n < 1000000) return (Math.floor(n / 1000) === 1 ? 'mil' : numberToCatalan(Math.floor(n / 1000)) + ' mil') + (n % 1000 !== 0 ? ' ' + numberToCatalan(n % 1000) : '');
+    return n.toString();
+  };
+
   // Lògica de la Cançó Satírica
   const handleGenerateSong = async () => {
     if (!isHost) return;
@@ -143,7 +162,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
           }
         }
         if (maxDist > 0) {
-          return `- Jugador: ${p.name}\n  Lloc de la foto: ${worstActualCountry}\n  On ha posat el pin: ${worstGuessCountry}\n  Distància de l'error: ${Math.round(maxDist)} quilòmetres\n`;
+          const distWords = numberToCatalan(Math.round(maxDist));
+          return `- Jugador: ${p.name}\n  Lloc de la foto: ${worstActualCountry}\n  On ha posat el pin: ${worstGuessCountry}\n  Distància de l'error: ${distWords} quilòmetres\n`;
         }
         return `- Jugador: ${p.name} (ha jugat perfecte i no ha fallat gens)\n`;
       }).join('\\n');
