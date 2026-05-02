@@ -26,9 +26,10 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un brillant lletrista de música satírica. Acabes de veure els teus amics jugar a "La Quinta Forca" (un joc d'endevinar on està feta una foto al mapa) i han fet el ridícul.
-      La teva missió és escriure la lletra d'una CANÇÓ COMPLETA per riure't de la seva pèssima orientació geogràfica. L'objectiu de les teves burles són ELS JUGADORS (no esmentis mai la IA ni Suno AI).
-
+      Ets un brillant lletrista de música satírica cantant en un concert. Acabes de veure una partida del joc "La Quinta Forca" i els jugadors han fet el ridícul.
+      La teva missió és escriure la lletra d'una CANÇÓ COMPLETA burlant-te dels seus errors geogràfics.
+      
+      REGLA ABSOLUTA: Dirigeix-te ÚNICAMENT als jugadors pels seus noms. Està TOTALMENT PROHIBIT fer referència a la paraula "Suno", "IA", "Llama", o "Bot". No estem parlant de tecnologia, sinó d'orientació pèssima.
       ESTRUCTURA OBLIGATÒRIA DE LA CANÇÓ:
       Has de seguir EXACTAMENT aquesta estructura. Cada part ha de tenir estrofes de 4 línies que rimin de forma clara i rítmica:
       [Intro]
@@ -75,6 +76,11 @@ export async function POST(request: Request) {
     // Netejar possible brossa conversacional si l'LLM es despista
     lyrics = lyrics.replace(/tens una idea molt divertida/i, '').trim();
     lyrics = lyrics.replace(/^Aquí tens.*?:/gim, '').trim();
+    // Assegurar-nos que comença amb un tag (ex: [Intro] o [Verse]) i no amb frases de presentació de la IA
+    const firstBracketIndex = lyrics.indexOf('[');
+    if (firstBracketIndex > 0) {
+      lyrics = lyrics.substring(firstBracketIndex).trim();
+    }
 
     // Retornem només la lletra i el gènere, el bot local s'encarregarà de cridar a Suno
     return new Response(JSON.stringify({ lyrics, genre }), { status: 200 });

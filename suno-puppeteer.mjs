@@ -45,15 +45,15 @@ async function initBrowser() {
       '--disable-gpu'
     ]
   });
-  
+
   // Reutilitzar la pestanya per defecte en comptes d'obrir-ne de noves
   const pages = await browser.pages();
   page = pages[0] || await browser.newPage();
   await page.bringToFront();
-  
+
   console.log("🌐 Navegador obert. Anant a Suno...");
   await page.goto('https://suno.com/create', { waitUntil: 'domcontentloaded', timeout: 60000 });
-  
+
   console.log("\n=======================================================");
   console.log("⚠️ ATENCIÓ: Si és el teu primer cop, fes LOGIN a Suno manualment (recomanat Discord).");
   console.log("Un cop tinguis la sessió iniciada, el bot començarà a treballar automàticament.");
@@ -66,25 +66,25 @@ async function processSongRequest(roomId, songState) {
     return;
   }
   isProcessing = true;
-  
+
   try {
     await initBrowser();
     await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_music' });
     console.log(`📝 Processant cançó per a la sala ${roomId}. Gènere: ${songState.genre}`);
-    
+
     await page.bringToFront();
     if (!page.url().includes('/create')) {
       await page.goto('https://suno.com/create', { waitUntil: 'domcontentloaded', timeout: 60000 });
     }
 
     await new Promise(r => setTimeout(r, 6000));
-    
+
     // Tancar cookies si molesten
     const btns = await page.$$('button');
     for (const btn of btns) {
       const text = await page.evaluate(el => el.textContent, btn);
       if (text && text.toLowerCase().includes('accept all')) {
-        await btn.click().catch(() => {});
+        await btn.click().catch(() => { });
       }
     }
 
@@ -94,7 +94,7 @@ async function processSongRequest(roomId, songState) {
     for (const btn of allButtons) {
       const text = await page.evaluate(el => el.textContent, btn);
       if (text && (text.includes('+ Lyrics') || text.includes('Advanced'))) {
-        await btn.click().catch(() => {});
+        await btn.click().catch(() => { });
         await new Promise(r => setTimeout(r, 1000));
       }
     }
@@ -108,14 +108,14 @@ async function processSongRequest(roomId, songState) {
     }
 
     console.log("✍️ Escrivint lletra i estil...");
-    
+
     // Normalment en Custom Mode, textareas[0] és Lyrics i textareas[1] és Style (si és textarea)
     if (textareas.length >= 1) {
       await textareas[0].click({ clickCount: 3 });
       await page.keyboard.press('Backspace');
       await textareas[0].type(songState.lyrics, { delay: 5 });
     }
-    
+
     if (textareas.length >= 2) {
       await textareas[1].click({ clickCount: 3 });
       await page.keyboard.press('Backspace');
@@ -149,7 +149,7 @@ async function processSongRequest(roomId, songState) {
         break;
       }
     }
-    
+
     if (!clicked) throw new Error("No s'ha trobat el botó de generar.");
 
     // Activem l'interceptor de respostes de xarxa per pescar l'MP3 directament de l'API de Suno
@@ -158,24 +158,28 @@ async function processSongRequest(roomId, songState) {
     const responseHandler = async (response) => {
       try {
         const url = response.url();
-        // Busquem les respostes de l'API de Suno que contenen la informació de les cançons
         if (url.includes('/api/feed') || url.includes('/api/generate')) {
-          const json = await response.json().catch(() => null);
-          if (json) {
-            const str = JSON.stringify(json);
-            // Busquem qualsevol URL d'àudio que no sigui el silenci (sil-100)
-            const match = str.match(/https:\/\/cdn1\.suno\.ai\/[^"'\s]+\.mp3/g);
-            if (match) {
-              for (const m of match) {
-                if (!m.includes('sil-100')) {
-                  audioUrl = m;
-                  break;
-                }
+          const clips = await response.json().catch(() => null);
+          if (Array.isArray(clips) && clips.length > 0) {
+            // Busquem exclusivament clips que estiguin TOTALMENT COMPLETATS i no siguin silenci
+            const completedClip = clips.find(c =>
+              (c.status === 'complete' || c.status === 'COMPLETE') &&
+              c.audio_url &&
+              !c.audio_url.includes('sil-100')
+            );
+
+            if (completedClip) {
+              audioUrl = completedClip.audio_url;
+            } else {
+              // Si encara s'està generant, ignorem i esperem al proper "poll" que fa la web de Suno
+              const streamingClip = clips.find(c => c.status === 'streaming');
+              if (streamingClip) {
+                console.log("  ...Suno està generant (streaming)... esperant la versió completa.");
               }
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     page.on('response', responseHandler);
@@ -186,30 +190,30 @@ async function processSongRequest(roomId, songState) {
     while (attempts < 60 && !audioUrl) {
       attempts++;
       await new Promise(r => setTimeout(r, 4000));
-      
+
       if (audioUrl) {
         console.log(`🎉 Àudio REAL trobat per xarxa! URL: ${audioUrl}`);
         break;
       }
     }
-    
+
     // Netejem l'interceptor
     page.off('response', responseHandler);
 
     if (!audioUrl) throw new Error("Timeout: No s'ha trobat cap etiqueta d'àudio a la pàgina després de generar.");
 
     // Acabar i penjar
-    await update(ref(db, `rooms/${roomId}/songState`), { 
-      status: 'ready', 
-      audioUrl 
+    await update(ref(db, `rooms/${roomId}/songState`), {
+      status: 'ready',
+      audioUrl
     });
     console.log(`✅ Procés completat per a la sala ${roomId}.`);
 
   } catch (error) {
     console.error(`❌ Error processant la petició: ${error.message}`);
-    await update(ref(db, `rooms/${roomId}/songState`), { 
-      status: 'error', 
-      error: error.message 
+    await update(ref(db, `rooms/${roomId}/songState`), {
+      status: 'error',
+      error: error.message
     });
   } finally {
     isProcessing = false;
@@ -218,7 +222,7 @@ async function processSongRequest(roomId, songState) {
 
 async function startBot() {
   console.log("🎵 Inicialitzant Suno Puppeteer Bot...");
-  
+
   try {
     await signInAnonymously(auth);
     console.log("✅ Connectat a Firebase.");
@@ -246,7 +250,7 @@ async function startBot() {
   onValue(roomsRef, async (snapshot) => {
     if (!snapshot.exists()) return;
     const rooms = snapshot.val();
-    
+
     for (const roomId of Object.keys(rooms)) {
       const room = rooms[roomId];
       if (room.songState?.status === 'waiting_for_bot') {
