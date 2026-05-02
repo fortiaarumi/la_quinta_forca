@@ -33,10 +33,10 @@ async function initBrowser() {
   if (browser) return;
   console.log("🚀 Iniciant navegador Chrome (Això pot trigar una mica el primer cop)...");
   browser = await puppeteer.launch({
-    headless: false, // Ha de ser false per evitar bloquejos i permetre a l'usuari fer el primer login
-    userDataDir: './suno-chrome-profile', // Guarda la sessió per no haver de fer login cada cop
+    headless: false,
+    userDataDir: './suno-chrome-profile',
     defaultViewport: null,
-    timeout: 60000, // Donem 60 segons en lloc de 30 per si l'ordinador va lent
+    timeout: 60000,
     args: [
       '--start-maximized',
       '--no-sandbox',
@@ -46,21 +46,15 @@ async function initBrowser() {
     ]
   });
   
-  page = await browser.newPage();
+  // Reutilitzar la pestanya per defecte en comptes d'obrir-ne de noves
+  const pages = await browser.pages();
+  page = pages[0] || await browser.newPage();
   
-  // Interceptar respostes de xarxa per pescar l'àudio
-  page.on('response', async (response) => {
-    const url = response.url();
-    if (url.includes('/api/feed/') || url.includes('/api/generate/')) {
-      // Això ho deixem per si cal debugar, però Suno canvia molt les rutes
-    }
-  });
-
   console.log("🌐 Navegador obert. Anant a Suno...");
   await page.goto('https://suno.com/create', { waitUntil: 'networkidle2' });
   
   console.log("\n=======================================================");
-  console.log("⚠️ ATENCIÓ: Si és el teu primer cop, has de fer LOGIN a Suno manualment a la finestra que s'ha obert!");
+  console.log("⚠️ ATENCIÓ: Si és el teu primer cop, fes LOGIN a Suno manualment (recomanat Discord).");
   console.log("Un cop tinguis la sessió iniciada, el bot començarà a treballar automàticament.");
   console.log("=======================================================\n");
 }
@@ -74,79 +68,90 @@ async function processSongRequest(roomId, songState) {
   
   try {
     await initBrowser();
-    
-    // Indicar que estem treballant
     await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_music' });
     console.log(`📝 Processant cançó per a la sala ${roomId}. Gènere: ${songState.genre}`);
     
-    // 1. Assegurar-nos que estem a la pàgina de creació
     if (!page.url().includes('/create')) {
       await page.goto('https://suno.com/create', { waitUntil: 'networkidle2' });
     }
 
-    // Esperar a que la pàgina carregui bé
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 4000));
     
-    // 2. Comprovar si estem en mode "Custom" (Lletres personalitzades)
-    // El botó de Custom ha d'estar activat.
-    const customSwitchSelector = 'button[role="switch"]'; // Suno sol tenir un switch o botó per Custom Mode
-    // Comprovem si hi ha un textarea per a lletres (lyrics)
-    let hasLyricsArea = await page.$('textarea[placeholder*="Lyrics"]');
+    // Tancar cookies si molesten
+    const btns = await page.$$('button');
+    for (const btn of btns) {
+      const text = await page.evaluate(el => el.textContent, btn);
+      if (text && text.toLowerCase().includes('accept all')) {
+        await btn.click().catch(() => {});
+      }
+    }
+
+    // Activar mode lletres buscant el botó "+ Lyrics" o "Advanced"
+    console.log("🔄 Buscant opció de lletres...");
+    const allButtons = await page.$$('button, div[role="button"], span[role="button"], div.cursor-pointer');
+    for (const btn of allButtons) {
+      const text = await page.evaluate(el => el.textContent, btn);
+      if (text && (text.includes('+ Lyrics') || text.includes('Advanced'))) {
+        await btn.click().catch(() => {});
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Buscar i omplir els inputs
+    const textareas = await page.$$('textarea');
+    if (textareas.length === 0) {
+      throw new Error("No s'ha trobat cap quadre de text per posar la lletra.");
+    }
+
+    console.log("✍️ Escrivint lletra i estil...");
     
-    if (!hasLyricsArea) {
-      console.log("🔄 Activant mode Custom (Lletres)...");
-      // Intentar fer clic al botó de 'Custom' (això depèn molt del disseny de Suno)
-      // Busquem un botó que digui 'Custom'
-      const customButtons = await page.$$('button');
-      for (const btn of customButtons) {
-        const text = await page.evaluate(el => el.textContent, btn);
-        if (text && text.toLowerCase().includes('custom')) {
-          await btn.click();
-          await new Promise(r => setTimeout(r, 1000));
+    // Normalment en Custom Mode, textareas[0] és Lyrics i textareas[1] és Style (si és textarea)
+    if (textareas.length >= 1) {
+      await textareas[0].click({ clickCount: 3 });
+      await page.keyboard.press('Backspace');
+      await textareas[0].type(songState.lyrics, { delay: 5 });
+    }
+    
+    if (textareas.length >= 2) {
+      await textareas[1].click({ clickCount: 3 });
+      await page.keyboard.press('Backspace');
+      await textareas[1].type(songState.genre, { delay: 5 });
+    } else {
+      // De vegades l'estil és un input normal
+      const inputs = await page.$$('input');
+      for (const input of inputs) {
+        const ph = await page.evaluate(el => el.getAttribute('placeholder') || '', input);
+        if (ph.toLowerCase().includes('style') || ph.toLowerCase().includes('genre')) {
+          await input.click({ clickCount: 3 });
+          await page.keyboard.press('Backspace');
+          await input.type(songState.genre, { delay: 5 });
           break;
         }
       }
     }
 
-    // Tornem a buscar l'àrea de text
-    hasLyricsArea = await page.$('textarea[placeholder*="Lyrics"]');
-    if (!hasLyricsArea) {
-      throw new Error("No s'ha trobat el quadre de text per posar la lletra. Pots haver de fer login o l'interfície de Suno ha canviat.");
+    // Títol
+    const inputs = await page.$$('input');
+    for (const input of inputs) {
+      const ph = await page.evaluate(el => el.getAttribute('placeholder') || '', input);
+      if (ph.toLowerCase().includes('title')) {
+        await input.click({ clickCount: 3 });
+        await page.keyboard.press('Backspace');
+        await input.type('Sátira La Quinta Forca', { delay: 5 });
+        break;
+      }
     }
 
-    // 3. Omplir la lletra
-    console.log("✍️ Escrivint lletra...");
-    // Buidar l'àrea primer
-    await page.click('textarea[placeholder*="Lyrics"]', { clickCount: 3 });
-    await page.keyboard.press('Backspace');
-    await page.type('textarea[placeholder*="Lyrics"]', songState.lyrics, { delay: 10 });
-    
-    // 4. Omplir l'estil (Genre)
-    console.log("🎸 Escrivint estil...");
-    const styleInputs = await page.$$('input[placeholder*="Style"], input[placeholder*="Genre"]');
-    if (styleInputs.length > 0) {
-      await styleInputs[0].click({ clickCount: 3 });
-      await styleInputs[0].press('Backspace');
-      await styleInputs[0].type(songState.genre, { delay: 10 });
-    } else {
-      console.log("⚠️ No s'ha trobat l'input d'estil, provant textareas genèriques...");
-    }
-
-    // 5. Títol de la cançó
-    const titleInputs = await page.$$('input[placeholder*="Title"]');
-    if (titleInputs.length > 0) {
-      await titleInputs[0].click({ clickCount: 3 });
-      await titleInputs[0].press('Backspace');
-      await titleInputs[0].type('Sátira de La Quinta Forca', { delay: 10 });
-    }
-
-    // 6. Fer clic a Generate / Create
+    // Crear
     console.log("▶️ Fent clic a Crear Cançó...");
     let clicked = false;
-    const generateButtons = await page.$$('button');
-    for (const btn of generateButtons) {
+    const createBtns = await page.$$('button');
+    for (let i = createBtns.length - 1; i >= 0; i--) {
+      const btn = createBtns[i];
       const text = await page.evaluate(el => el.textContent, btn);
-      if (text && (text.toLowerCase().includes('create') || text.toLowerCase().includes('generate'))) {
+      if (text && (text.toLowerCase().trim() === 'create' || text.toLowerCase().includes('generate'))) {
         await btn.click();
         clicked = true;
         break;
@@ -155,8 +160,8 @@ async function processSongRequest(roomId, songState) {
     
     if (!clicked) throw new Error("No s'ha trobat el botó de generar.");
 
-    // 7. Esperar a que l'àudio aparegui
-    console.log("⏳ Esperant a que Suno acabi de generar la música (pot trigar fins a 2-3 minuts)...");
+    console.log("⏳ Esperant la música (pot trigar fins a 2 minuts)...");
+
     
     // Esperem 15 segons inicials per donar temps a que aparegui a la llista
     await new Promise(r => setTimeout(r, 15000));
