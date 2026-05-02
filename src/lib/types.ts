@@ -9,6 +9,8 @@ export interface PlayerGuess {
   lng: number;
   distance: number;
   score: number;
+  guessCountry?: string;
+  actualCountry?: string;
 }
 
 export interface RoundData {

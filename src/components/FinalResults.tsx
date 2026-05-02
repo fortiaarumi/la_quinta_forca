@@ -130,11 +130,20 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       // Recopilar les pitjors tirades per al prompt
       const guesses = Object.entries(room.players).map(([id, p]) => {
         let maxDist = 0;
+        let worstGuessCountry = '';
+        let worstActualCountry = '';
         for (let i = 0; i < 5; i++) {
-          const dist = room.rounds?.[i]?.guesses?.[id]?.distance || 0;
-          if (dist > maxDist) maxDist = dist;
+          const guessObj = room.rounds?.[i]?.guesses?.[id];
+          if (guessObj && guessObj.distance > maxDist) {
+            maxDist = guessObj.distance;
+            worstGuessCountry = guessObj.guessCountry || "lloc desconegut";
+            worstActualCountry = guessObj.actualCountry || "lloc desconegut";
+          }
         }
-        return `${p.name} ha arribat a fallar per ${Math.round(maxDist)} km.`;
+        if (maxDist > 0) {
+          return `${p.name} ha fallat per ${Math.round(maxDist)} km (La foto era a ${worstActualCountry} però ha tirat a ${worstGuessCountry}).`;
+        }
+        return `${p.name} ha jugat perfecte i no ha fallat gens.`;
       }).join('\\n');
 
       const res = await fetch('/api/generate-song', {

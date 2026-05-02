@@ -49,9 +49,10 @@ async function initBrowser() {
   // Reutilitzar la pestanya per defecte en comptes d'obrir-ne de noves
   const pages = await browser.pages();
   page = pages[0] || await browser.newPage();
+  await page.bringToFront();
   
   console.log("🌐 Navegador obert. Anant a Suno...");
-  await page.goto('https://suno.com/create', { waitUntil: 'networkidle2' });
+  await page.goto('https://suno.com/create', { waitUntil: 'domcontentloaded', timeout: 60000 });
   
   console.log("\n=======================================================");
   console.log("⚠️ ATENCIÓ: Si és el teu primer cop, fes LOGIN a Suno manualment (recomanat Discord).");
@@ -71,11 +72,12 @@ async function processSongRequest(roomId, songState) {
     await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_music' });
     console.log(`📝 Processant cançó per a la sala ${roomId}. Gènere: ${songState.genre}`);
     
+    await page.bringToFront();
     if (!page.url().includes('/create')) {
-      await page.goto('https://suno.com/create', { waitUntil: 'networkidle2' });
+      await page.goto('https://suno.com/create', { waitUntil: 'domcontentloaded', timeout: 60000 });
     }
 
-    await new Promise(r => setTimeout(r, 4000));
+    await new Promise(r => setTimeout(r, 6000));
     
     // Tancar cookies si molesten
     const btns = await page.$$('button');
@@ -132,17 +134,7 @@ async function processSongRequest(roomId, songState) {
       }
     }
 
-    // Títol
-    const inputs = await page.$$('input');
-    for (const input of inputs) {
-      const ph = await page.evaluate(el => el.getAttribute('placeholder') || '', input);
-      if (ph.toLowerCase().includes('title')) {
-        await input.click({ clickCount: 3 });
-        await page.keyboard.press('Backspace');
-        await input.type('Sátira La Quinta Forca', { delay: 5 });
-        break;
-      }
-    }
+    // Deixem que Suno posi el títol automàticament per evitar sobreescriure l'estil
 
     // Crear
     console.log("▶️ Fent clic a Crear Cançó...");
@@ -160,31 +152,49 @@ async function processSongRequest(roomId, songState) {
     
     if (!clicked) throw new Error("No s'ha trobat el botó de generar.");
 
+    // Activem l'interceptor de respostes de xarxa per pescar l'MP3 directament de l'API de Suno
+    // Així no depenem de si el botó de Play està visible o no
+    let audioUrl = null;
+    const responseHandler = async (response) => {
+      try {
+        const url = response.url();
+        // Busquem les respostes de l'API de Suno que contenen la informació de les cançons
+        if (url.includes('/api/feed') || url.includes('/api/generate')) {
+          const json = await response.json().catch(() => null);
+          if (json) {
+            const str = JSON.stringify(json);
+            // Busquem qualsevol URL d'àudio que no sigui el silenci (sil-100)
+            const match = str.match(/https:\/\/cdn1\.suno\.ai\/[^"'\s]+\.mp3/g);
+            if (match) {
+              for (const m of match) {
+                if (!m.includes('sil-100')) {
+                  audioUrl = m;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    page.on('response', responseHandler);
+
     console.log("⏳ Esperant la música (pot trigar fins a 2 minuts)...");
 
-    
-    // Esperem 15 segons inicials per donar temps a que aparegui a la llista
-    await new Promise(r => setTimeout(r, 15000));
-    
-    let audioUrl = null;
     let attempts = 0;
-    
-    // Busquem etiquetes d'àudio a la pàgina periòdicament
     while (attempts < 60 && !audioUrl) {
       attempts++;
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 4000));
       
-      const audios = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('audio')).map(a => a.src).filter(src => src && src.includes('suno'));
-      });
-      
-      if (audios.length > 0) {
-        // Agafem el més recent o el primer que surti
-        audioUrl = audios[0];
-        console.log(`🎉 Àudio trobat a la web! URL: ${audioUrl}`);
+      if (audioUrl) {
+        console.log(`🎉 Àudio REAL trobat per xarxa! URL: ${audioUrl}`);
         break;
       }
     }
+    
+    // Netejem l'interceptor
+    page.off('response', responseHandler);
 
     if (!audioUrl) throw new Error("Timeout: No s'ha trobat cap etiqueta d'àudio a la pàgina després de generar.");
 

@@ -251,6 +251,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     currentRound: 0,
     totalScores: initialScores,
     rounds: null,
+    songState: null,
     roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
   });
 }, [mapsReady, roomId, room]);;
@@ -263,6 +264,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }, [room?.gameState, mapsReady, isSinglePlayer, isHost]);
 
   // ── ENVIAR LA JUGADA (Sense sumar punts i activant el pànic) ────────────
+  const getCountryName = async (lat: number, lng: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const geocoder = new (google.maps as any).Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+        if (status === 'OK' && results && results.length > 0) {
+          for (const component of results[0].address_components) {
+            if (component.types.includes('country')) {
+              resolve(component.long_name);
+              return;
+            }
+          }
+          resolve(results[0].formatted_address.split(',').pop()?.trim() || "Desconegut");
+        } else {
+          resolve("Mig de l'oceà");
+        }
+      });
+    });
+  };
+
   const submitGuess = useCallback(
     async (guessLat: number, guessLng: number) => {
       if (!room?.locations || hasGuessed) return;
@@ -272,7 +292,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
       // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
       const score = calculateScore(distance, room.gameMode);
 
-      const guess: PlayerGuess = { lat: guessLat, lng: guessLng, distance, score };
+      // Obtenim els països asíncronament
+      const guessCountry = await getCountryName(guessLat, guessLng);
+      const actualCountry = await getCountryName(actual.lat, actual.lng);
+
+      const guess: PlayerGuess = { 
+        lat: guessLat, 
+        lng: guessLng, 
+        distance, 
+        score,
+        guessCountry,
+        actualCountry
+      };
 
       // 1. Guardem la jugada de l'usuari (sense actualitzar el totalScores)
       await set(

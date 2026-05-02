@@ -29,12 +29,15 @@ export async function POST(request: Request) {
       Ets un amic molt cabró i sarcàstic que acaba de jugar a "La Quinta Forca" (un joc de localitzar llocs al mapa). 
       Escriu la lletra d'una cançó per riure't sense pietat a la cara dels jugadors per la seva ignorància geogràfica.
       La lletra ha de tenir entre 8 i 12 línies ben rítmiques i que RIMIN de forma clara i directa.
-      IMPORTANT: Sigues descriptiu, directe i molt brètol amb els errors concrets. NO siguis filosòfic ni poètic. Has de ser molt col·loquial, insultant la seva pèssima orientació i detallant els quilòmetres que han fallat tal com t'indico aquí.
+      IMPORTANT: Sigues descriptiu, directe i molt brètol amb els errors concrets. NO siguis filosòfic ni poètic. Has de ser molt col·loquial, insultant la seva pèssima orientació.
+      
+      ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i ELS PAÏSOS REALS on era la foto i on han tirat ells.
+      Fes sàtira fent servir aquests noms de països reals per riure-te'n de com algú pot confondre X amb Y.
       
       Aquests han estat els errors reals d'aquesta partida:
       ${guesses}
       
-      La cançó ha de ser 100% en català molt col·loquial (pots fer servir algun insult lleu com 'tros de soca', 'inútils', 'cecs', etc.).
+      La cançó ha de ser 100% en català molt col·loquial (pots fer servir algun insult lleu com 'tros de soca', 'inútils', 'cecs', 'poca-soltes').
       NO posis títols ni indicacions com [Verse] o [Chorus]. Només la lletra de la cançó perquè es pugui cantar directament.
     `;
 
