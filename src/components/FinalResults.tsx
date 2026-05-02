@@ -393,7 +393,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                       </h3>
                       <p>Torna a la terminal i posa el bot en marxa amb aquest comandament:</p>
                       <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400">
-                        node suno-puppeteer.mjs
+                        node --env-file=.env.local suno-puppeteer.mjs
                       </pre>
                       <p className="text-xs text-yellow-400 mt-2 font-bold">⚠️ EL PRIMER COP QUE L'OBRIS:</p>
                       <ol className="text-xs text-gray-400 list-decimal pl-5 space-y-1">
