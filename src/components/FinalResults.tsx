@@ -499,6 +499,18 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
                 </div>
 
                 <div className="flex items-center gap-2 mb-4 justify-center">
+                  <button 
+                    onClick={() => {
+                      if (songRef.current) {
+                        songRef.current.currentTime = 0;
+                        songRef.current.play();
+                      }
+                    }}
+                    className="mr-2 text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded-full text-white transition-colors font-bold shadow-md shadow-indigo-500/20"
+                    title="Tornar a reproduir"
+                  >
+                    🔄 Repetir
+                  </button>
                   <span className="text-xs text-gray-400">Volum:</span>
                   <input 
                     type="range" 

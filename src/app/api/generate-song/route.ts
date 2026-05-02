@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i LES ZONES REALS (poden ser països, comarques o ciutats) on era la foto i on han tirat ells.
       Fes sàtira fent servir aquests noms reals per riure-te'n de com algú pot confondre X amb Y.
       Menciona ELS LLOCS EXACTES que et passo en la teva lletra.
+      PROHIBIT INVENTAR-SE ALTRES LLOCS: Si jo no esmento un poble, comarca o país concret, NO l'afegeixis a la cançó per farcir. Limita't estrictament a la informació que et dono.
       
       Aquests han estat els errors reals d'aquesta partida:
       ${guesses}
