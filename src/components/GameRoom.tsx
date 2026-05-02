@@ -264,18 +264,33 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }, [room?.gameState, mapsReady, isSinglePlayer, isHost]);
 
   // ── ENVIAR LA JUGADA (Sense sumar punts i activant el pànic) ────────────
-  const getCountryName = async (lat: number, lng: number): Promise<string> => {
+  const getLocationName = async (lat: number, lng: number, gameMode: string): Promise<string> => {
     return new Promise((resolve) => {
       const geocoder = new (google.maps as any).Geocoder();
       geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
         if (status === 'OK' && results && results.length > 0) {
-          for (const component of results[0].address_components) {
-            if (component.types.includes('country')) {
-              resolve(component.long_name);
-              return;
+          const components = results[0].address_components;
+          
+          if (gameMode === 'catalunya') {
+            let comarca = '';
+            let locality = '';
+            for (const comp of components) {
+              if (comp.types.includes('administrative_area_level_3')) comarca = comp.long_name;
+              if (comp.types.includes('locality')) locality = comp.long_name;
             }
+            if (comarca && locality) resolve(`${locality} (${comarca})`);
+            else if (comarca) resolve(`la comarca de ${comarca}`);
+            else if (locality) resolve(locality);
+            else resolve(results[0].formatted_address.split(',')[1]?.trim() || "Catalunya");
+          } else {
+            for (const comp of components) {
+              if (comp.types.includes('country')) {
+                resolve(comp.long_name);
+                return;
+              }
+            }
+            resolve(results[0].formatted_address.split(',').pop()?.trim() || "Desconegut");
           }
-          resolve(results[0].formatted_address.split(',').pop()?.trim() || "Desconegut");
         } else {
           resolve("Mig de l'oceà");
         }
@@ -292,9 +307,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
       // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
       const score = calculateScore(distance, room.gameMode);
 
-      // Obtenim els països asíncronament
-      const guessCountry = await getCountryName(guessLat, guessLng);
-      const actualCountry = await getCountryName(actual.lat, actual.lng);
+      // Obtenim les zones asíncronament segons el mode de joc
+      const guessCountry = await getLocationName(guessLat, guessLng, room.gameMode || 'world');
+      const actualCountry = await getLocationName(actual.lat, actual.lng, room.gameMode || 'world');
 
       const guess: PlayerGuess = { 
         lat: guessLat, 

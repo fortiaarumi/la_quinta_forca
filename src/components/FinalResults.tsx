@@ -29,6 +29,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
   const { playCelebration, playDecepcion, stopAllMusic } = useAudio();
   const [grayscale, setGrayscale] = useState(false);
   const songRef = useRef<HTMLAudioElement | null>(null);
+  const [songCurrentTime, setSongCurrentTime] = useState(0);
+  const [songDuration, setSongDuration] = useState(0);
 
   // Manual d'instal·lació
   const [showManual, setShowManual] = useState(false);
@@ -183,8 +185,22 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
       if (!songRef.current) {
         songRef.current = new Audio(room.songState.audioUrl);
       }
-      songRef.current.volume = songVolume;
-      songRef.current.play().catch(e => console.error("Auto-play prevengut pel navegador", e));
+      
+      const audio = songRef.current;
+      
+      const updateTime = () => setSongCurrentTime(audio.currentTime);
+      const updateDuration = () => setSongDuration(audio.duration);
+      
+      audio.addEventListener('timeupdate', updateTime);
+      audio.addEventListener('loadedmetadata', updateDuration);
+      
+      audio.volume = songVolume;
+      audio.play().catch(e => console.error("Auto-play prevengut pel navegador", e));
+      
+      return () => {
+        audio.removeEventListener('timeupdate', updateTime);
+        audio.removeEventListener('loadedmetadata', updateDuration);
+      };
     } else if (songRef.current) {
       songRef.current.pause();
     }
@@ -193,6 +209,13 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
   useEffect(() => {
     if (songRef.current) songRef.current.volume = songVolume;
   }, [songVolume]);
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div 
@@ -460,6 +483,21 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb`}
             {room.songState?.status === 'playing' && (
               <div className="text-left w-full mt-2 bg-black/40 p-4 rounded-lg">
                 <div className="text-green-400 font-bold text-center mb-2 animate-pulse">🔊 Sonant ara: Sàtira {room.songState.genre}</div>
+                
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-xs text-gray-400 mb-1">
+                    <span>{formatTime(songCurrentTime)}</span>
+                    <span>{formatTime(songDuration)}</span>
+                  </div>
+                  <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-green-500 h-full transition-all duration-300 ease-linear"
+                      style={{ width: `${songDuration > 0 ? (songCurrentTime / songDuration) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 mb-4 justify-center">
                   <span className="text-xs text-gray-400">Volum:</span>
                   <input 

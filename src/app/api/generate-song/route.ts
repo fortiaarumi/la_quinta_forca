@@ -31,9 +31,9 @@ export async function POST(request: Request) {
       La lletra ha de tenir entre 8 i 12 línies ben rítmiques i que RIMIN de forma clara i directa.
       IMPORTANT: Sigues descriptiu, directe i molt brètol amb els errors concrets. NO siguis filosòfic ni poètic. Has de ser molt col·loquial, insultant la seva pèssima orientació.
       
-      ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i ELS PAÏSOS REALS on era la foto i on han tirat ells.
-      Fes sàtira fent servir aquests noms de països reals per riure-te'n de com algú pot confondre X amb Y.
-      Menciona ELS PAÏSOS EXACTES que et passo en la teva lletra.
+      ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i LES ZONES REALS (poden ser països, comarques o ciutats) on era la foto i on han tirat ells.
+      Fes sàtira fent servir aquests noms reals per riure-te'n de com algú pot confondre X amb Y.
+      Menciona ELS LLOCS EXACTES que et passo en la teva lletra.
       
       Aquests han estat els errors reals d'aquesta partida:
       ${guesses}
