@@ -26,22 +26,38 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un amic molt cabró i sarcàstic que acaba de jugar a "La Quinta Forca" (un joc de localitzar llocs al mapa). 
-      Escriu la lletra d'una cançó per riure't sense pietat a la cara dels jugadors per la seva ignorància geogràfica.
-      La lletra ha de tenir entre 8 i 12 línies ben rítmiques i que RIMIN de forma clara i directa.
-      IMPORTANT: Sigues descriptiu, directe i molt brètol amb els errors concrets. NO siguis filosòfic ni poètic. Has de ser molt col·loquial, insultant la seva pèssima orientació.
+      Ets un brillant lletrista de música satírica. Acabes de veure els teus amics jugar a "La Quinta Forca" (un joc d'endevinar on està feta una foto al mapa) i han fet el ridícul.
+      La teva missió és escriure la lletra d'una CANÇÓ COMPLETA per a la intel·ligència artificial Suno AI, rient-te de la seva pèssima orientació geogràfica.
+
+      ESTRUCTURA OBLIGATÒRIA DE LA CANÇÓ:
+      Has de seguir EXACTAMENT aquesta estructura. Cada part ha de tenir estrofes de 4 línies que rimin de forma clara i rítmica:
+      [Intro]
+      [Verse]
+      [Pre-Chorus]
+      [Chorus]
+      [Verse]
+      [Pre-Chorus]
+      [Chorus]
+      [Bridge]
+      [Chorus]
+      [Outro]
+
+      REGLES CRÍTIQUES DE FORMAT:
+      1. Has d'incloure els tags de dalt (ex: [Chorus]) perquè Suno AI sàpiga com cantar-ho.
+      2. Posa veus secundàries/cors entre parèntesis. Exemple: "(no hi toques!)".
+      3. ELS NÚMEROS MAI ES PODEN ESCRIURE EN XIFRES. Converteix sempre els quilòmetres a paraules. Exemple: si diu "207", escriu "dos-cents set quilòmetres".
+      4. Fes servir un català molt col·loquial, directe, ple de sàtira i amb insults lleus (tros de soca, inútil, cec, penós, etc.).
       
-      ATENCIÓ: Jo et donaré a sota els quilòmetres reals que han fallat i LES ZONES REALS (poden ser països, comarques o ciutats) on era la foto i on han tirat ells.
-      Fes sàtira fent servir aquests noms reals per riure-te'n de com algú pot confondre X amb Y.
-      Menciona ELS LLOCS EXACTES que et passo en la teva lletra.
-      PROHIBIT INVENTAR-SE ALTRES LLOCS: Si jo no esmento un poble, comarca o país concret, NO l'afegeixis a la cançó per farcir. Limita't estrictament a la informació que et dono.
+      CONTEXT DEL JOC (MOLT IMPORTANT):
+      Els jugadors han vist una foto (Lloc Real) i han posat un pin al mapa (On han tirat). El teu objectiu és riure't de com poden arribar a confondre A amb B, assenyalant la distància de l'error.
       
-      Aquests han estat els errors reals d'aquesta partida:
+      ATENCIÓ - PROHIBIT INVENTAR-SE LLOCS: 
+      Només pots esmentar els noms dels jugadors i els llocs (països, pobles, comarques) que t'indico aquí sota. No t'inventis altres ciutats per fer rima.
+      
+      Aquests han estat els resultats d'aquesta partida:
       ${guesses}
       
-      La cançó ha de ser 100% en català molt col·loquial (pots fer servir algun insult lleu com 'tros de soca', 'inútils', 'cecs', 'poca-soltes').
-      NO posis títols ni indicacions com [Verse] o [Chorus]. 
-      RETORNA ÚNICAMENT I EXCLUSIVAMENT LA LLETRA DE LA CANÇÓ. NO FACIS CAP COMENTARI PREVI NI POSTERIOR, CAP SALUTACIÓ, NOMÉS LA LLETRA.
+      RETORNA ÚNICAMENT I EXCLUSIVAMENT LA LLETRA DE LA CANÇÓ AMB ELS TAGS. NO FACIS CAP COMENTARI PREVI NI POSTERIOR. NOMÉS LA LLETRA.
     `;
 
     console.log("=== PROMPT GEOGRÀFIC ENVIAT A L'LLM ===");

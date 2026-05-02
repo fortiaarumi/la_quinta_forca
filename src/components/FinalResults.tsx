@@ -143,9 +143,9 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
           }
         }
         if (maxDist > 0) {
-          return `${p.name} ha fallat per ${Math.round(maxDist)} km (La foto era a ${worstActualCountry} però ha tirat a ${worstGuessCountry}).`;
+          return `- Jugador: ${p.name}\n  Lloc de la foto: ${worstActualCountry}\n  On ha posat el pin: ${worstGuessCountry}\n  Distància de l'error: ${Math.round(maxDist)} quilòmetres\n`;
         }
-        return `${p.name} ha jugat perfecte i no ha fallat gens.`;
+        return `- Jugador: ${p.name} (ha jugat perfecte i no ha fallat gens)\n`;
       }).join('\\n');
 
       const res = await fetch('/api/generate-song', {
