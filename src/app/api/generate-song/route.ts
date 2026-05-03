@@ -28,16 +28,18 @@ export async function POST(request: Request) {
     const prompt = `
       Ets un lletrista brillant, sarcàstic i humorístic. Has d'escriure la lletra d'una CANÇÓ SATÍRICA per riure't d'uns jugadors que han fet una partida pèssima a un joc d'endevinar on s'ha fet una foto al mapa.
 
-      REGLES ESTRICTES DE FORMAT (CRÍTIQUES PER PODER-HO CANTAR BÉ):
-      1. MAI, SOTA CAP CONCEPTE, facis servir números en dígits (ex: 32, 100, 5000). Escriu-los SEMPRE TOT EN LLETRES (ex: trenta-dos, cent, cinc mil).
-      2. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
-      3. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà". Parla només dels jugadors i els seus errors de geografia.
-      4. El to ha de ser una sàtira intel·ligent, irònica i divertida en català col·loquial, sense caure en insults infantils o repetitius. Fes rimes enginyoses.
+      REGLES ESTRICTES DE FORMAT I CONTINGUT (CRÍTIQUES):
+      1. ÉS OBLIGATORI INCLOURE ELS NOMS DELS LLOCS EXACTES que t'indico a les dades. Has de mencionar explícitament "El lloc real" i "On ha posat el pin" dins de la lletra.
+      2. MAI, SOTA CAP CONCEPTE, facis servir números en dígits (ex: 32, 100). Escriu-los SEMPRE TOT EN LLETRES (ex: trenta-dos).
+      3. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
+      4. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà".
+      5. NO t'inventis cap ciutat ni país que no estigui a les dades.
 
-      CONTEXT DEL JOC:
-      Riu-te de com el jugador ha confós el "Lloc de la foto real" amb "On ha posat el pin el jugador". Fes befa de la distància cega en quilòmetres.
+      CONTEXT DEL JOC I COM FER LA BROMA:
+      Riu-te de la distància entre el lloc real i on ha posat el pin. 
+      ATENCIÓ: Si el país real i el país on ha posat el pin SÓN EL MATEIX (per exemple, la foto era als Estats Units i ha posat el pin als Estats Units), la teva burla s'ha de centrar en com és possible fallar per tants quilòmetres sense sortir del mateix país!
       
-      DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis ciutats noves per fer rima):
+      DADES REALS DE LA PARTIDA A INCLOURE OBLIGATÒRIAMENT:
       ${guesses}
 
       ESTRUCTURA OBLIGATÒRIA:
