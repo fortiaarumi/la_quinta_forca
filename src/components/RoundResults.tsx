@@ -285,16 +285,37 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
                 className={`rounded-xl p-4 ${isMe ? 'ring-2 ring-white/20' : ''}`}
                 style={{ background: `${color}18`, borderLeft: `3px solid ${color}` }}
               >
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-white font-bold text-sm truncate flex items-center gap-1.5">
-                    {player?.name}
-                    {(player as any)?.isAdmin && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.8)]">👑 ADMIN</span>}
-                    {isMe ? ' (Tu)' : ''}
-                  </span>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="relative">
+                    <div
+                      className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center"
+                      style={{ borderColor: `${color}40` }}
+                    >
+                      {player?.avatarUrl ? (
+                        <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs opacity-40">👤</span>
+                      )}
+                    </div>
+                    <div
+                      className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900"
+                      style={{ backgroundColor: color }}
+                    />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-white font-bold text-sm truncate flex items-center gap-1.5">
+                      {player?.name}
+                      {(player as any)?.isAdmin && <span className="text-[7px] bg-red-600 text-white px-1 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
+                      {isMe ? ' (Tu)' : ''}
+                    </span>
+                    {player?.badges && player.badges.length > 0 && (
+                      <div className="flex gap-1 overflow-hidden">
+                        {player.badges.slice(0, 2).map((b, bi) => (
+                          <span key={bi} className="text-[6px] text-indigo-300 font-bold uppercase truncate">🏅 {b}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {guess ? (
                   <>
@@ -316,11 +337,18 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
         {/* Total acumulat */}
         <div className="bg-gray-800 rounded-xl p-3 mb-4 flex justify-around">
           {playerIds.map((pid) => (
-            <div key={pid} className="text-center">
-              <div className="text-gray-400 text-xs mb-1 flex justify-center items-center gap-1">
-                {room.players[pid]?.name} {(room.players[pid] as any)?.isAdmin && '👑'}
+            <div key={pid} className="text-center flex flex-col items-center">
+              <div className="w-6 h-6 rounded-full overflow-hidden border border-white/10 mb-1">
+                {room.players[pid]?.avatarUrl ? (
+                  <img src={room.players[pid].avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gray-700 flex items-center justify-center text-[8px]">👤</div>
+                )}
               </div>
-              <div className="text-yellow-400 font-black text-lg">
+              <div className="text-gray-400 text-[10px] mb-0.5 flex justify-center items-center gap-1 max-w-[60px] truncate">
+                {room.players[pid]?.name}
+              </div>
+              <div className="text-yellow-400 font-black text-sm">
                 {(room.totalScores?.[pid] ?? 0).toLocaleString()}
               </div>
             </div>

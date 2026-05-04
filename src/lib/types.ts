@@ -20,6 +20,8 @@ export interface RoundData {
 export interface Player {
   name: string;
   joinedAt: number;
+  avatarUrl?: string; // 👈 NOU
+  badges?: string[];  // 👈 NOU
 }
 
 export type GameState =

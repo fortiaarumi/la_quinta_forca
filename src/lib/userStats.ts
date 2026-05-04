@@ -22,6 +22,10 @@ export interface UserProfile {
   bestScoreCultural_normal?: number;
   bestScoreCultural_infinit?: number;
   lastVideoUploadDate?: string;
+  avatarUrl?: string; // 👈 NOU
+  badges?: string[];  // 👈 NOU
+  totalGames?: number; // Per a l'insígnia de 10 partides
+  totalWins?: number;  // Per a l'insígnia de 50 victòries
 }
 
 export interface LeaderboardEntry {
@@ -29,6 +33,8 @@ export interface LeaderboardEntry {
   nickname: string;
   score: number;
   total5k?: number;
+  avatarUrl?: string; // 👈 NOU
+  badges?: string[];  // 👈 NOU
 }
 
 // Crea el perfil d'usuari nou a la base de dades
@@ -53,16 +59,17 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 // roundScores: array de puntuacions de cada ronda (per comptar els 5k)
 export async function updateUserStatsAfterGame(
   uid: string,
-  gameMode: GameMode | string, // Permetem string per si ve dels nous modes
+  gameMode: GameMode | string,
   timeMode: string,
   totalGameScore: number,
-  roundScores: number[]
+  roundScores: number[],
+  isWinner: boolean // 👈 NOU: Necessitem saber si ha guanyat
 ): Promise<void> {
   const profile: any = await getUserProfile(uid);
   if (!profile) return;
 
   // Construïm el nom de la caixa exacta depenent del mode i el temps
-  let bestField = `bestScoreWorld_${timeMode}`; // per defecte
+  let bestField = `bestScoreWorld_${timeMode}`;
   if (gameMode === 'catalunya') {
     bestField = `bestScoreCatalunya_${timeMode}`;
   } else if (gameMode === 'estadis') {
@@ -72,17 +79,52 @@ export async function updateUserStatsAfterGame(
   }
 
   const currentBest = profile[bestField] ?? 0;
-
   const updates: Record<string, any> = {};
 
-  // 👈 NOU: Només comptem els 5K si el mode és Món o Catalunya
+  // 1. Comptar 5K
   if (gameMode === 'world' || gameMode === 'catalunya') {
     const new5k = roundScores.filter((s) => s >= 5000).length;
     updates.total5k = (profile.total5k ?? 0) + new5k;
   }
 
+  // 2. Actualitzar millor puntuació
   if (totalGameScore > currentBest) {
     updates[bestField] = totalGameScore;
+  }
+
+  // 3. Increment de partides i victòries
+  updates.totalGames = (profile.totalGames ?? 0) + 1;
+  if (isWinner) {
+    updates.totalWins = (profile.totalWins ?? 0) + 1;
+  }
+
+  // 4. LÒGICA D'INSÍGNIES (Automàtica)
+  const currentBadges = profile.badges || [];
+  const newBadges = [...currentBadges];
+
+  // Brúixola d'Or (10 partides)
+  if (updates.totalGames >= 10 && !newBadges.includes("Brúixola d'Or")) {
+    newBadges.push("Brúixola d'Or");
+  }
+
+  // Ull de Lince (Un 5k perfecte)
+  const has5kThisRound = roundScores.some(s => s >= 5000);
+  if (has5kThisRound && !newBadges.includes("Ull de Lince")) {
+    newBadges.push("Ull de Lince");
+  }
+
+  // Pubilla/Hereu de la Forca (Guanyar a Catalunya)
+  if (gameMode === 'catalunya' && isWinner && !newBadges.includes("Pubilla/Hereu de la Forca")) {
+    newBadges.push("Pubilla/Hereu de la Forca");
+  }
+
+  // Llegendari (50 victòries)
+  if (updates.totalWins >= 50 && !newBadges.includes("Llegendari")) {
+    newBadges.push("Llegendari");
+  }
+
+  if (newBadges.length > currentBadges.length) {
+    updates.badges = newBadges;
   }
 
   await update(ref(db, `users/${uid}`), updates);
@@ -100,7 +142,13 @@ export async function getLeaderboard(mode: GameMode, limit = 10): Promise<Leader
     const data = child.val() as UserProfile;
     const score = data[field] ?? 0;
     if (score > 0) {
-      entries.push({ uid: child.key!, nickname: data.nickname, score });
+      entries.push({ 
+        uid: child.key!, 
+        nickname: data.nickname, 
+        score,
+        avatarUrl: data.avatarUrl,
+        badges: data.badges
+      });
     }
   });
 
@@ -117,7 +165,14 @@ export async function get5kMasters(limit = 10): Promise<LeaderboardEntry[]> {
   snap.forEach((child) => {
     const data = child.val() as UserProfile;
     if ((data.total5k ?? 0) > 0) {
-      entries.push({ uid: child.key!, nickname: data.nickname, score: 0, total5k: data.total5k });
+      entries.push({ 
+        uid: child.key!, 
+        nickname: data.nickname, 
+        score: 0, 
+        total5k: data.total5k,
+        avatarUrl: data.avatarUrl,
+        badges: data.badges
+      });
     }
   });
 

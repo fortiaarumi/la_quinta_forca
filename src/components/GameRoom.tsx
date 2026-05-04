@@ -387,13 +387,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
       // 1. Agafem la nostra puntuació total
       const myTotalScore = room.totalScores?.[playerId] || 0;
 
+      // 👈 NOU: Calculem si som el guanyador (tenim la puntuació més alta i > 0)
+      const allScores = Object.values(room.totalScores || {});
+      const maxScore = Math.max(...allScores);
+      const isWinner = myTotalScore === maxScore && myTotalScore > 0;
+
       // 2. Recopilem quants punts hem fet a cadascuna de les 5 rondes
       const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx =>
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
 
-      // 3. Enviem les dades al nostre perfil (afegim el timeMode)
-      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores)
+      // 3. Enviem les dades al nostre perfil (afegim el timeMode i isWinner)
+      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner)
         .then(() => console.log('Estadístiques guardades amb èxit!'))
         .catch(e => console.error('Error guardant estadístiques:', e));
     }

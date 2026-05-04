@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction, update, limitToLast, onDisconnect } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
@@ -22,7 +22,13 @@ function getOrCreateGuestId(): string {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, nickname, isAdmin, isGuest, logout } = useAuth();
+  const { 
+    user, nickname, avatarUrl, badges, isAdmin, logout, isGuest 
+  } = useAuth();
+  
+  // ── ESTATS PER A L'AVATAR ──
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 👈 AFEGIT: Agafem la funció per reproduir la música del menú i gestionar l'estat d'interacció
   const { playMenuMusic, isMuted, toggleMute, hasInteracted, setHasInteracted } = useAudio();
@@ -213,6 +219,35 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
+  
+  // ── PUJADA D'AVATAR A CLOUDINARY ──
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'la_quinta_forca_avatars');
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/ddvvk5jii/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.secure_url) {
+        // Apliquem la transformació via URL per si el preset no la té (150x150 fill)
+        const transformedUrl = data.secure_url.replace('/upload/', '/upload/c_fill,g_face,w_150,h_150/');
+        await update(ref(db, `users/${user.uid}`), { avatarUrl: transformedUrl });
+      }
+    } catch (error) {
+      console.error("Error pujant avatar:", error);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   // ── EL GUÀRDIA DE SEGURETAT DEL LÍMIT DIARI ──
   const MAX_DAILY_ROOMS = 500; // 👈 Pots canviar aquest límit al que tu vulguis
@@ -290,7 +325,9 @@ export default function HomeScreen() {
           await set(ref(db, `rooms/${code}/players/${playerId}`), {
             name: playerNameToJoin,
             joinedAt: Date.now(),
-            isAdmin: !!isAdmin
+            isAdmin: !!isAdmin,
+            avatarUrl: avatarUrl || undefined, // 👈 NOU
+            badges: badges || []               // 👈 NOU
           });
           await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
         }
@@ -402,7 +439,13 @@ export default function HomeScreen() {
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin } },
+        players: { [playerId]: { 
+          name: playerName.trim(), 
+          joinedAt: Date.now(), 
+          isAdmin: !!isAdmin,
+          avatarUrl: avatarUrl || undefined, // 👈 NOU
+          badges: badges || []               // 👈 NOU
+        } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: true, gameMode, timeMode,
       });
@@ -427,7 +470,13 @@ export default function HomeScreen() {
       const roomCode = generateRoomCode();
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin } },
+        players: { [playerId]: { 
+          name: playerName.trim(), 
+          joinedAt: Date.now(), 
+          isAdmin: !!isAdmin,
+          avatarUrl: avatarUrl || undefined, // 👈 NOU
+          badges: badges || []               // 👈 NOU
+        } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
         isPublic: isPublicRoom // 👈 Guardem l'estat del botó
@@ -461,7 +510,13 @@ export default function HomeScreen() {
           const existing = Object.keys((room as any).players || {});
 
           if (!existing.includes(playerId)) {
-            await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin });
+            await set(ref(db, `rooms/${code}/players/${playerId}`), { 
+              name: playerName.trim(), 
+              joinedAt: Date.now(), 
+              isAdmin: !!isAdmin,
+              avatarUrl: avatarUrl || undefined, // 👈 NOU
+              badges: badges || []               // 👈 NOU
+            });
             await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
           }
           router.push(`/room/${code}`);
@@ -491,7 +546,13 @@ export default function HomeScreen() {
         setError('La sala és plena (màxim 10 jugadors).'); return setLoading(false);
       }
       if (!existing.includes(playerId)) {
-        await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin });
+        await set(ref(db, `rooms/${code}/players/${playerId}`), { 
+          name: playerName.trim(), 
+          joinedAt: Date.now(), 
+          isAdmin: !!isAdmin,
+          avatarUrl: avatarUrl || undefined, // 👈 NOU
+          badges: badges || []               // 👈 NOU
+        });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
       router.push(`/room/${code}`);
@@ -629,24 +690,77 @@ export default function HomeScreen() {
             <>
               {/* Nom del jugador */}
               <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px 24px' }}>
-                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '10px' }}>
-                  {user ? 'Jugues com' : 'El teu nom'}
-                </label>
-                <input
-                  type="text"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder={user ? (nickname ?? 'Nom de jugador') : 'Introdueix el teu nom'}
-                  readOnly={!!user} // Si estàs loguejat, el nom ve del nickname
-                  maxLength={20}
-                  style={{
-                    width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '14px', padding: '14px 18px', color: 'white', fontSize: '18px',
-                    fontWeight: 800, outline: 'none', boxSizing: 'border-box',
-                    opacity: user ? 0.8 : 1,
-                    cursor: user ? 'default' : 'text',
-                  }}
-                />
+                <div className="flex items-center gap-5">
+                  {/* Avatar Circular */}
+                  <div className="relative group">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-500/30 bg-black/40 shadow-lg shadow-emerald-500/10 flex items-center justify-center">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-2xl opacity-40">👤</span>
+                      )}
+                      {uploadingAvatar && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    {user && (
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute -bottom-1 -right-1 bg-emerald-500 hover:bg-emerald-400 text-black p-1.5 rounded-full shadow-lg transition-all scale-0 group-hover:scale-100 active:scale-90"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
+                    )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleAvatarUpload} 
+                      accept="image/*" 
+                      className="hidden" 
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '8px' }}>
+                      {user ? 'Jugues com' : 'El teu nom'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={playerName}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        placeholder={user ? (nickname ?? 'Nom de jugador') : 'Introdueix el teu nom'}
+                        readOnly={!!user}
+                        maxLength={20}
+                        style={{
+                          width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: '14px', padding: '14px 18px', color: 'white', fontSize: '18px',
+                          fontWeight: 800, outline: 'none', boxSizing: 'border-box',
+                          opacity: user ? 0.8 : 1,
+                          cursor: user ? 'default' : 'text',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Secció d'Insígnies */}
+                {badges.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/5">
+                    {badges.map((badge, i) => (
+                      <span 
+                        key={i} 
+                        className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm"
+                      >
+                        🏅 {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Mode de joc */}

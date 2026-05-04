@@ -127,11 +127,27 @@ export default function StatsPage() {
                     >
                       <td className="p-6 font-black text-xl italic opacity-30 italic">#{index + 1}</td>
                       <td className="p-6">
-                        <div className="font-bold text-lg flex items-center gap-2">
-                          {player.nickname}
-                          {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center">
+                            {player.avatarUrl ? (
+                              <img src={player.avatarUrl} alt={player.nickname} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-lg opacity-40">👤</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <div className="font-bold text-lg flex items-center gap-2 truncate">
+                              {player.nickname}
+                              {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mt-0.5">
+                              {user?.uid === player.uid && <span className="text-[8px] bg-emerald-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">Tu</span>}
+                              {player.badges && player.badges.map((b: string, bi: number) => (
+                                <span key={bi} className="text-[8px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                        {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mt-1 inline-block">Tu</span>}
                       </td>
                       <td className="p-6 text-right font-mono text-2xl font-black text-emerald-400">
                         {mode === '5k' ? player.total5k : (

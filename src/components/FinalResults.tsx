@@ -275,12 +275,28 @@ export default function FinalResults({ roomId, room, playerId, onRestart, isHost
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-4xl">{medals[i] ?? '🎮'}</span>
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/20 bg-black/40 shadow-inner flex items-center justify-center">
+                        {room.players[p.id]?.avatarUrl ? (
+                          <img src={room.players[p.id].avatarUrl} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-2xl opacity-40">👤</span>
+                        )}
+                      </div>
+                      <div className="absolute -top-1 -left-1 text-3xl drop-shadow-lg">{medals[i] ?? '🎮'}</div>
+                    </div>
                     <div>
                       <div className="font-black text-xl flex items-center gap-2">
                         {p.name}
                         {p.isAdmin && <span className="text-[10px] bg-red-600 text-white px-2 py-1 rounded-md font-black uppercase tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
                       </div>
+                      {room.players[p.id]?.badges && room.players[p.id].badges!.length > 0 && (
+                        <div className="flex gap-1 mb-1">
+                          {room.players[p.id].badges!.map((b, bi) => (
+                            <span key={bi} className="text-[8px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>
+                          ))}
+                        </div>
+                      )}
                       {isMe && <div className="text-xs text-gray-400">Tu</div>}
                       {/* 👈 AFEGIT: Botó d'afegir amic a la pantalla final */}
                       {user && !isMe && !myFriends.includes(p.id) && (

@@ -164,14 +164,32 @@ export default function LobbyScreen({
           <div className="space-y-2">
             {players.map(([id, player]) => (
               <div key={id} className="flex items-center gap-3 bg-gray-800 rounded-xl p-4 border border-gray-700">
-                <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="font-semibold">
-                  {player.name}{id === playerId ? ' (Tu)' : ''}
-                </span>
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                    {player.avatarUrl ? (
+                      <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-lg opacity-40">👤</span>
+                    )}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-gray-800 animate-pulse" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">
+                    {player.name}{id === playerId ? ' (Tu)' : ''}
+                  </span>
+                  {player.badges && player.badges.length > 0 && (
+                    <div className="flex gap-1 mt-0.5 overflow-hidden">
+                      {player.badges.slice(0, 2).map((b, bi) => (
+                        <span key={bi} className="text-[7px] text-indigo-300 font-bold uppercase truncate">🏅 {b}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="ml-auto flex items-center gap-2">
                   {id === room.hostId && (
-                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
                       HOST
                     </span>
                   )}
@@ -204,7 +222,16 @@ export default function LobbyScreen({
               {onlineFriends.map((friend) => (
                 <div key={friend.uid} className="flex items-center justify-between bg-black/40 rounded-xl p-3 border border-white/5">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <div className="relative">
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                        {friend.avatarUrl ? (
+                          <img src={friend.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs opacity-40">👤</span>
+                        )}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    </div>
                     <span className="font-bold text-sm">{friend.nickname}</span>
                   </div>
                   <button

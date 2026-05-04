@@ -87,18 +87,27 @@ export default function LobbyChat({ roomId, playerId, room }: Props) {
                         const senderName = room.players[msg.senderId]?.name || 'Jugador desconegut';
 
                         return (
-                            <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                                <div className="text-[10px] text-gray-500 mb-0.5 ml-1 mr-1 flex gap-2">
-                                    <span>{isMe ? 'Tu' : senderName}</span>
-                                    <span>{formatTime(msg.timestamp)}</span>
+                            <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <div className="w-6 h-6 rounded-full overflow-hidden border border-white/5 flex-shrink-0 mt-1">
+                                    {room.players[msg.senderId]?.avatarUrl ? (
+                                        <img src={room.players[msg.senderId].avatarUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gray-600 flex items-center justify-center text-[8px]">👤</div>
+                                    )}
                                 </div>
-                                <div
-                                    className={`px-3 py-2 rounded-2xl max-w-[85%] text-sm shadow-md break-words ${isMe
-                                            ? 'bg-blue-600 text-white rounded-br-sm'
-                                            : 'bg-gray-700 text-gray-200 rounded-bl-sm'
-                                        }`}
-                                >
-                                    {msg.text}
+                                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[80%]`}>
+                                    <div className="text-[9px] text-gray-500 mb-0.5 ml-1 mr-1 flex gap-2">
+                                        <span>{isMe ? 'Tu' : senderName}</span>
+                                        <span>{formatTime(msg.timestamp)}</span>
+                                    </div>
+                                    <div
+                                        className={`px-3 py-2 rounded-2xl text-sm shadow-md break-words w-full ${isMe
+                                                ? 'bg-indigo-600 text-white rounded-tr-sm'
+                                                : 'bg-gray-700 text-gray-200 rounded-tl-sm'
+                                            }`}
+                                    >
+                                        {msg.text}
+                                    </div>
                                 </div>
                             </div>
                         );

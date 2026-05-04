@@ -8,6 +8,8 @@ import { auth, db } from './firebase';
 interface AuthContextType {
   user: User | null;
   nickname: string | null;
+  avatarUrl: string | null; // 👈 NOU
+  badges: string[];         // 👈 NOU
   isAdmin: boolean;
   isGuest: boolean;
   loading: boolean;
@@ -19,6 +21,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   nickname: null,
+  avatarUrl: null, // 👈 NOU
+  badges: [],      // 👈 NOU
   isAdmin: false,
   isGuest: false,
   loading: true,
@@ -30,6 +34,8 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // 👈 NOU
+  const [badges, setBadges] = useState<string[]>([]);              // 👈 NOU
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (snap.exists()) {
             const data = snap.val();
             setNickname(data.nickname);
+            setAvatarUrl(data.avatarUrl || null); // 👈 NOU
+            setBadges(data.badges || []);        // 👈 NOU
             // 👈 AFEGIT: Si tens el rol a la DB O ets el Fortià, s'activa!
             setIsAdmin(data.isAdmin === true || u.email === 'fortiaarumi@gmail.com'); 
           } else if (u.email === 'fortiaarumi@gmail.com') {
@@ -85,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
     setIsGuest(false);
     setNickname(null);
+    setAvatarUrl(null); // 👈 NOU
+    setBadges([]);      // 👈 NOU
   };
 
   const setGuestMode = (v: boolean) => {
@@ -100,6 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       nickname, 
+      avatarUrl, // 👈 NOU
+      badges,    // 👈 NOU
       isAdmin,
       isGuest, 
       loading, 

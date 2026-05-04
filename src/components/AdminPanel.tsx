@@ -103,6 +103,7 @@ export default function AdminPanel() {
         bestScoreCatalunya_normal: Number(editingUser.bestScoreCatalunya_normal) || 0,
         bestScoreCatalunya_infinit: Number(editingUser.bestScoreCatalunya_infinit) || 0,
         total5k: Number(editingUser.total5k) || 0,
+        badges: editingUser.badges || [], // 👈 NOU
       });
       setEditingUser(null);
       alert('✅ Dades de l\'usuari actualitzades!');
@@ -336,6 +337,7 @@ export default function AdminPanel() {
                 <thead>
                   <tr className="text-[10px] text-gray-500 uppercase tracking-widest border-b border-white/10">
                     <th className="pb-3 font-black">Jugador</th>
+                    <th className="pb-3 font-black">Avatar</th>
                     <th className="pb-3 font-black">Estat</th>
                     <th className="pb-3 font-black">Rècords (Món / Cat)</th>
                     <th className="pb-3 font-black">5K ⭐</th>
@@ -351,6 +353,27 @@ export default function AdminPanel() {
                           {u.isAdmin && <span className="text-[8px] bg-red-600 px-2 py-0.5 rounded text-white uppercase tracking-widest">Admin</span>}
                         </div>
                         <div className="text-xs text-gray-500">{u.email || 'Sense correu'}</div>
+                      </td>
+                      <td className="py-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black flex items-center justify-center relative group">
+                          {u.avatarUrl ? (
+                            <>
+                              <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" />
+                              <button 
+                                onClick={async () => {
+                                  if (confirm(`Vols esborrar l'avatar de ${u.nickname}?`)) {
+                                    await update(ref(db, `users/${u.uid}`), { avatarUrl: null });
+                                  }
+                                }}
+                                className="absolute inset-0 bg-red-600/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-xs font-bold"
+                              >
+                                BORRAR
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs opacity-20">👤</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3">
                         <span className={`text-[10px] font-black uppercase tracking-widest ${u.status === 'online' ? 'text-emerald-400' : 'text-gray-600'}`}>
@@ -425,6 +448,52 @@ export default function AdminPanel() {
                 <div>
                   <label className="block text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Total 5K (Plens al centre)</label>
                   <input type="number" value={editingUser.total5k || 0} onChange={(e) => setEditingUser({...editingUser, total5k: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-yellow-500 font-mono" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Insígnies (Badges)</label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {(editingUser.badges || []).map((badge: string, bi: number) => (
+                      <span key={bi} className="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded text-[10px] font-black flex items-center gap-1">
+                        {badge}
+                        <button onClick={() => {
+                          const newBadges = editingUser.badges.filter((_: any, i: number) => i !== bi);
+                          setEditingUser({...editingUser, badges: newBadges});
+                        }} className="text-red-400 hover:text-white">×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <input 
+                      type="text" 
+                      placeholder="Nova insígnia..." 
+                      id="new-badge-input"
+                      className="flex-1 bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-xs text-white outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const val = (e.target as HTMLInputElement).value.trim();
+                          if (val) {
+                            const newBadges = [...(editingUser.badges || []), val];
+                            setEditingUser({...editingUser, badges: newBadges});
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <button 
+                      onClick={() => {
+                        const input = document.getElementById('new-badge-input') as HTMLInputElement;
+                        const val = input.value.trim();
+                        if (val) {
+                          const newBadges = [...(editingUser.badges || []), val];
+                          setEditingUser({...editingUser, badges: newBadges});
+                          input.value = '';
+                        }
+                      }}
+                      className="bg-indigo-600 px-3 py-1 rounded-lg text-xs font-bold"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
