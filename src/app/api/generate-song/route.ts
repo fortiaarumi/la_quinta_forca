@@ -26,26 +26,34 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un lletrista brillant, sarcàstic i humorístic. Has d'escriure la lletra d'una CANÇÓ SATÍRICA per riure't d'uns jugadors que han fet una partida pèssima a un joc d'endevinar on s'ha fet una foto al mapa.
+      Ets un lletrista mordaç i un comediant espectacular. Has d'escriure la lletra d'una CANÇÓ SATÍRICA i molt divertida per riure't d'uns jugadors que han fet una partida pèssima a un joc de geografia (han de situar una foto al mapa).
 
-      REGLES ESTRICTES DE FORMAT I CONTINGUT (CRÍTIQUES):
-      1. ÉS OBLIGATORI INCLOURE ELS NOMS DELS LLOCS EXACTES que t'indico a les dades. Has de mencionar explícitament "El lloc real" i "On ha posat el pin" dins de la lletra.
+      ATENCIÓ - ESTIL MUSICAL: L'estil d'aquesta cançó serà "${genre}". 
+      Has d'adaptar el vocabulari, l'actitud i el ritme de la lletra perquè encaixi PERFECTAMENT amb aquest gènere.
+
+      CONTEXT DE LA BROMA (MOLT IMPORTANT):
+      La gràcia de la cançó NO és inventar-se històries genèriques, sinó fer sang i riure's EXCLUSIVAMENT de la falta de punteria dels jugadors. 
+      Fes befa de com de cecs estan, de com necessiten ulleres o una brúixola, i de la brutal quantitat de quilòmetres que han errat.
+
+      DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis ciutats noves):
+      ${guesses}
+
+      REGLES ESTRICTES DE FORMAT:
+      1. ÉS OBLIGATORI mencionar els noms dels jugadors i els llocs reals que apareixen a les dades.
       2. MAI, SOTA CAP CONCEPTE, facis servir números en dígits (ex: 32, 100). Escriu-los SEMPRE TOT EN LLETRES (ex: trenta-dos).
       3. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
       4. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà".
-      5. NO t'inventis cap ciutat ni país que no estigui a les dades.
-
-      CONTEXT DEL JOC I COM FER LA BROMA:
-      Riu-te de la distància entre el lloc real i on ha posat el pin. 
-      ATENCIÓ: Si el país real i el país on ha posat el pin SÓN EL MATEIX (per exemple, la foto era als Estats Units i ha posat el pin als Estats Units), la teva burla s'ha de centrar en com és possible fallar per tants quilòmetres sense sortir del mateix país!
       
-      DADES REALS DE LA PARTIDA A INCLOURE OBLIGATÒRIAMENT:
-      ${guesses}
-
-      ESTRUCTURA OBLIGATÒRIA:
-      Fes servir els tags: [Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], [Outro].
+      ESTRUCTURA OBLIGATÒRIA (Més curta i directa):
+      Has de fer la cançó més breu. Utilitza NOMÉS aquests tags exactes en aquest ordre:
+      [Intro]
+      [Verse 1]
+      [Chorus]
+      [Verse 2]
+      [Chorus]
+      [Outro]
       
-      RETORNA ÚNICAMENT LA LLETRA DE LA CANÇÓ. CAP COMENTARI.
+      RETORNA ÚNICAMENT LA LLETRA DE LA CANÇÓ. CAP COMENTARI PREVI NI POSTERIOR.
     `;
 
     console.log("=== PROMPT GEOGRÀFIC ENVIAT A L'LLM ===");

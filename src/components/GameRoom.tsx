@@ -269,7 +269,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const geocoder = new (google.maps as any).Geocoder();
       geocoder.geocode({ location: { lat, lng } }, (results: any, status: any) => {
         if (status === 'OK' && results && results.length > 0) {
-          const components = results[0].address_components;
+
+          // Filtre anti-codis: busquem el primer resultat que NO sigui un codi estrany (Plus Code)
+          const validResult = results.find((r: any) => !r.formatted_address.includes('+')) || results[0];
+          const components = validResult.address_components;
 
           if (gameMode === 'catalunya') {
             let comarca = '';
@@ -281,18 +284,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
             if (comarca && locality) resolve(`${locality} (${comarca})`);
             else if (comarca) resolve(`la comarca de ${comarca}`);
             else if (locality) resolve(locality);
-            else resolve(results[0].formatted_address.split(',')[1]?.trim() || "Catalunya");
+            else resolve("un indret remot de Catalunya");
           } else {
+            // Mode Món: Prioritzem sempre el nom sencer del País
             for (const comp of components) {
               if (comp.types.includes('country')) {
                 resolve(comp.long_name);
                 return;
               }
             }
-            resolve(results[0].formatted_address.split(',').pop()?.trim() || "Desconegut");
+            // Si no hi ha país, agafem l'última part de l'adreça netejada
+            const fallback = validResult.formatted_address.split(',').pop()?.trim() || "";
+            if (fallback.includes('+') || fallback.length <= 3) {
+              resolve("un indret perdut del món");
+            } else {
+              resolve(fallback);
+            }
           }
         } else {
-          resolve("Mig de l'oceà");
+          resolve("un indret completament aïllat");
         }
       });
     });

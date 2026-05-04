@@ -6,6 +6,7 @@ import { ref, onValue, set, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
+import LobbyChat from './LobbyChat';
 
 interface Props {
   room: Room;
@@ -82,14 +83,14 @@ export default function LobbyScreen({
   useEffect(() => {
     if (!user) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
-    
+
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) {
         setOnlineFriends([]);
         setMyFriends([]);
         return;
       }
-      
+
       const friendUids = Object.keys(snap.val());
       setMyFriends(friendUids);
       const unsubList: (() => void)[] = [];
@@ -113,7 +114,7 @@ export default function LobbyScreen({
 
       return () => unsubList.forEach(u => u());
     });
-    
+
     return () => unsubFriends();
   }, [user]);
 
@@ -167,7 +168,7 @@ export default function LobbyScreen({
                 <span className="font-semibold">
                   {player.name}{id === playerId ? ' (Tu)' : ''}
                 </span>
-                
+
                 <div className="ml-auto flex items-center gap-2">
                   {id === room.hostId && (
                     <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold">
@@ -181,9 +182,8 @@ export default function LobbyScreen({
                         setFriendReqSent(prev => ({ ...prev, [id]: true }));
                       }}
                       disabled={friendReqSent[id]}
-                      className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg transition-all ${
-                        friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
-                      }`}
+                      className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg transition-all ${friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
+                        }`}
                     >
                       {friendReqSent[id] ? '✓ Petició Enviada' : '+ Afegir Amic'}
                     </button>
@@ -210,13 +210,12 @@ export default function LobbyScreen({
                   <button
                     onClick={() => sendInvite(friend.uid)}
                     disabled={invited[friend.uid] || Object.keys(room.players).includes(friend.uid)}
-                    className={`text-xs px-4 py-2 rounded-lg font-black tracking-wider uppercase transition-all ${
-                      Object.keys(room.players).includes(friend.uid)
-                        ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                        : invited[friend.uid] 
-                          ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
-                          : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
-                    }`}
+                    className={`text-xs px-4 py-2 rounded-lg font-black tracking-wider uppercase transition-all ${Object.keys(room.players).includes(friend.uid)
+                      ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                      : invited[friend.uid]
+                        ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
+                      }`}
                   >
                     {Object.keys(room.players).includes(friend.uid) ? 'A la sala' : invited[friend.uid] ? '✓ Enviat' : 'Convidar'}
                   </button>
@@ -225,6 +224,11 @@ export default function LobbyScreen({
             </div>
           </div>
         )}
+
+        {/* ── NOU: XAT DEL LOBBY ── */}
+        <div className="mb-8">
+          <LobbyChat roomId={roomId} playerId={playerId} room={room} />
+        </div>
 
         {/* Vídeo del dia */}
         <div className="mb-8">
@@ -259,10 +263,10 @@ export default function LobbyScreen({
               {isGenerating
                 ? '⌛ GENERANT MAPA...'
                 : !mapsReady
-                ? '⌛ CARREGANT...'
-                : players.length < 2
-                ? '⏳ ESPERANT JUGADORS...'
-                : '🚀 INICIAR PARTIDA'}
+                  ? '⌛ CARREGANT...'
+                  : players.length < 2
+                    ? '⏳ ESPERANT JUGADORS...'
+                    : '🚀 INICIAR PARTIDA'}
             </button>
             {!canStart && mapsReady && !isGenerating && players.length < 2 && (
               <p className="text-center text-gray-500 text-sm mt-3">

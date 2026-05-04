@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction, update } from 'firebase/database';
+import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction, update, limitToLast, onDisconnect } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
@@ -46,10 +46,10 @@ export default function HomeScreen() {
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // AFEGIT: Per canviar entre menú de joc i menú d'amics
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
-  
+
   // AFEGIT: Variables del vídeo dinàmic i suggeriments
   const [homeVideoUrl, setHomeVideoUrl] = useState('/Rochaesquiant.mp4');
   const [homeVideoCaption, setHomeVideoCaption] = useState('Roger Bernadó masterclass esquiant');
@@ -58,35 +58,69 @@ export default function HomeScreen() {
   const [suggestTitle, setSuggestTitle] = useState(''); // Títol del vídeo
   const [videoFile, setVideoFile] = useState<File | null>(null); // El fitxer .mp4
   const [suggestMsg, setSuggestMsg] = useState({ text: '', type: '' });
-  
+
   // AFEGIT: Variable per guardar la invitació que ens arriba
-  const [activeInvite, setActiveInvite] = useState<{roomId: string, from: string} | null>(null);
-  const [activeFriendReq, setActiveFriendReq] = useState<{uid: string, nickname: string} | null>(null);
+  const [activeInvite, setActiveInvite] = useState<{ roomId: string, from: string } | null>(null);
+  const [activeFriendReq, setActiveFriendReq] = useState<{ uid: string, nickname: string } | null>(null);
 
   // ── XAT NOTIFICACIONS ──
   const [chatToast, setChatToast] = useState<{ from: string, text: string } | null>(null);
 
+  // ── VARIABLES SALES PÚBLIQUES I PRESÈNCIA ──
+  const [isPublicRoom, setIsPublicRoom] = useState(true);
+  const [searchingPublic, setSearchingPublic] = useState(false);
+  const [publicError, setPublicError] = useState('');
+  const [onlineCount, setOnlineCount] = useState(1);
+
+  // ── SISTEMA DE PRESÈNCIA (QUI ESTÀ ONLINE) ──
+  useEffect(() => {
+    if (!user) return;
+    const connectedRef = ref(db, '.info/connected');
+    const myOnlineRef = ref(db, `system/onlineUsers/${user.uid}`);
+
+    const unsub = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        set(myOnlineRef, true);
+        onDisconnect(myOnlineRef).remove();
+      }
+    });
+    return () => unsub();
+  }, [user]);
+
+  // Escoltar quants usuaris hi ha en línia
+  useEffect(() => {
+    const countRef = ref(db, 'system/onlineUsers');
+    const unsub = onValue(countRef, (snap) => {
+      if (snap.exists()) {
+        setOnlineCount(Object.keys(snap.val()).length);
+      } else {
+        setOnlineCount(1);
+      }
+    });
+    return () => unsub();
+  }, []);
+
   useEffect(() => {
     if (!user || isGuest) return;
-    
+
     // 1. Obtenim la llista d'amics
     const friendsRef = ref(db, `users/${user.uid}/friends`);
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) return;
       const friendUids = Object.keys(snap.val());
-      
+
       // 2. Per cada amic, escoltem el seu xat
       friendUids.forEach(fUid => {
         const chatId = [user.uid, fUid].sort().join('_');
         // Només escoltem l'últim missatge per no carregar tot l'historial
         const lastMsgQuery = query(ref(db, `chats/${chatId}/messages`), orderByChild('timestamp'), endAt(Date.now() + 10000));
-        
+
         onValue(ref(db, `chats/${chatId}/messages`), (mSnap) => {
           if (!mSnap.exists()) return;
           const msgs = mSnap.val();
           const lastMsgId = Object.keys(msgs).pop();
           const lastMsg = msgs[lastMsgId!];
-          
+
           // Si el missatge és nou (fa menys de 5 segons) i no és nostre
           if (lastMsg.from !== user.uid && !lastMsg.read && (Date.now() - lastMsg.timestamp < 5000)) {
             setChatToast({ from: lastMsg.fromNickname || 'Un amic', text: lastMsg.text });
@@ -116,7 +150,7 @@ export default function HomeScreen() {
   // ── Enviar Suggeriment de Vídeo ──
   const handleSuggestVideo = async () => {
     if (!videoFile || !suggestTitle.trim() || !user) return;
-    
+
     setLoading(true);
     setSuggestMsg({ text: '⌛ Comprovant límit diari...', type: '' });
 
@@ -151,7 +185,7 @@ export default function HomeScreen() {
       // 3. GUARDAR A LA CUA DE FIREBASE
       const queueRef = ref(db, 'videoQueue');
       const newVideoRef = ref(db, `videoQueue/${crypto.randomUUID()}`);
-      
+
       await set(newVideoRef, {
         url: cloudinaryData.secure_url,
         title: suggestTitle.trim(),
@@ -168,7 +202,7 @@ export default function HomeScreen() {
       setVideoFile(null);
       setSuggestTitle('');
       setTimeout(() => setShowSuggestModal(false), 3000);
-      
+
     } catch (error: any) {
       console.error(error);
       setSuggestMsg({ text: '❌ Error: ' + error.message, type: 'error' });
@@ -182,9 +216,9 @@ export default function HomeScreen() {
 
   const checkDailyLimit = async () => {
     // Agafem la data d'avui en format "YYYY-MM-DD" (ex: "2026-04-28")
-    const today = new Date().toISOString().split('T')[0]; 
+    const today = new Date().toISOString().split('T')[0];
     const limitRef = ref(db, `dailyLimits/${today}/roomsCreated`);
-    
+
     // Fem una transacció segura per sumar 1
     const result = await runTransaction(limitRef, (currentCount) => {
       if (currentCount >= MAX_DAILY_ROOMS) {
@@ -192,9 +226,9 @@ export default function HomeScreen() {
       }
       return (currentCount || 0) + 1; // Si no, sumem 1 a la llista d'avui
     });
-    
+
     // Retorna 'true' si ens ha deixat sumar, o 'false' si ha avortat pel límit
-    return result.committed; 
+    return result.committed;
   };
 
   // AFEGIT: El radar de peticions d'amistat
@@ -218,7 +252,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!user) return;
     const invitesRef = ref(db, `users/${user.uid}/invites`);
-    
+
     // Escoltem constantment la nostra carpeta d'invitacions
     const unsub = onValue(invitesRef, (snap) => {
       if (snap.exists()) {
@@ -236,7 +270,7 @@ export default function HomeScreen() {
   // Funcions per als botons del pop-up
   const acceptInvite = async () => {
     if (!activeInvite || !user) return;
-    
+
     const code = activeInvite.roomId;
     const playerId = user.uid;
     const playerNameToJoin = nickname ?? 'Convidat';
@@ -247,23 +281,23 @@ export default function HomeScreen() {
       if (snap.exists()) {
         const room = snap.val();
         const existing = Object.keys(room.players || {});
-        
+
         // 2. Si el jugador encara no hi és, l'apuntem oficialment a la sala
         if (!existing.includes(playerId)) {
-          await set(ref(db, `rooms/${code}/players/${playerId}`), { 
-            name: playerNameToJoin, 
-            joinedAt: Date.now(), 
-            isAdmin: !!isAdmin 
+          await set(ref(db, `rooms/${code}/players/${playerId}`), {
+            name: playerNameToJoin,
+            joinedAt: Date.now(),
+            isAdmin: !!isAdmin
           });
           await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
         }
       }
-      
+
       // 3. Esborrem la carta de la bústia i viatgem a la sala
       await remove(ref(db, `users/${user.uid}/invites/${code}`));
       setActiveInvite(null); // Tanquem el pop-up
       router.push(`/room/${code}`);
-      
+
     } catch (error) {
       console.error("Error en acceptar la invitació:", error);
     }
@@ -304,16 +338,16 @@ export default function HomeScreen() {
       if (profile) {
         // Busquem la puntuació més alta de les 3 modalitats
         const maxWorld = Math.max(
-          profile.bestScoreWorld_bala || 0, 
-          profile.bestScoreWorld_normal || 0, 
+          profile.bestScoreWorld_bala || 0,
+          profile.bestScoreWorld_normal || 0,
           profile.bestScoreWorld_infinit || 0
         );
         const maxCat = Math.max(
-          profile.bestScoreCatalunya_bala || 0, 
-          profile.bestScoreCatalunya_normal || 0, 
+          profile.bestScoreCatalunya_bala || 0,
+          profile.bestScoreCatalunya_normal || 0,
           profile.bestScoreCatalunya_infinit || 0
         );
-        
+
         setMyBestWorld(maxWorld);
         setMyBestCat(maxCat);
         setMy5k(profile.total5k);
@@ -379,10 +413,50 @@ export default function HomeScreen() {
         players: { [playerId]: { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
+        isPublic: isPublicRoom // 👈 Guardem l'estat del botó
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       router.push(`/room/${roomCode}`);
     } catch { setError('Error en crear la sala.'); setLoading(false); }
+  };
+
+  // ── NOVA FUNCIÓ: BUSCAR PARTIDA PÚBLICA ──
+  const handleJoinPublic = async () => {
+    if (!playerName.trim()) return setError('Introdueix el teu nom');
+    setSearchingPublic(true); setPublicError(''); setError('');
+
+    try {
+      const recentRoomsQuery = query(ref(db, 'rooms'), orderByChild('createdAt'), limitToLast(30));
+      const snap = await get(recentRoomsQuery);
+
+      if (snap.exists()) {
+        const rooms = snap.val();
+        const availableRooms = Object.entries(rooms).filter(([id, r]: [string, any]) =>
+          r.isPublic === true &&
+          r.gameState === 'lobby' &&
+          r.isSinglePlayer === false &&
+          (!r.players || Object.keys(r.players).length < 10)
+        );
+
+        if (availableRooms.length > 0) {
+          const [code, room] = availableRooms[availableRooms.length - 1];
+          const playerId = getPlayerId();
+          const existing = Object.keys((room as any).players || {});
+
+          if (!existing.includes(playerId)) {
+            await set(ref(db, `rooms/${code}/players/${playerId}`), { name: playerName.trim(), joinedAt: Date.now(), isAdmin: !!isAdmin });
+            await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
+          }
+          router.push(`/room/${code}`);
+          return;
+        }
+      }
+      setPublicError("⚠️ No hi ha cap sala pública disponible. Crea'n una tu!");
+    } catch (e) {
+      setPublicError("❌ Error en buscar sala.");
+    } finally {
+      setSearchingPublic(false);
+    }
   };
 
   const handleJoin = async () => {
@@ -415,10 +489,10 @@ export default function HomeScreen() {
 
   return (
     <div className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden font-sans" style={{ background: '#06080f' }}>
-      
+
       {/* ── TOAST DE XAT (NOTIFICACIÓ) ── */}
       {chatToast && (
-        <div 
+        <div
           onClick={() => setActiveMenu('friends')}
           className="fixed top-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-[320px] bg-slate-900/90 backdrop-blur-xl border border-indigo-500/40 rounded-2xl p-4 shadow-2xl shadow-indigo-500/20 flex items-center gap-4 cursor-pointer hover:scale-105 transition-all animate-in slide-in-from-top-full duration-500"
         >
@@ -479,6 +553,11 @@ export default function HomeScreen() {
               Quin lloc del món és?
             </p>
 
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '6px 12px', borderRadius: '20px', marginTop: '16px' }}>
+              <span className="animate-pulse" style={{ fontSize: '10px' }}>🟢</span>
+              <span style={{ color: '#34d399', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{onlineCount} Jugadors en línia</span>
+            </div>
+
             {/* Toggle de música centralitzat */}
             <div className="flex items-center justify-center gap-3 mt-6 mb-2">
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full transition-all duration-300">
@@ -496,14 +575,13 @@ export default function HomeScreen() {
                   Música: {isMuted ? 'Desactivada' : 'Activada'}
                 </span>
               </div>
-              
+
               <button
                 onClick={toggleMute}
-                className={`px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all duration-300 transform active:scale-95 ${
-                  isMuted 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
-                    : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                }`}
+                className={`px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all duration-300 transform active:scale-95 ${isMuted
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                  }`}
               >
                 {isMuted ? 'Activar' : 'Desactivar'}
               </button>
@@ -512,7 +590,7 @@ export default function HomeScreen() {
 
           {/* TABS DE NAVEGACIÓ (PLAY / FRIENDS) */}
           <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '16px', padding: '4px', gap: '4px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' }}>
-            <button 
+            <button
               onClick={() => setActiveMenu('play')}
               style={{
                 flex: 1, padding: '14px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -520,7 +598,7 @@ export default function HomeScreen() {
                 color: activeMenu === 'play' ? 'black' : 'rgba(255,255,255,0.4)',
                 boxShadow: activeMenu === 'play' ? '0 4px 12px rgba(16,185,129,0.3)' : 'none'
               }}>🎮 Jugar</button>
-            <button 
+            <button
               onClick={() => setActiveMenu('friends')}
               style={{
                 flex: 1, padding: '14px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase',
@@ -534,128 +612,155 @@ export default function HomeScreen() {
             <>
               {/* Nom del jugador */}
               <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px 24px' }}>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '10px' }}>
-              {user ? 'Jugues com' : 'El teu nom'}
-            </label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder={user ? (nickname ?? 'Nom de jugador') : 'Introdueix el teu nom'}
-              readOnly={!!user} // Si estàs loguejat, el nom ve del nickname
-              maxLength={20}
-              style={{
-                width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '14px', padding: '14px 18px', color: 'white', fontSize: '18px',
-                fontWeight: 800, outline: 'none', boxSizing: 'border-box',
-                opacity: user ? 0.8 : 1,
-                cursor: user ? 'default' : 'text',
-              }}
-            />
-          </div>
-
-          {/* Mode de joc */}
-          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Mode de joc</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {([
-                { id: 'world', label: '🌍 Món', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
-                { id: 'catalunya', label: '🔴🟡 Catalunya', active: '#ef4444', shadow: 'rgba(239,68,68,0.3)' },
-              ] as const).map(({ id, label, active, shadow }) => (
-                <button key={id} onClick={() => setGameMode(id)} style={{
-                  padding: '12px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                  background: gameMode === id ? active : 'rgba(0,0,0,0.4)',
-                  color: gameMode === id ? 'white' : 'rgba(255,255,255,0.4)',
-                  boxShadow: gameMode === id ? `0 4px 16px ${shadow}` : 'none',
-                  transform: gameMode === id ? 'scale(1.02)' : 'scale(1)',
-                }}>{label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Ritme */}
-          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Ritme de joc</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {([
-                { id: 'bala', label: '⚡ BALA (1 min)', active: '#f59e0b', shadow: 'rgba(245,158,11,0.3)' },
-                { id: 'normal', label: '🚶 NORMAL (5 min)', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
-                { id: 'infinit', label: '♾️ SENSE TEMPS', active: '#6366f1', shadow: 'rgba(99,102,241,0.3)' },
-              ] as const).map(({ id, label, active, shadow }) => (
-                <button key={id} onClick={() => setTimeMode(id)} style={{
-                  padding: '11px 8px', fontSize: '11px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                  background: timeMode === id ? active : 'rgba(0,0,0,0.4)',
-                  color: timeMode === id ? (id === 'infinit' ? 'white' : 'black') : 'rgba(255,255,255,0.4)',
-                  transform: timeMode === id ? 'scale(1.02)' : 'scale(1)',
-                  boxShadow: timeMode === id ? `0 4px 16px ${shadow}` : 'none'
-                }}>{label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Accions */}
-          <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px' }}>
-            {/* Tabs */}
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '14px', padding: '4px', marginBottom: '20px', gap: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              {tabs.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id)} style={{
-                  flex: 1, padding: '10px 4px', fontSize: '11px', fontWeight: 900, borderRadius: '10px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                  background: tab === t.id ? '#10b981' : 'transparent',
-                  color: tab === t.id ? 'black' : 'rgba(255,255,255,0.35)',
-                  boxShadow: tab === t.id ? '0 2px 12px rgba(16,185,129,0.3)' : 'none'
-                }}>{t.label}</button>
-              ))}
-            </div>
-
-            {tab === 'solo' && (
-              <button onClick={handleSolo} disabled={loading || !playerName.trim()} style={{
-                width: '100%', background: loading || !playerName.trim() ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
-                color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'white',
-                fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
-                boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(16,185,129,0.35)', transition: 'all 0.2s', letterSpacing: '-0.01em'
-              }}>
-                {loading ? '⌛ PREPARANT...' : '🚀 JUGAR SOL'}
-              </button>
-            )}
-            {tab === 'create' && (
-              <button onClick={handleCreate} disabled={loading || !playerName.trim()} style={{
-                width: '100%', background: loading || !playerName.trim() ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
-                color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'black',
-                fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
-                boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(255,255,255,0.15)', transition: 'all 0.2s', letterSpacing: '-0.01em'
-              }}>
-                {loading ? '⌛ CREANT SALA...' : '🏠 CREAR SALA'}
-              </button>
-            )}
-            {tab === 'join' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="CODI" maxLength={6} style={{
-                  background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
-                  padding: '18px 24px', color: 'white', textAlign: 'center', fontFamily: 'monospace', fontSize: '32px', fontWeight: 700, outline: 'none', letterSpacing: '0.2em', boxSizing: 'border-box', width: '100%'
-                }} />
-                <button onClick={handleJoin} disabled={loading || !playerName.trim() || joinCode.length < 6} style={{
-                  background: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(99,102,241,0.2)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                  color: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(255,255,255,0.3)' : 'white',
-                  padding: '18px', borderRadius: '14px', fontWeight: 900, fontSize: '18px', border: 'none',
-                  cursor: loading || !playerName.trim() || joinCode.length < 6 ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 32px rgba(99,102,241,0.25)', transition: 'all 0.2s'
-                }}>UNIR-SE</button>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                  {user ? 'Jugues com' : 'El teu nom'}
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder={user ? (nickname ?? 'Nom de jugador') : 'Introdueix el teu nom'}
+                  readOnly={!!user} // Si estàs loguejat, el nom ve del nickname
+                  maxLength={20}
+                  style={{
+                    width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '14px', padding: '14px 18px', color: 'white', fontSize: '18px',
+                    fontWeight: 800, outline: 'none', boxSizing: 'border-box',
+                    opacity: user ? 0.8 : 1,
+                    cursor: user ? 'default' : 'text',
+                  }}
+                />
               </div>
-            )}
 
-            {error && (
-              <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#f87171', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
-                ⚠️ {error}
+              {/* Mode de joc */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Mode de joc</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {([
+                    { id: 'world', label: '🌍 Món', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
+                    { id: 'catalunya', label: '🔴🟡 Catalunya', active: '#ef4444', shadow: 'rgba(239,68,68,0.3)' },
+                  ] as const).map(({ id, label, active, shadow }) => (
+                    <button key={id} onClick={() => setGameMode(id)} style={{
+                      padding: '12px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      background: gameMode === id ? active : 'rgba(0,0,0,0.4)',
+                      color: gameMode === id ? 'white' : 'rgba(255,255,255,0.4)',
+                      boxShadow: gameMode === id ? `0 4px 16px ${shadow}` : 'none',
+                      transform: gameMode === id ? 'scale(1.02)' : 'scale(1)',
+                    }}>{label}</button>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        </>
-      ) : (
-        /* CONTINGUT DE LA PESTANYA AMICS */
-        <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-          <FriendsTab />
-        </div>
-      )}
+
+              {/* Ritme */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '20px' }}>
+                <label style={{ display: 'block', color: 'rgba(255,255,255,0.3)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.25em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '12px' }}>Ritme de joc</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {([
+                    { id: 'bala', label: '⚡ BALA (1 min)', active: '#f59e0b', shadow: 'rgba(245,158,11,0.3)' },
+                    { id: 'normal', label: '🚶 NORMAL (5 min)', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
+                    { id: 'infinit', label: '♾️ SENSE TEMPS', active: '#6366f1', shadow: 'rgba(99,102,241,0.3)' },
+                  ] as const).map(({ id, label, active, shadow }) => (
+                    <button key={id} onClick={() => setTimeMode(id)} style={{
+                      padding: '11px 8px', fontSize: '11px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      background: timeMode === id ? active : 'rgba(0,0,0,0.4)',
+                      color: timeMode === id ? (id === 'infinit' ? 'white' : 'black') : 'rgba(255,255,255,0.4)',
+                      transform: timeMode === id ? 'scale(1.02)' : 'scale(1)',
+                      boxShadow: timeMode === id ? `0 4px 16px ${shadow}` : 'none'
+                    }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accions */}
+              <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '24px 28px' }}>
+                {/* Tabs */}
+                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '14px', padding: '4px', marginBottom: '20px', gap: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {tabs.map((t) => (
+                    <button key={t.id} onClick={() => setTab(t.id)} style={{
+                      flex: 1, padding: '10px 4px', fontSize: '11px', fontWeight: 900, borderRadius: '10px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                      background: tab === t.id ? '#10b981' : 'transparent',
+                      color: tab === t.id ? 'black' : 'rgba(255,255,255,0.35)',
+                      boxShadow: tab === t.id ? '0 2px 12px rgba(16,185,129,0.3)' : 'none'
+                    }}>{t.label}</button>
+                  ))}
+                </div>
+
+                {tab === 'solo' && (
+                  <button onClick={handleSolo} disabled={loading || !playerName.trim()} style={{
+                    width: '100%', background: loading || !playerName.trim() ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
+                    color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'white',
+                    fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
+                    boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(16,185,129,0.35)', transition: 'all 0.2s', letterSpacing: '-0.01em'
+                  }}>
+                    {loading ? '⌛ PREPARANT...' : '🚀 JUGAR SOL'}
+                  </button>
+                )}
+                {tab === 'create' && (
+                  <>
+                    <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '12px', cursor: 'pointer' }} onClick={() => setIsPublicRoom(!isPublicRoom)}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: `2px solid ${isPublicRoom ? '#10b981' : 'rgba(255,255,255,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isPublicRoom ? '#10b981' : 'transparent', transition: 'all 0.2s' }}>
+                        {isPublicRoom && <span style={{ color: 'black', fontSize: '12px', fontWeight: 'bold' }}>✓</span>}
+                      </div>
+                      <span style={{ color: 'white', fontSize: '12px', fontWeight: 700 }}>🌍 Fer aquesta sala Pública</span>
+                    </div>
+                    <button onClick={handleCreate} disabled={loading || !playerName.trim()} style={{
+                      width: '100%', background: loading || !playerName.trim() ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
+                      color: loading || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'black',
+                      fontWeight: 900, padding: '20px', borderRadius: '16px', fontSize: '22px', border: 'none', cursor: loading || !playerName.trim() ? 'not-allowed' : 'pointer',
+                      boxShadow: loading || !playerName.trim() ? 'none' : '0 8px 32px rgba(255,255,255,0.15)', transition: 'all 0.2s', letterSpacing: '-0.01em'
+                    }}>
+                      {loading ? '⌛ CREANT SALA...' : '🏠 CREAR SALA'}
+                    </button>
+                  </>
+                )}
+                {tab === 'join' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+                    <button onClick={handleJoinPublic} disabled={searchingPublic || !playerName.trim()} style={{
+                      background: searchingPublic || !playerName.trim() ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
+                      color: searchingPublic || !playerName.trim() ? 'rgba(255,255,255,0.3)' : 'white',
+                      padding: '18px', borderRadius: '14px', fontWeight: 900, fontSize: '16px', border: 'none',
+                      cursor: searchingPublic || !playerName.trim() ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 8px 32px rgba(16,185,129,0.25)', transition: 'all 0.2s', marginBottom: '8px', width: '100%'
+                    }}>
+                      {searchingPublic ? '🔍 CERCANT SALA...' : '🌍 UNIR-SE A PARTIDA PÚBLICA'}
+                    </button>
+
+                    {publicError && <div style={{ color: '#f87171', fontSize: '11px', fontWeight: 700, textAlign: 'center', marginBottom: '8px' }}>{publicError}</div>}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', fontWeight: 900, letterSpacing: '0.1em' }}>O AMB CODI PRIVAT</span>
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                    </div>
+
+                    <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="CODI" maxLength={6} style={{
+                      background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
+                      padding: '18px 24px', color: 'white', textAlign: 'center', fontFamily: 'monospace', fontSize: '32px', fontWeight: 700, outline: 'none', letterSpacing: '0.2em', boxSizing: 'border-box', width: '100%'
+                    }} />
+                    <button onClick={handleJoin} disabled={loading || !playerName.trim() || joinCode.length < 6} style={{
+                      background: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(99,102,241,0.2)' : 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                      color: loading || !playerName.trim() || joinCode.length < 6 ? 'rgba(255,255,255,0.3)' : 'white',
+                      padding: '18px', borderRadius: '14px', fontWeight: 900, fontSize: '18px', border: 'none',
+                      cursor: loading || !playerName.trim() || joinCode.length < 6 ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 8px 32px rgba(99,102,241,0.25)', transition: 'all 0.2s'
+                    }}>UNIR-SE</button>
+                  </div>
+                )}
+
+                {error && (
+                  <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', color: '#f87171', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center' }}>
+                    ⚠️ {error}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* CONTINGUT DE LA PESTANYA AMICS */
+            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              <FriendsTab />
+            </div>
+          )}
 
           {/* ── AFEGIT PER A MÒBILS: Rànquing i Vídeo ── */}
           <div className="flex flex-col gap-6 lg:hidden w-full mt-4">
@@ -683,11 +788,11 @@ export default function HomeScreen() {
                   </p>
                 )}
               </div>
-              
+
               {/* 👈 NOU BOTÓ GEGANT MÒBIL */}
               {user && (
-                <button 
-                  onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }}
+                <button
+                  onClick={() => { setShowSuggestModal(true); setSuggestMsg({ text: '', type: '' }); }}
                   className="w-full mt-5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 p-4 rounded-xl transition-all flex items-center justify-center gap-3"
                 >
                   <span className="text-2xl">💡</span>
@@ -746,7 +851,7 @@ export default function HomeScreen() {
                 )}
               </div>
             </div>
-            
+
             {/* Botó de Admin */}
             <div className="flex gap-2">
               {isAdmin && (
@@ -759,8 +864,8 @@ export default function HomeScreen() {
 
           {/* 👈 NOU BOTÓ GEGANT PC */}
           {user && (
-            <button 
-              onClick={() => { setShowSuggestModal(true); setSuggestMsg({text:'', type:''}); }}
+            <button
+              onClick={() => { setShowSuggestModal(true); setSuggestMsg({ text: '', type: '' }); }}
               style={{
                 width: '100%', marginTop: '4px', padding: '16px', borderRadius: '16px', border: '1px solid rgba(245,158,11,0.3)',
                 background: 'linear-gradient(to right, rgba(245,158,11,0.1), rgba(245,158,11,0.05))',
@@ -838,7 +943,7 @@ export default function HomeScreen() {
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
               <strong style={{ color: '#818cf8', fontSize: '16px' }}>{activeInvite.from}</strong> t'ha convidat a jugar una partida.
             </p>
-           <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={declineInvite} style={{
                 flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
                 color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
@@ -890,31 +995,31 @@ export default function HomeScreen() {
           background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)', animation: 'fadeIn 0.4s ease-out'
         }}>
           <div style={{
-            background: 'linear-gradient(145deg, #0f172a, #1e293b)', border: '1px solid rgba(16,185,129,0.4)', 
-            borderRadius: '28px', padding: '36px', maxWidth: '400px', width: '90%', textAlign: 'center', 
+            background: 'linear-gradient(145deg, #0f172a, #1e293b)', border: '1px solid rgba(16,185,129,0.4)',
+            borderRadius: '28px', padding: '36px', maxWidth: '400px', width: '90%', textAlign: 'center',
             boxShadow: '0 30px 60px rgba(16,185,129,0.25)', transform: 'translateY(0)', transition: 'all 0.3s'
           }}>
             <div style={{ fontSize: '56px', marginBottom: '20px', filter: 'drop-shadow(0 0 20px rgba(251,191,36,0.4))' }}>🎵</div>
             <h3 style={{ color: 'white', fontSize: '26px', fontWeight: 900, margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>Benvingut/da!</h3>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '15px', marginBottom: '32px', lineHeight: 1.6 }}>
-              Vols activar la música d'aquest joc?<br/>
+              Vols activar la música d'aquest joc?<br />
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'block', marginTop: '8px' }}>
                 Si canvies d'opinió més endavant, aquesta opció la podràs canviar a la pàgina d'inici.
               </span>
             </p>
             <div style={{ display: 'flex', gap: '16px' }}>
-              <button onClick={() => { 
-                if(!isMuted) toggleMute(); 
-                setHasInteracted(true); 
+              <button onClick={() => {
+                if (!isMuted) toggleMute();
+                setHasInteracted(true);
               }} style={{
                 flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
                 color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s',
                 textTransform: 'uppercase', letterSpacing: '0.05em'
               }}>No, gràcies</button>
-              
-              <button onClick={() => { 
-                if(isMuted) toggleMute(); 
-                setHasInteracted(true); 
+
+              <button onClick={() => {
+                if (isMuted) toggleMute();
+                setHasInteracted(true);
               }} style={{
                 flex: 1, padding: '16px', borderRadius: '16px', border: 'none', background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: 'white', fontWeight: 900, fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s',
@@ -934,7 +1039,7 @@ export default function HomeScreen() {
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '24px', textAlign: 'center', lineHeight: 1.5 }}>
               Tria un vídeo divertit de la teva galeria. El sistema en triarà un cada nit!
             </p>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
               <div>
                 <label style={{ display: 'block', color: 'rgba(255,255,255,0.4)', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px' }}>Títol del vídeo</label>
