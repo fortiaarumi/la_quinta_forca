@@ -73,12 +73,13 @@ export async function updateUserStatsAfterGame(
 
   const currentBest = profile[bestField] ?? 0;
 
-  // Rondes perfectes en aquesta partida
-  const new5k = roundScores.filter((s) => s >= 5000).length;
+  const updates: Record<string, any> = {};
 
-  const updates: Record<string, any> = {
-    total5k: (profile.total5k ?? 0) + new5k,
-  };
+  // 👈 NOU: Només comptem els 5K si el mode és Món o Catalunya
+  if (gameMode === 'world' || gameMode === 'catalunya') {
+    const new5k = roundScores.filter((s) => s >= 5000).length;
+    updates.total5k = (profile.total5k ?? 0) + new5k;
+  }
 
   if (totalGameScore > currentBest) {
     updates[bestField] = totalGameScore;

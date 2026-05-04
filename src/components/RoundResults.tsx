@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
+import confetti from 'canvas-confetti';
 
 interface Props {
   room: Room;
@@ -21,26 +22,57 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   const guesses = room.rounds?.[round]?.guesses ?? {};
   const playerIds = Object.keys(room.players);
 
-  const { playSiu } = useAudio();
-  const [perfectScorer, setPerfectScorer] = useState<string | null>(null);
+  // Necessitem el playMenuMusic (o playGameMusic) per reprendre la música després
+  const { playSiu, isMuted } = useAudio();
+  const [perfectScorers, setPerfectScorers] = useState<string[]>([]); // 👈 ARA ÉS UN ARRAY
+
+  // Guardarem una referència a la música de fons de la web
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Buscar si algú ha fet 5000 punts en aquesta ronda
-    let foundPerfect = null;
+    // 1. Busquem l'element d'àudio principal del fons (si està actiu)
+    bgMusicRef.current = document.getElementById('bg-music-player') as HTMLAudioElement;
+
+    // 2. Buscar TOTS els que han fet 5000 punts
+    const foundPerfects: string[] = [];
     for (const pid of playerIds) {
       if (guesses[pid] && guesses[pid].score === 5000) {
-        foundPerfect = room.players[pid]?.name;
-        break; // Només agafem el primer per l'animació (o podríem posar múltiples)
+        if (room.players[pid]?.name) {
+          foundPerfects.push(room.players[pid].name);
+        }
       }
     }
 
-    if (foundPerfect) {
-      setPerfectScorer(foundPerfect);
+    if (foundPerfects.length > 0) {
+      setPerfectScorers(foundPerfects);
+
+      // 3. Aturem la música de fons un moment
+      if (bgMusicRef.current && !isMuted) {
+        bgMusicRef.current.pause();
+      }
+
+      // 4. Llançem el confeti des de les cantonades
+      var duration = 3000;
+      var end = Date.now() + duration;
+
+      (function frame() {
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      }());
+
+      // 5. Reproduim el crit de guerra a tot drap
       playSiu();
-      // L'animació desapareix després de 5 segons
-      setTimeout(() => setPerfectScorer(null), 5000);
     }
-  }, [guesses, playerIds, playSiu, room.players]);
+  }, [guesses, playerIds, playSiu, isMuted, room.players]);
+
+  // NOU BOTÓ: Funció per tancar el popup i reprendre la música
+  const handleClosePerfectScore = () => {
+    setPerfectScorers([]);
+    if (bgMusicRef.current && !isMuted) {
+      bgMusicRef.current.play().catch(e => console.log('Error reprenent música', e));
+    }
+  };
 
   useEffect(() => {
     if (!mapRef.current || !mapsReady || !actual) return;
@@ -108,32 +140,50 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
     });
 
     map.fitBounds(bounds, 80);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsReady, actual]);
 
   if (!actual) return null;
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
-      
-      {/* ── AFEGIT: Animació de 5K ── */}
-      {perfectScorer && (
+
+      {/* ── ANIMACIÓ 5K MULTIJUGADOR MILLORADA ── */}
+      {perfectScorers.length > 0 && (
         <div style={{
           position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', animation: 'fadeIn 0.3s ease-out'
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', animation: 'fadeIn 0.3s ease-out'
         }}>
           <div style={{
-            background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', border: '2px solid #60a5fa', borderRadius: '30px', 
-            padding: '40px', textAlign: 'center', boxShadow: '0 0 100px rgba(59, 130, 246, 0.8)',
-            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', border: '2px solid #60a5fa', borderRadius: '30px',
+            padding: '40px', textAlign: 'center', boxShadow: '0 0 150px rgba(59, 130, 246, 0.8)',
+            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '500px'
           }}>
-            <div style={{ fontSize: '80px', marginBottom: '10px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))', animation: 'pulse 1s infinite' }}>🐐</div>
-            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+            <div style={{ fontSize: '80px', marginBottom: '15px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))', animation: 'pulse 1s infinite' }}>🐐</div>
+            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 15px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
               SIUUUUU!
             </h2>
-            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: 0 }}>
-              Felicitats! El jugador <span style={{ color: '#fcd34d', fontSize: '24px' }}>{perfectScorer}</span> ha fet 5K punts!!!
+            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: '0 0 30px 0', lineHeight: 1.4 }}>
+              Felicitats! {perfectScorers.length > 1 ? 'Els jugadors' : 'El jugador'} <br />
+              <span style={{ color: '#fcd34d', fontSize: '28px', display: 'block', marginTop: '5px' }}>
+                {perfectScorers.join(', ').replace(/, ([^,]*)$/, ' i $1')}
+              </span>
+              {perfectScorers.length > 1 ? 'han clavat' : 'ha clavat'} els 5.000 punts!
             </p>
+
+            <button
+              onClick={handleClosePerfectScore}
+              style={{
+                background: '#f59e0b', color: '#78350f', border: 'none', padding: '16px 32px', borderRadius: '16px',
+                fontSize: '18px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)',
+                transition: 'all 0.2s', width: '100%', textTransform: 'uppercase', letterSpacing: '1px'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+            >
+              Continuar 🚀
+            </button>
           </div>
         </div>
       )}
@@ -169,10 +219,10 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
                     style={{ backgroundColor: color }}
                   />
                   <span className="text-white font-bold text-sm truncate flex items-center gap-1.5">
-                  {player?.name}
-                  {(player as any)?.isAdmin && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.8)]">👑 ADMIN</span>}
-                  {isMe ? ' (Tu)' : ''}
-                </span>
+                    {player?.name}
+                    {(player as any)?.isAdmin && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.8)]">👑 ADMIN</span>}
+                    {isMe ? ' (Tu)' : ''}
+                  </span>
                 </div>
                 {guess ? (
                   <>

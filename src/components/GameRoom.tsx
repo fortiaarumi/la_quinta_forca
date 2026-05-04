@@ -140,7 +140,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             alertaRef.current.play().catch(e => console.log('Error alerta', e));
           }
           setShowAlert(true);
-          setTimeout(() => setShowAlert(false), 3000);
+          setTimeout(() => setShowAlert(false), 2000); // 👈 CANVIAT A 2 SEGONS
         }
 
         if (remaining === 0) isTimeUp = true;
@@ -507,20 +507,22 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
       )}
 
-      {/* ── ALERTA GEGANT 10 SEGONS ── */}
+      {/* ── ALERTA 10 SEGONS (MÉS PETITA) ── */}
       {showAlert && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyItems: 'center',
           pointerEvents: 'none', animation: 'fadeIn 0.2s ease-out'
         }}>
+          {/* Posicionat a dalt al mig perquè no tapi el mapa sencer */}
           <div style={{
-            background: 'rgba(239, 68, 68, 0.9)', backdropFilter: 'blur(10px)', border: '4px solid #fca5a5',
-            borderRadius: '30px', padding: '40px 60px', textAlign: 'center', boxShadow: '0 0 100px rgba(239, 68, 68, 1)',
-            animation: 'pulse 0.5s infinite'
+            position: 'absolute', top: '150px', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(239, 68, 68, 0.95)', backdropFilter: 'blur(5px)', border: '2px solid #fca5a5',
+            borderRadius: '20px', padding: '15px 30px', textAlign: 'center', boxShadow: '0 10px 40px rgba(239, 68, 68, 0.8)',
+            animation: 'pulse 0.5s infinite', display: 'flex', alignItems: 'center', gap: '15px'
           }}>
-            <div style={{ fontSize: '80px', marginBottom: '10px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))' }}>⚠️</div>
-            <h2 style={{ color: 'white', fontSize: '48px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '4px', margin: 0, textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
-              ALERTA! QUEDEN 10 SEGONS!
+            <div style={{ fontSize: '32px', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.5))' }}>⚠️</div>
+            <h2 style={{ color: 'white', fontSize: '24px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: 0, textShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
+              10 SEGONS!
             </h2>
           </div>
         </div>
