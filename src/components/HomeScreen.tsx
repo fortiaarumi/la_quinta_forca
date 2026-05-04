@@ -967,6 +967,10 @@ export default function HomeScreen() {
             <a href="mailto:laquintaforca.joc@gmail.com" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-widest font-bold transition-colors">
               Contacte & Errors
             </a>
+            {/* El correu explícit a sota perquè la gent el pugui veure i copiar */}
+            <span className="text-gray-600 text-[10px] font-mono lowercase tracking-normal">
+              laquintaforca.joc@gmail.com
+            </span>
           </div>
 
           {/* Versió */}
