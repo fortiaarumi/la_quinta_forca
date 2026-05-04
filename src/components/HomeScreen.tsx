@@ -14,6 +14,16 @@ import FriendsTab from './FriendsTab';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
 
 // Per a convidats: manté el localStorage ID
+// ── LLISTA D'INSÍGNIES DISPONIBLES ──
+const ALL_BADGES = [
+  { id: "Brúixola d'Or", label: "Brúixola d'Or", desc: "10 partides jugades" },
+  { id: "Franctirador", label: "Franctirador", desc: "Un 5k perfecte" },
+  { id: "Pubilla/Hereu de la Forca", label: "Pubilla/Hereu de la Forca", desc: "Guanyar a Catalunya" },
+  { id: "Llegendari", label: "Llegendari", desc: "50 victòries" },
+  { id: "Lofish the goat", label: "Lofish the goat", desc: "Guanya la teva primera partida" },
+  { id: "Uri Badia", label: "Uri Badia", desc: "Guanya a estadis" },
+];
+
 function getOrCreateGuestId(): string {
   let id = localStorage.getItem('geoPlayerId');
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('geoPlayerId', id); }
@@ -1043,6 +1053,55 @@ export default function HomeScreen() {
                 }}>
                   🏆 Veure Rànquings Globals →
                 </Link>
+              </div>
+
+              {/* ── TAULA D'INSÍGNIES ── */}
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>🏅 Col·lecció d'Insígnies</span>
+                  <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+                </div>
+                
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Foto</th>
+                        <th style={{ padding: '12px', textAlign: 'left', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Insígnia</th>
+                        <th style={{ padding: '12px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Estat</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ALL_BADGES.map((b) => {
+                        const isUnlocked = badges.includes(b.id);
+                        return (
+                          <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isUnlocked ? 1 : 0.4, filter: isUnlocked ? 'none' : 'grayscale(100%)', transition: 'all 0.3s' }}>
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                {isUnlocked ? '🏅' : '🔒'}
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <p style={{ margin: 0, fontWeight: 800, color: isUnlocked ? 'white' : 'rgba(255,255,255,0.5)' }}>{b.label}</p>
+                              <p style={{ margin: 0, fontSize: '9px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{b.desc}</p>
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span style={{ 
+                                padding: '4px 8px', borderRadius: '6px', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase',
+                                background: isUnlocked ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
+                                color: isUnlocked ? '#10b981' : 'rgba(255,255,255,0.2)',
+                                border: `1px solid ${isUnlocked ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`
+                              }}>
+                                {isUnlocked ? 'SI' : 'NO'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </>
           )}

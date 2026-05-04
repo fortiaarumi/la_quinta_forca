@@ -107,10 +107,10 @@ export async function updateUserStatsAfterGame(
     newBadges.push("Brúixola d'Or");
   }
 
-  // Ull de Lince (Un 5k perfecte)
+  // Franctirador (Un 5k perfecte)
   const has5kThisRound = roundScores.some(s => s >= 5000);
-  if (has5kThisRound && !newBadges.includes("Ull de Lince")) {
-    newBadges.push("Ull de Lince");
+  if (has5kThisRound && !newBadges.includes("Franctirador")) {
+    newBadges.push("Franctirador");
   }
 
   // Pubilla/Hereu de la Forca (Guanyar a Catalunya)
@@ -121,6 +121,16 @@ export async function updateUserStatsAfterGame(
   // Llegendari (50 victòries)
   if (updates.totalWins >= 50 && !newBadges.includes("Llegendari")) {
     newBadges.push("Llegendari");
+  }
+
+  // Lofish the goat (Guanya la teva primera partida)
+  if (updates.totalWins >= 1 && !newBadges.includes("Lofish the goat")) {
+    newBadges.push("Lofish the goat");
+  }
+
+  // Uri Badia (Guanya a estadis)
+  if (gameMode === 'estadis' && updates.totalWins >= 1 && !newBadges.includes("Uri Badia")) {
+    newBadges.push("Uri Badia");
   }
 
   if (newBadges.length > currentBadges.length) {
@@ -142,9 +152,9 @@ export async function getLeaderboard(mode: GameMode, limit = 10): Promise<Leader
     const data = child.val() as UserProfile;
     const score = data[field] ?? 0;
     if (score > 0) {
-      entries.push({ 
-        uid: child.key!, 
-        nickname: data.nickname, 
+      entries.push({
+        uid: child.key!,
+        nickname: data.nickname,
         score,
         avatarUrl: data.avatarUrl,
         badges: data.badges
@@ -165,10 +175,10 @@ export async function get5kMasters(limit = 10): Promise<LeaderboardEntry[]> {
   snap.forEach((child) => {
     const data = child.val() as UserProfile;
     if ((data.total5k ?? 0) > 0) {
-      entries.push({ 
-        uid: child.key!, 
-        nickname: data.nickname, 
-        score: 0, 
+      entries.push({
+        uid: child.key!,
+        nickname: data.nickname,
+        score: 0,
         total5k: data.total5k,
         avatarUrl: data.avatarUrl,
         badges: data.badges
