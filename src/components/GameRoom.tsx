@@ -222,7 +222,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           {
             location: coords,
             // Radi molt petit (50m) per estadis i monuments perquè caigui just a sobre. 
-            radius: room.gameMode === 'catalunya' ? 1000 : (room.gameMode === 'estadis' || room.gameMode === 'cultural' ? 50 : 50000),
+            radius: room.gameMode === 'catalunya' ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
             source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
             preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
           },

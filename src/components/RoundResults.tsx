@@ -29,6 +29,8 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   // NOU: Cadenats per evitar el bucle i controlar el botó de felicitar
   const [hasClosedPopup, setHasClosedPopup] = useState(false);
   const [hasCongratulated, setHasCongratulated] = useState(false);
+  // NOU: Guardar el nom de qui felicita
+  const [congratulatedBy, setCongratulatedBy] = useState<string | null>(null);
 
   // NOU: Reiniciem els cadenats cada cop que la ronda canvia
   useEffect(() => {
@@ -55,19 +57,15 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
     if (foundPerfects.length > 0 && !hasClosedPopup) {
       setPerfectScorers(foundPerfects);
 
-      // Llançem el confeti inicial per sobre de tot (zIndex 10000)
-      let duration = 3000;
-      let end = Date.now() + duration;
-      (function frame() {
-        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 10000, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
-        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 10000, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
-        if (Date.now() < end) requestAnimationFrame(frame);
-      }());
+      // Eliminem el confeti inicial. S'activarà només amb el botó "Felicitar"
 
       // Disparem event global per parar la música a l'AudioContext
       window.dispatchEvent(new Event('pauseBackgroundMusic'));
 
-      playSiu();
+      // Fem que la música s'aturi enviant un missatge al document
+      document.dispatchEvent(new Event('pauseBackgroundMusic'));
+
+      // playSiu(); <- Tampoc reproduirem el SIU automàticament
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guesses, playerIds, playSiu, hasClosedPopup]);
@@ -83,8 +81,14 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   // Funció pel nou botó de felicitar
   const handleFelicitar = () => {
     setHasCongratulated(true);
+    setCongratulatedBy(room.players[playerId]?.name || 'Algú'); // Agafa el teu propi nom
     playSiu();
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 10000 });
+
+    // Amagar el missatge de felicitació al cap de 3 segons
+    setTimeout(() => {
+      setCongratulatedBy(null);
+    }, 3000)
   };
 
   useEffect(() => {
@@ -216,6 +220,20 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── NOU: AVÍS DE FELICITACIÓ A LA PANTALLA PRINCIPAL ── */}
+      {congratulatedBy && hasClosedPopup && (
+        <div style={{
+          position: 'absolute', top: '150px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 9999, background: 'rgba(16, 185, 129, 0.9)', backdropFilter: 'blur(5px)',
+          border: '2px solid #34d399', borderRadius: '20px', padding: '15px 30px', textAlign: 'center',
+          boxShadow: '0 10px 40px rgba(16, 185, 129, 0.6)', animation: 'slideInDown 0.3s ease-out'
+        }}>
+          <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 800, margin: 0, textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
+            🎉 {congratulatedBy} t'ha felicitat!
+          </h2>
         </div>
       )}
 
