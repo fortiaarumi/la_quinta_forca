@@ -59,6 +59,9 @@ export default function HomeScreen() {
   const [videoFile, setVideoFile] = useState<File | null>(null); // El fitxer .mp4
   const [suggestMsg, setSuggestMsg] = useState({ text: '', type: '' });
 
+  // AFEGIT: Estat pel manual de Suno
+  const [showSunoManual, setShowSunoManual] = useState(false);
+
   // AFEGIT: Variable per guardar la invitació que ens arriba
   const [activeInvite, setActiveInvite] = useState<{ roomId: string, from: string } | null>(null);
   const [activeFriendReq, setActiveFriendReq] = useState<{ uid: string, nickname: string } | null>(null);
@@ -932,7 +935,7 @@ export default function HomeScreen() {
 
           {/* Si és convidat, mostrem invitació a registrar-se */}
           {isGuest && (
-            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '16px', padding: '16px 20px', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '16px', padding: '16px 20px', textAlign: 'center', marginBottom: '8px' }}>
               <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', lineHeight: 1.6, margin: 0 }}>
                 Crea un compte per guardar les teves<br />puntuacions als rànquings globals 🏆
               </p>
@@ -942,6 +945,30 @@ export default function HomeScreen() {
             </div>
           )}
 
+          {/* ── NOU: BOTONS DE MANUAL I SUPORT ── */}
+          <div className="flex justify-between items-center gap-2 mt-2 mb-4">
+            <button
+              onClick={() => setShowSunoManual(true)}
+              className="flex-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl transition-all"
+            >
+              🤖 Manual Suno
+            </button>
+            <a
+              href="https://paypal.me/fortiaarumi"
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wider py-2.5 px-3 rounded-xl text-center transition-all flex items-center justify-center gap-1"
+            >
+              <span>☕</span> Donar suport
+            </a>
+          </div>
+
+          <div className="text-center mb-6">
+            <a href="mailto:laquintaforca.joc@gmail.com" className="text-gray-500 hover:text-white text-[10px] uppercase tracking-widest font-bold transition-colors">
+              Contacte & Errors
+            </a>
+          </div>
+
           {/* Versió */}
           <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '9px', fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', textAlign: 'center' }}>
             Versió 3.0 · Creat per Fortià Arumí Casals
@@ -950,51 +977,48 @@ export default function HomeScreen() {
 
       </div>
 
-      {/* ── NOU: MANUAL, CONTACTE I SUPORT (PEU DE PÀGINA) ── */}
-      <div className="w-full max-w-4xl relative z-10 mx-auto px-6 mb-12">
+      {/* ── MODAL DEL MANUAL DE SUNO ── */}
+      {showSunoManual && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#0f172a', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '24px', padding: '32px',
+            maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 24px 50px rgba(59,130,246,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>🤖</span> Manual d'Instal·lació de Suno
+              </h3>
+              <button onClick={() => setShowSunoManual(false)} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', fontSize: '24px', cursor: 'pointer' }}>×</button>
+            </div>
 
-        {/* Manual de Suno */}
-        <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 p-6 rounded-2xl w-full text-left mb-6 shadow-xl">
-          <h3 className="text-xl font-black text-blue-400 mb-4 flex items-center gap-2">
-            🤖 Manual d'Instal·lació: Bot de Suno
-          </h3>
-          <div className="text-gray-300 space-y-3 text-sm">
-            <p>Per tenir música generada per IA a les teves partides, has de configurar el bot de Suno. Segueix aquests passos:</p>
-            <ol className="list-decimal pl-5 space-y-2 text-gray-400 font-medium">
-              <li>Crea un compte a <a href="https://suno.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Suno.com</a>.</li>
-              <li>Aconsegueix la teva clau d'API o el token de sessió des de la configuració del teu perfil.</li>
-              <li>Copia el token i enganxa'l a la configuració del teu compte de <i>La Quinta Forca</i> (menú d'Admin).</li>
-              <li>Assegura't de tenir crèdits disponibles a Suno perquè el bot pugui generar les cançons al final de la partida.</li>
-            </ol>
+            <div className="text-gray-300 text-sm space-y-4 text-left">
+              <p>Per generar les teves pròpies cançons, necessites configurar el teu compte de Suno a la web.</p>
+
+              <h4 className="font-bold text-white mt-4">Pas 1: Entrar a Suno</h4>
+              <p>Vés a <a href="https://suno.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Suno.com</a> i inicia sessió amb el teu compte.</p>
+
+              <h4 className="font-bold text-white mt-4">Pas 2: Obtenir la Cookie</h4>
+              <p>Depenent del teu navegador i sistema operatiu, has d'obrir les eines de desenvolupador (F12 o Clic dret {'>'} Inspeccionar) i buscar una galeta (cookie) que es diu <code className="bg-gray-800 px-1 py-0.5 rounded text-blue-300">__client_id</code>.</p>
+
+              <ul className="list-disc pl-5 space-y-2 mt-2 text-gray-400">
+                <li><strong className="text-gray-300">Windows / Linux (Chrome/Edge):</strong> Prem <kbd className="bg-gray-800 px-1 rounded">F12</kbd> {'>'} Ves a la pestanya <em>Application</em> {'>'} <em>Cookies</em>.</li>
+                <li><strong className="text-gray-300">Mac (Safari):</strong> Prem <kbd className="bg-gray-800 px-1 rounded">Cmd + Option + I</kbd> {'>'} Ves a la pestanya <em>Storage</em> {'>'} <em>Cookies</em>.</li>
+              </ul>
+
+              <h4 className="font-bold text-white mt-4">Pas 3: Guardar al teu Perfil</h4>
+              <p>Copia el valor sencer de la cookie i enganxa'l a la configuració del teu perfil de <i>La Quinta Forca</i> (a través de la pestanya Admin o directament a la configuració de l'usuari).</p>
+            </div>
+
+            <button onClick={() => setShowSunoManual(false)} style={{
+              width: '100%', marginTop: '24px', padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(59,130,246,0.1)',
+              color: '#60a5fa', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', borderTop: '1px solid rgba(59,130,246,0.2)'
+            }}>Entès, tancar manual</button>
           </div>
         </div>
-
-        {/* Contacte i PayPal (Costat a costat en PC) */}
-        <div className="flex flex-col md:flex-row gap-4 justify-center items-stretch">
-
-          {/* Contacte */}
-          <div className="flex-1 bg-black/40 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-center justify-center text-center">
-            <span className="text-2xl mb-2">✉️</span>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Contacte i Errors</p>
-            <a href="mailto:laquintaforca.joc@gmail.com" className="text-emerald-400 font-black hover:text-emerald-300 transition-colors text-sm">
-              laquintaforca.joc@gmail.com
-            </a>
-          </div>
-
-          {/* PayPal */}
-          <div className="flex-1 bg-black/40 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-center justify-center text-center">
-            <span className="text-2xl mb-2">☕</span>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Col·labora amb el projecte</p>
-            <p className="text-gray-500 text-xs mb-2">Si t'agrada el joc i vols donar suport:</p>
-            <a href="https://paypal.me/fortiaarumi" target="_blank" rel="noreferrer" className="text-yellow-400 font-black hover:text-yellow-300 transition-colors text-sm flex items-center gap-2">
-              {/* Icona vectorial de PayPal per donar-li un toc PRO */}
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.636.636 0 0 1 .625-.538h6.945c3.086 0 5.289.873 6.002 3.22.404 1.32.298 3.195-.89 5.275-1.077 1.884-2.836 2.946-4.996 2.946H10.45a.638.638 0 0 0-.622.502l-1.393 8.358a.295.295 0 0 1-.291.246h-1.068zM19.043 6.643c-.417-1.13-1.636-1.528-3.327-1.528H9.378a.332.332 0 0 0-.326.282L6.155 20.354a.148.148 0 0 0 .146.173h2.645a.64.64 0 0 0 .633-.538l1.196-7.172a.642.642 0 0 1 .632-.536h1.226c1.64 0 3.018-.8 3.864-2.279.855-1.493.963-2.905.658-3.83z" /></svg>
-              fortiaarumi@gmail.com
-            </a>
-          </div>
-
-        </div>
-      </div>
+      )}
 
       {/* ── MODAL D'INVITACIÓ ── */}
       {activeInvite && (
