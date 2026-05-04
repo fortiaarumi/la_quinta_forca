@@ -43,12 +43,25 @@ export default function StatsPage() {
 
         const snap = await get(q);
         if (snap.exists()) {
-          const data: UserStats[] = [];
+          const data: any[] = [];
           snap.forEach((child) => {
-            data.push({ uid: child.key, ...child.val() });
+            const val = child.val();
+            const score = val[field] ?? 0;
+            if (score > 0 || mode === '5k') { // Filtrem per no mostrar gent amb 0 (excepte si és 5k i el field és total5k)
+              data.push({ uid: child.key, ...val });
+            }
           });
-          // Invertim l'ordre per tenir els més alts a dalt
-          setRanking(data.reverse());
+          
+          // Ordenació manual extra per seguretat (Firebase a vegades és lent amb índexs nous)
+          data.sort((a, b) => {
+            const scoreA = a[field] ?? 0;
+            const scoreB = b[field] ?? 0;
+            return scoreB - scoreA;
+          });
+          
+          setRanking(data);
+        } else {
+          setRanking([]);
         }
       } catch (error) {
         console.error("Error carregant rànquings:", error);

@@ -7,6 +7,8 @@ export interface UserProfile {
   email: string;
   bestScoreWorld: number;
   bestScoreCatalunya: number;
+  bestScoreEstadis?: number;
+  bestScoreCultural?: number;
   total5k: number;
   // 👈 AFEGIT: Les modalitats noves i el control de vídeos
   bestScoreWorld_bala?: number;
@@ -90,6 +92,17 @@ export async function updateUserStatsAfterGame(
   // 2. Actualitzar millor puntuació
   if (totalGameScore > currentBest) {
     updates[bestField] = totalGameScore;
+    
+    // També actualitzem el camp global per al rànquing
+    let globalField = 'bestScoreWorld';
+    if (gameMode === 'catalunya') globalField = 'bestScoreCatalunya';
+    else if (gameMode === 'estadis') globalField = 'bestScoreEstadis';
+    else if (gameMode === 'cultural') globalField = 'bestScoreCultural';
+
+    const currentGlobalBest = profile[globalField] ?? 0;
+    if (totalGameScore > currentGlobalBest) {
+      updates[globalField] = totalGameScore;
+    }
   }
 
   // 3. Increment de partides i victòries
@@ -140,16 +153,19 @@ export async function updateUserStatsAfterGame(
   await update(ref(db, `users/${uid}`), updates);
 }
 
-// Top 10 per mode (world o catalunya)
-export async function getLeaderboard(mode: GameMode, limit = 10): Promise<LeaderboardEntry[]> {
-  const field = mode === 'catalunya' ? 'bestScoreCatalunya' : 'bestScoreWorld';
+// Top 10 per mode
+export async function getLeaderboard(mode: GameMode | string, limit = 10): Promise<LeaderboardEntry[]> {
+  let field = 'bestScoreWorld';
+  if (mode === 'catalunya') field = 'bestScoreCatalunya';
+  else if (mode === 'estadis') field = 'bestScoreEstadis';
+  else if (mode === 'cultural') field = 'bestScoreCultural';
   const q = query(ref(db, 'users'), orderByChild(field), limitToLast(limit));
   const snap = await get(q);
   if (!snap.exists()) return [];
 
   const entries: LeaderboardEntry[] = [];
   snap.forEach((child) => {
-    const data = child.val() as UserProfile;
+    const data = child.val() as any;
     const score = data[field] ?? 0;
     if (score > 0) {
       entries.push({

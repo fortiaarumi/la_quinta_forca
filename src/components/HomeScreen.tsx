@@ -14,15 +14,7 @@ import FriendsTab from './FriendsTab';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
 
 // Per a convidats: manté el localStorage ID
-// ── LLISTA D'INSÍGNIES DISPONIBLES ──
-const ALL_BADGES = [
-  { id: "Brúixola d'Or", label: "Brúixola d'Or", desc: "10 partides jugades" },
-  { id: "Franctirador", label: "Franctirador", desc: "Un 5k perfecte" },
-  { id: "Pubilla/Hereu de la Forca", label: "Pubilla/Hereu de la Forca", desc: "Guanyar a Catalunya" },
-  { id: "Llegendari", label: "Llegendari", desc: "50 victòries" },
-  { id: "Lofish the goat", label: "Lofish the goat", desc: "Guanya la teva primera partida" },
-  { id: "Uri Badia", label: "Uri Badia", desc: "Guanya a estadis" },
-];
+import { ALL_BADGES } from '@/lib/badges';
 
 function getOrCreateGuestId(): string {
   let id = localStorage.getItem('geoPlayerId');
@@ -718,7 +710,7 @@ export default function HomeScreen() {
                     {user && (
                       <button 
                         onClick={() => fileInputRef.current?.click()}
-                        className="absolute -bottom-1 -right-1 bg-emerald-500 hover:bg-emerald-400 text-black p-1.5 rounded-full shadow-lg transition-all scale-0 group-hover:scale-100 active:scale-90"
+                        className="absolute -bottom-1 -right-1 bg-emerald-500 hover:bg-emerald-400 text-black p-1.5 rounded-full shadow-lg transition-all scale-100 lg:scale-0 lg:group-hover:scale-100 active:scale-90"
                       >
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
@@ -908,9 +900,28 @@ export default function HomeScreen() {
           {/* ── AFEGIT PER A MÒBILS: Rànquing i Vídeo ── */}
           <div className="flex flex-col gap-6 lg:hidden w-full mt-4">
             {/* Botó Rànquings Mòbil */}
-            <Link href="/stats" className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-black uppercase tracking-widest py-4 px-6 rounded-2xl text-center text-sm shadow-lg active:scale-95 transition-all">
-              🏆 Veure Rànquings Globals
-            </Link>
+            {/* Botó Rànquings Mòbil */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/stats" className="bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-black uppercase tracking-widest py-4 px-4 rounded-2xl text-center text-[10px] shadow-lg active:scale-95 transition-all">
+                🏆 Rànquings
+              </Link>
+              <Link href="/badges" className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-black uppercase tracking-widest py-4 px-4 rounded-2xl text-center text-[10px] shadow-lg active:scale-95 transition-all">
+                🏅 Insígnies
+              </Link>
+            </div>
+
+            {/* Estadístiques Mòbil */}
+            {user && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-4 text-center">📊 Les teves estadístiques</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <StatBox label="Millor Món" value={myBestWorld !== null ? myBestWorld.toLocaleString() : '—'} color="#10b981" />
+                  <StatBox label="Millor Cat." value={myBestCat !== null ? myBestCat.toLocaleString() : '—'} color="#ef4444" />
+                  <StatBox label="Estadis" value={myBestEstadis !== null ? myBestEstadis.toLocaleString() : '—'} color="#3b82f6" />
+                  <StatBox label="Cultural" value={myBestCultural !== null ? myBestCultural.toLocaleString() : '—'} color="#8b5cf6" />
+                </div>
+              </div>
+            )}
 
             {/* Vídeo Mòbil Dinàmic */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -946,6 +957,29 @@ export default function HomeScreen() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Manual i Suport Mòbil */}
+          <div className="flex flex-col gap-2 lg:hidden w-full mt-4 px-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSunoManual(true)}
+                className="flex-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider py-3 px-3 rounded-xl transition-all"
+              >
+                🤖 Manual Suno
+              </button>
+              <a
+                href="https://paypal.me/fortiaarumi"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wider py-3 px-3 rounded-xl text-center transition-all"
+              >
+                ☕ Suport
+              </a>
+            </div>
+            <a href="mailto:laquintaforca.joc@gmail.com" className="text-gray-500 text-[9px] uppercase tracking-[0.2em] font-black mt-2 text-center">
+              laquintaforca.joc@gmail.com
+            </a>
           </div>
 
           {/* Footer mòbil */}
@@ -1055,54 +1089,14 @@ export default function HomeScreen() {
                 </Link>
               </div>
 
-              {/* ── TAULA D'INSÍGNIES ── */}
-              <div style={{ marginTop: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-                  <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', fontWeight: 900, letterSpacing: '0.3em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>🏅 Col·lecció d'Insígnies</span>
-                  <div style={{ height: '1px', flex: 1, background: 'rgba(255,255,255,0.08)' }} />
-                </div>
-                
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-                        <th style={{ padding: '12px', textAlign: 'left', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Foto</th>
-                        <th style={{ padding: '12px', textAlign: 'left', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Insígnia</th>
-                        <th style={{ padding: '12px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Estat</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ALL_BADGES.map((b) => {
-                        const isUnlocked = badges.includes(b.id);
-                        return (
-                          <tr key={b.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', opacity: isUnlocked ? 1 : 0.4, filter: isUnlocked ? 'none' : 'grayscale(100%)', transition: 'all 0.3s' }}>
-                            <td style={{ padding: '12px' }}>
-                              <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                                {isUnlocked ? '🏅' : '🔒'}
-                              </div>
-                            </td>
-                            <td style={{ padding: '12px' }}>
-                              <p style={{ margin: 0, fontWeight: 800, color: isUnlocked ? 'white' : 'rgba(255,255,255,0.5)' }}>{b.label}</p>
-                              <p style={{ margin: 0, fontSize: '9px', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{b.desc}</p>
-                            </td>
-                            <td style={{ padding: '12px', textAlign: 'center' }}>
-                              <span style={{ 
-                                padding: '4px 8px', borderRadius: '6px', fontSize: '8px', fontWeight: 900, textTransform: 'uppercase',
-                                background: isUnlocked ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-                                color: isUnlocked ? '#10b981' : 'rgba(255,255,255,0.2)',
-                                border: `1px solid ${isUnlocked ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)'}`
-                              }}>
-                                {isUnlocked ? 'SI' : 'NO'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                <Link href="/badges" style={{
+                  display: 'block', textAlign: 'center', padding: '11px', borderRadius: '12px', marginTop: '8px',
+                  background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.25)',
+                  color: '#fcd34d', fontSize: '12px', fontWeight: 800, textDecoration: 'none',
+                  letterSpacing: '0.05em', transition: 'all 0.2s',
+                }}>
+                  🏅 Col·lecció d'Insígnies →
+                </Link>
             </>
           )}
 
@@ -1210,7 +1204,7 @@ export default function HomeScreen() {
             <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'bounce 2s infinite' }}>💌</div>
             <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Invitació rebuda!</h3>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
-              <strong style={{ color: '#818cf8', fontSize: '16px' }}>{activeInvite.from}</strong> t'ha convidat a jugar una partida.
+              <strong style={{ color: '#818cf8', fontSize: '16px' }}>{activeInvite?.from}</strong> t'ha convidat a jugar una partida.
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={declineInvite} style={{
@@ -1240,7 +1234,7 @@ export default function HomeScreen() {
             <div style={{ fontSize: '48px', marginBottom: '16px', animation: 'bounce 2s infinite' }}>👋</div>
             <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Nou Amic!</h3>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
-              <strong style={{ color: '#34d399', fontSize: '16px' }}>{activeFriendReq.nickname}</strong> vol afegir-te a la seva pinya.
+              <strong style={{ color: '#34d399', fontSize: '16px' }}>{activeFriendReq?.nickname}</strong> vol afegir-te a la seva pinya.
             </p>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={declineFriend} style={{
