@@ -26,14 +26,22 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   const { playSiu, isMuted } = useAudio();
   const [perfectScorers, setPerfectScorers] = useState<string[]>([]); // 👈 ARA ÉS UN ARRAY
 
+  // NOU: Cadenats per evitar el bucle i controlar el botó de felicitar
+  const [hasClosedPopup, setHasClosedPopup] = useState(false);
+  const [hasCongratulated, setHasCongratulated] = useState(false);
+
+  // NOU: Reiniciem els cadenats cada cop que la ronda canvia
+  useEffect(() => {
+    setHasClosedPopup(false);
+    setPerfectScorers([]);
+    setHasCongratulated(false);
+  }, [round]);
+
   // Guardarem una referència a la música de fons de la web
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // 1. Busquem l'element d'àudio principal del fons (si està actiu)
-    bgMusicRef.current = document.getElementById('bg-music-player') as HTMLAudioElement;
-
-    // 2. Buscar TOTS els que han fet 5000 punts
+    // 1. Buscar TOTS els que han fet 5000 punts
     const foundPerfects: string[] = [];
     for (const pid of playerIds) {
       if (guesses[pid] && guesses[pid].score === 5000) {
@@ -43,35 +51,40 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
       }
     }
 
-    if (foundPerfects.length > 0) {
+    // 2. Si hi ha 5K i encara NO hem tancat el popup manualment
+    if (foundPerfects.length > 0 && !hasClosedPopup) {
       setPerfectScorers(foundPerfects);
 
-      // 3. Aturem la música de fons un moment
-      if (bgMusicRef.current && !isMuted) {
-        bgMusicRef.current.pause();
-      }
-
-      // 4. Llançem el confeti des de les cantonades
-      var duration = 3000;
-      var end = Date.now() + duration;
-
+      // Llançem el confeti inicial per sobre de tot (zIndex 10000)
+      let duration = 3000;
+      let end = Date.now() + duration;
       (function frame() {
-        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
-        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, zIndex: 10000, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, zIndex: 10000, colors: ['#fbbf24', '#3b82f6', '#10b981'] });
         if (Date.now() < end) requestAnimationFrame(frame);
       }());
 
-      // 5. Reproduim el crit de guerra a tot drap
+      // Disparem event global per parar la música a l'AudioContext
+      window.dispatchEvent(new Event('pauseBackgroundMusic'));
+
       playSiu();
     }
-  }, [guesses, playerIds, playSiu, isMuted, room.players]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guesses, playerIds, playSiu, hasClosedPopup]);
+  // Treiem room.players perquè no es torni a disparar quan canvia alguna cosa menor
 
-  // NOU BOTÓ: Funció per tancar el popup i reprendre la música
+  // Funció per tancar manualment i trencar el bucle
   const handleClosePerfectScore = () => {
+    setHasClosedPopup(true); // Marquem com a tancat
     setPerfectScorers([]);
-    if (bgMusicRef.current && !isMuted) {
-      bgMusicRef.current.play().catch(e => console.log('Error reprenent música', e));
-    }
+    window.dispatchEvent(new Event('resumeBackgroundMusic')); // Reprenem música
+  };
+
+  // Funció pel nou botó de felicitar
+  const handleFelicitar = () => {
+    setHasCongratulated(true);
+    playSiu();
+    confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 10000 });
   };
 
   useEffect(() => {
@@ -171,19 +184,37 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
               {perfectScorers.length > 1 ? 'han clavat' : 'ha clavat'} els 5.000 punts!
             </p>
 
-            <button
-              onClick={handleClosePerfectScore}
-              style={{
-                background: '#f59e0b', color: '#78350f', border: 'none', padding: '16px 32px', borderRadius: '16px',
-                fontSize: '18px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)',
-                transition: 'all 0.2s', width: '100%', textTransform: 'uppercase', letterSpacing: '1px'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            >
-              Continuar 🚀
-            </button>
+            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+              <button
+                onClick={handleFelicitar}
+                disabled={hasCongratulated}
+                style={{
+                  flex: 1, background: hasCongratulated ? '#4b5563' : '#10b981', color: hasCongratulated ? '#9ca3af' : '#064e3b',
+                  border: 'none', padding: '16px 10px', borderRadius: '16px', fontSize: '16px', fontWeight: 900,
+                  cursor: hasCongratulated ? 'not-allowed' : 'pointer', boxShadow: hasCongratulated ? 'none' : '0 8px 20px rgba(16, 185, 129, 0.4)',
+                  transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '1px'
+                }}
+                onMouseOver={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(1.05)')}
+                onMouseOut={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(1)')}
+                onMouseDown={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(0.95)')}
+              >
+                {hasCongratulated ? 'Felicitat! 🎉' : 'Felicitar 👏'}
+              </button>
+
+              <button
+                onClick={handleClosePerfectScore}
+                style={{
+                  flex: 1, background: '#f59e0b', color: '#78350f', border: 'none', padding: '16px 10px', borderRadius: '16px',
+                  fontSize: '16px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)',
+                  transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '1px'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+              >
+                Continuar 🚀
+              </button>
+            </div>
           </div>
         </div>
       )}

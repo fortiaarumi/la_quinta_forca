@@ -23,7 +23,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const celebrationRef = useRef<HTMLAudioElement | null>(null);
   const decepcionRef = useRef<HTMLAudioElement | null>(null);
   const siuRef = useRef<HTMLAudioElement | null>(null);
-  
+
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
 
@@ -50,13 +50,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     gameAudioRef.current = new Audio('/sounds/game-bgm.mp3');
     gameAudioRef.current.loop = true;
     gameAudioRef.current.volume = 0.4; // Una mica més fort per l'acció
-    
+
     celebrationRef.current = new Audio('/sounds/celebracio.mp3');
     celebrationRef.current.volume = 0.6;
-    
+
     decepcionRef.current = new Audio('/sounds/decepcio.mp3');
     decepcionRef.current.volume = 0.6;
-    
+
     siuRef.current = new Audio('/sounds/siu.mp3');
     siuRef.current.volume = 0.8;
   }, []);
@@ -68,6 +68,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (celebrationRef.current) celebrationRef.current.muted = isMuted;
     if (decepcionRef.current) decepcionRef.current.muted = isMuted;
     if (siuRef.current) siuRef.current.muted = isMuted;
+  }, [isMuted]);
+
+  // 👈 AFEGIT: Escoltar events globals per parar i reprendre la música quan hi ha un 5K
+  useEffect(() => {
+    const pauseMusic = () => {
+      if (gameAudioRef.current) gameAudioRef.current.pause();
+    };
+    const resumeMusic = () => {
+      if (gameAudioRef.current && !isMuted) gameAudioRef.current.play().catch(e => console.log(e));
+    };
+
+    window.addEventListener('pauseBackgroundMusic', pauseMusic);
+    window.addEventListener('resumeBackgroundMusic', resumeMusic);
+
+    return () => {
+      window.removeEventListener('pauseBackgroundMusic', pauseMusic);
+      window.removeEventListener('resumeBackgroundMusic', resumeMusic);
+    };
   }, [isMuted]);
 
   const playMenuMusic = () => {
@@ -126,9 +144,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AudioContext.Provider value={{ 
+    <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
-      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu 
+      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu
     }}>
       {children}
     </AudioContext.Provider>
