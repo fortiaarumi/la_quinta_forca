@@ -20,7 +20,7 @@ export default function StatsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<any[]>([]); // Canviem a any[] pels camps dinàmics
-  const [mode, setMode] = useState<'world' | 'catalunya' | '5k'>('world');
+  const [mode, setMode] = useState<'world' | 'catalunya' | 'estadis' | 'cultural' | '5k'>('world');
   const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala'); // 👈 AFEGIT
 
   useEffect(() => {
@@ -28,16 +28,19 @@ export default function StatsPage() {
       setLoading(true);
       try {
         const usersRef = ref(db, 'users');
-        
+
         // Construïm el camp exacte que volem buscar
-        const field = mode === '5k' 
-          ? 'total5k' 
-          : mode === 'world' 
-            ? `bestScoreWorld_${timeFilter}` 
-            : `bestScoreCatalunya_${timeFilter}`;
-            
+        let field = 'total5k';
+        if (mode !== '5k') {
+          // Mirem quin mode és i li concatenem el temps
+          if (mode === 'world') field = `bestScoreWorld_${timeFilter}`;
+          else if (mode === 'catalunya') field = `bestScoreCatalunya_${timeFilter}`;
+          else if (mode === 'estadis') field = `bestScoreEstadis_${timeFilter}`;
+          else if (mode === 'cultural') field = `bestScoreCultural_${timeFilter}`;
+        }
+
         const q = query(usersRef, orderByChild(field), limitToLast(10));
-        
+
         const snap = await get(q);
         if (snap.exists()) {
           const data: UserStats[] = [];
@@ -72,7 +75,7 @@ export default function StatsPage() {
             </h1>
             <p className="text-gray-500 text-[10px] md:text-xs uppercase tracking-[0.3em] font-bold mt-3">Hall of Fame — La Quinta Forca</p>
           </div>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all active:scale-95"
           >
@@ -81,25 +84,12 @@ export default function StatsPage() {
         </div>
 
         {/* Selector de Rànquing */}
-        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-8 gap-1">
-          <button 
-            onClick={() => setMode('world')}
-            className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'world' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
-          >
-            🌎 Mode Món
-          </button>
-          <button 
-            onClick={() => setMode('catalunya')}
-            className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}
-          >
-            🔴 Mode Catalunya
-          </button>
-          <button 
-            onClick={() => setMode('5k')}
-            className={`flex-1 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === '5k' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-          >
-            🏆 Mestres 5K
-          </button>
+        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-8 gap-1 flex-wrap md:flex-nowrap">
+          <button onClick={() => setMode('world')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'world' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>🌎 Món</button>
+          <button onClick={() => setMode('catalunya')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>🔴 Cat.</button>
+          <button onClick={() => setMode('estadis')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'estadis' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>⚽ Estadis</button>
+          <button onClick={() => setMode('cultural')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'cultural' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🏛️ Cult.</button>
+          <button onClick={() => setMode('5k')} className={`flex-1 min-w-[100%] md:min-w-[auto] mt-1 md:mt-0 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === '5k' ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🏆 5K</button>
         </div>
 
         {/* AFEGIT: Selector de Temps (només es mostra si no estem a Mestres 5K) */}
@@ -131,20 +121,25 @@ export default function StatsPage() {
                 </thead>
                 <tbody>
                   {ranking.map((player, index) => (
-                    <tr 
-                      key={player.uid} 
+                    <tr
+                      key={player.uid}
                       className={`border-b border-white/5 transition-colors hover:bg-white/[0.02] ${user?.uid === player.uid ? 'bg-emerald-500/10' : ''}`}
                     >
                       <td className="p-6 font-black text-xl italic opacity-30 italic">#{index + 1}</td>
                       <td className="p-6">
-                      <div className="font-bold text-lg flex items-center gap-2">
-                        {player.nickname}
-                        {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
-                      </div>
-                      {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mt-1 inline-block">Tu</span>}
-                    </td>
+                        <div className="font-bold text-lg flex items-center gap-2">
+                          {player.nickname}
+                          {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
+                        </div>
+                        {user?.uid === player.uid && <span className="text-[9px] bg-emerald-500 text-black px-2 py-0.5 rounded-full font-black uppercase tracking-tighter mt-1 inline-block">Tu</span>}
+                      </td>
                       <td className="p-6 text-right font-mono text-2xl font-black text-emerald-400">
-                        {mode === '5k' ? player.total5k : player[mode === 'world' ? `bestScoreWorld_${timeFilter}` : `bestScoreCatalunya_${timeFilter}`] || 0}
+                        {mode === '5k' ? player.total5k : (
+                          mode === 'world' ? player[`bestScoreWorld_${timeFilter}`] :
+                            mode === 'catalunya' ? player[`bestScoreCatalunya_${timeFilter}`] :
+                              mode === 'estadis' ? player[`bestScoreEstadis_${timeFilter}`] :
+                                player[`bestScoreCultural_${timeFilter}`]
+                        ) || 0}
                       </td>
                     </tr>
                   ))}

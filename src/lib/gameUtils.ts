@@ -14,7 +14,7 @@ export function haversineDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function calculateScore(distanceKm: number, mode: 'world' | 'catalunya' = 'world'): number {
+export function calculateScore(distanceKm: number, mode: string = 'world'): number {
   // 👈 AFEGIT: Tolerància de 50 metres (0.05 km) per la puntuació perfecta
   if (distanceKm <= 0.05) return 5000;
 
@@ -23,7 +23,7 @@ export function calculateScore(distanceKm: number, mode: 'world' | 'catalunya' =
     const score = Math.round(5000 * Math.exp(-distanceKm / 30));
     return Math.max(0, Math.min(5000, score));
   } else {
-    // Escala per al Món: La caiguda de punts és més suau (divisor 2000)
+    // Escala per al Món, Estadis i Cultural: La caiguda de punts és més suau (divisor 2000)
     const score = Math.round(5000 * Math.exp(-distanceKm / 2000));
     return Math.max(0, Math.min(5000, score));
   }
@@ -80,6 +80,27 @@ export function randomCatalunyaCoords(): Coords {
 
   const lat = minLat + Math.random() * (maxLat - minLat);
   const lng = minLng + Math.random() * (maxLng - minLng);
-  
+
   return { lat, lng };
 }
+
+// ── NOU: LLISTES DE COORDENADES TEMÀTIQUES ──
+export const ESTADIS_FUTBOL = [
+  { lat: 41.3809, lng: 2.1228 }, // Camp Nou
+  { lat: 40.4531, lng: -3.6883 }, // Santiago Bernabéu
+  { lat: 51.5560, lng: -0.2795 }, // Wembley
+  { lat: 48.9246, lng: 2.3601 }, // Stade de France
+  { lat: -22.9121, lng: -43.2302 }, // Maracanã
+  { lat: 45.4781, lng: 9.1240 }, // San Siro
+  { lat: 39.4746, lng: -0.3582 }, // Mestalla
+];
+
+export const MONUMENTS_CULTURALS = [
+  { lat: 48.8584, lng: 2.2945 }, // Torre Eiffel
+  { lat: 41.8902, lng: 12.4922 }, // Colosseu de Roma
+  { lat: 27.1751, lng: 78.0421 }, // Taj Mahal
+  { lat: 40.6892, lng: -74.0445 }, // Estàtua de la Llibertat
+  { lat: -13.1631, lng: -72.5450 }, // Machu Picchu
+  { lat: 41.4036, lng: 2.1744 }, // Sagrada Família
+  { lat: 29.9792, lng: 31.1342 }, // Piràmides de Giza
+];

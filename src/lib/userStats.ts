@@ -15,6 +15,12 @@ export interface UserProfile {
   bestScoreCatalunya_bala?: number;
   bestScoreCatalunya_normal?: number;
   bestScoreCatalunya_infinit?: number;
+  bestScoreEstadis_bala?: number;
+  bestScoreEstadis_normal?: number;
+  bestScoreEstadis_infinit?: number;
+  bestScoreCultural_bala?: number;
+  bestScoreCultural_normal?: number;
+  bestScoreCultural_infinit?: number;
   lastVideoUploadDate?: string;
 }
 
@@ -47,16 +53,24 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 // roundScores: array de puntuacions de cada ronda (per comptar els 5k)
 export async function updateUserStatsAfterGame(
   uid: string,
-  gameMode: GameMode,
-  timeMode: string, // 👈 AFEGIT: Necessitem saber el temps
+  gameMode: GameMode | string, // Permetem string per si ve dels nous modes
+  timeMode: string,
   totalGameScore: number,
   roundScores: number[]
 ): Promise<void> {
-  const profile: any = await getUserProfile(uid); // Posem any per poder llegir camps dinàmics
+  const profile: any = await getUserProfile(uid);
   if (!profile) return;
 
-  // Construïm el nom de la caixa (ex: bestScoreWorld_bala)
-  const bestField = gameMode === 'catalunya' ? `bestScoreCatalunya_${timeMode}` : `bestScoreWorld_${timeMode}`;
+  // Construïm el nom de la caixa exacta depenent del mode i el temps
+  let bestField = `bestScoreWorld_${timeMode}`; // per defecte
+  if (gameMode === 'catalunya') {
+    bestField = `bestScoreCatalunya_${timeMode}`;
+  } else if (gameMode === 'estadis') {
+    bestField = `bestScoreEstadis_${timeMode}`;
+  } else if (gameMode === 'cultural') {
+    bestField = `bestScoreCultural_${timeMode}`;
+  }
+
   const currentBest = profile[bestField] ?? 0;
 
   // Rondes perfectes en aquesta partida

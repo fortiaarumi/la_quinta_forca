@@ -325,6 +325,8 @@ export default function HomeScreen() {
   // Estadístiques de l'usuari autenticat per la columna dreta
   const [myBestWorld, setMyBestWorld] = useState<number | null>(null);
   const [myBestCat, setMyBestCat] = useState<number | null>(null);
+  const [myBestEstadis, setMyBestEstadis] = useState<number | null>(null); // 👈 NOU
+  const [myBestCultural, setMyBestCultural] = useState<number | null>(null); // 👈 NOU
   const [my5k, setMy5k] = useState<number | null>(null);
 
   useEffect(() => {
@@ -347,9 +349,21 @@ export default function HomeScreen() {
           profile.bestScoreCatalunya_normal || 0,
           profile.bestScoreCatalunya_infinit || 0
         );
+        const maxEstadis = Math.max(
+          profile.bestScoreEstadis_bala || 0,
+          profile.bestScoreEstadis_normal || 0,
+          profile.bestScoreEstadis_infinit || 0
+        );
+        const maxCultural = Math.max(
+          profile.bestScoreCultural_bala || 0,
+          profile.bestScoreCultural_normal || 0,
+          profile.bestScoreCultural_infinit || 0
+        );
 
         setMyBestWorld(maxWorld);
         setMyBestCat(maxCat);
+        setMyBestEstadis(maxEstadis);
+        setMyBestCultural(maxCultural);
         setMy5k(profile.total5k);
       }
     });
@@ -639,6 +653,8 @@ export default function HomeScreen() {
                   {([
                     { id: 'world', label: '🌍 Món', active: '#10b981', shadow: 'rgba(16,185,129,0.3)' },
                     { id: 'catalunya', label: '🔴🟡 Catalunya', active: '#ef4444', shadow: 'rgba(239,68,68,0.3)' },
+                    { id: 'estadis', label: '⚽ Estadis', active: '#3b82f6', shadow: 'rgba(59,130,246,0.3)' },
+                    { id: 'cultural', label: '🏛️ Cultural', active: '#8b5cf6', shadow: 'rgba(139,92,246,0.3)' },
                   ] as const).map(({ id, label, active, shadow }) => (
                     <button key={id} onClick={() => setGameMode(id)} style={{
                       padding: '12px 8px', fontSize: '12px', fontWeight: 900, borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
@@ -892,9 +908,14 @@ export default function HomeScreen() {
               </div>
 
               <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '20px', padding: '20px 24px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                {/* He canviat el grid a 2 columnes perquè càpiguen bé */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                   <StatBox label="Millor Món" value={myBestWorld !== null ? myBestWorld.toLocaleString() : '—'} color="#10b981" />
                   <StatBox label="Millor Cat." value={myBestCat !== null ? myBestCat.toLocaleString() : '—'} color="#ef4444" />
+                  <StatBox label="Estadis" value={myBestEstadis !== null ? myBestEstadis.toLocaleString() : '—'} color="#3b82f6" />
+                  <StatBox label="Cultural" value={myBestCultural !== null ? myBestCultural.toLocaleString() : '—'} color="#8b5cf6" />
+                </div>
+                <div style={{ marginBottom: '16px' }}>
                   <StatBox label="Total 5k ⭐" value={my5k !== null ? String(my5k) : '—'} color="#f59e0b" />
                 </div>
                 <Link href="/stats" style={{

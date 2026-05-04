@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
-  onGuess: (lat: number, lng: number) => Promise<void>;
-  onPinChange?: (lat: number, lng: number) => void; // 👈 AFEGIT
+  onGuess: (lat: number, lng: number) => void;
+  onPinChange?: (lat: number, lng: number) => void;
   onClose: () => void;
-  gameMode?: 'world' | 'catalunya';
+  gameMode?: string;
 }
 
 export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'world' }: Props) {
@@ -30,17 +30,17 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
     if (!mapRef.current) return;
 
     const map = new google.maps.Map(mapRef.current, {
-      // Si és Catalunya, fem un zoom de 7; si és el món, zoom d'1
-      zoom: gameMode === 'catalunya' ? 7 : 1,
-      // Si és Catalunya, centrem a prop de Manresa; si no, a l'equador
-      center: gameMode === 'catalunya' ? { lat: 41.5912, lng: 1.5209 } : { lat: 20, lng: 0 },
-      disableDefaultUI: true,
-      zoomControl: true,
-      zoomControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
-      clickableIcons: false,
-      gestureHandling: 'greedy',
-      mapTypeId: google.maps.MapTypeId.TERRAIN,
-    });
+      // Si és Catalunya, fem un zoom de 7; si és el món, zoom d'1
+      zoom: gameMode === 'catalunya' ? 7 : 1,
+      // Si és Catalunya, centrem a prop de Manresa; si no, a l'equador
+      center: gameMode === 'catalunya' ? { lat: 41.5912, lng: 1.5209 } : { lat: 20, lng: 0 },
+      disableDefaultUI: true,
+      zoomControl: true,
+      zoomControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },
+      clickableIcons: false,
+      gestureHandling: 'greedy',
+      mapTypeId: google.maps.MapTypeId.TERRAIN,
+    });
 
     mapInstanceRef.current = map;
 
@@ -49,9 +49,9 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
       const latLng = e.latLng;
       const pos = { lat: latLng.lat(), lng: latLng.lng() };
       setPinPos(pos);
-      
+
       // 👈 AFEGIT 1: Avisem a la sala just quan fem el clic
-      if (onPinChange) onPinChange(pos.lat, pos.lng); 
+      if (onPinChange) onPinChange(pos.lat, pos.lng);
 
       if (markerRef.current) {
         markerRef.current.setPosition(latLng);
@@ -65,9 +65,9 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         markerRef.current.addListener('dragend', (de: google.maps.MapMouseEvent) => {
           if (de.latLng) {
             setPinPos({ lat: de.latLng.lat(), lng: de.latLng.lng() });
-            
+
             // 👈 AFEGIT 2: Avisem a la sala just quan acabem d'arrossegar la xinxeta
-            if (onPinChange) onPinChange(de.latLng.lat(), de.latLng.lng()); 
+            if (onPinChange) onPinChange(de.latLng.lat(), de.latLng.lng());
           }
         });
       }
@@ -87,26 +87,26 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
     await onGuess(pinPos.lat, pinPos.lng);
   };
 
- return (
+  return (
     <>
       {/* ── FONS FOSC (només per mòbil, quan està expandit) ── */}
       {isMobile && expanded && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-40" 
-          onClick={() => !submitting && setExpanded(false)} 
+        <div
+          className="fixed inset-0 bg-black/60 z-40"
+          onClick={() => !submitting && setExpanded(false)}
         />
       )}
 
       {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
         className={`fixed z-50 flex flex-col items-end transition-all duration-300 ease-out
-          ${isMobile 
-            ? (expanded 
-                ? 'inset-x-4 top-[12vh] bottom-[20vh]' 
-                : 'bottom-6 right-6')
-            : (expanded 
-                ? 'bottom-6 right-6 w-[480px] h-[360px]' 
-                : 'bottom-6 right-6 w-48 h-32')
+          ${isMobile
+            ? (expanded
+              ? 'inset-x-4 top-[12vh] bottom-[20vh]'
+              : 'bottom-6 right-6')
+            : (expanded
+              ? 'bottom-6 right-6 w-[480px] h-[360px]'
+              : 'bottom-6 right-6 w-48 h-32')
           }`}
 
       >
@@ -114,8 +114,8 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
           className={`mb-2 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl transition-all
-            ${expanded 
-              ? 'bg-red-500 text-white hover:bg-red-400' 
+            ${expanded
+              ? 'bg-red-500 text-white hover:bg-red-400'
               : 'bg-blue-600 text-white animate-bounce hover:bg-blue-500'
             }`}
         >
@@ -154,16 +154,16 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
                 onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
                 disabled={!pinPos || submitting}
                 className={`flex-1 text-white text-sm md:text-base font-black py-3 rounded-xl transition-all shadow-lg uppercase tracking-wider
-                  ${!pinPos || submitting 
-                    ? 'bg-gray-700/50 cursor-not-allowed text-gray-400' 
+                  ${!pinPos || submitting
+                    ? 'bg-gray-700/50 cursor-not-allowed text-gray-400'
                     : 'bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.4)]'
                   }`}
               >
                 {submitting
                   ? '⌛ Enviant...'
                   : pinPos
-                  ? '✓ Confirmar Posició'
-                  : '📍 Toca per posar el pin'}
+                    ? '✓ Confirmar Posició'
+                    : '📍 Toca per posar el pin'}
               </button>
             </div>
           )}

@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
-import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords } from '@/lib/gameUtils';
+import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
 import StreetViewPane from './StreetViewPane';
 import GuessMap from './GuessMap';
@@ -206,16 +206,23 @@ export default function GameRoom({ roomId, playerId }: Props) {
     while (locations.length < 5 && attempts < 150) {
       attempts++;
 
-      // Si és Catalunya, usem la teva funció de coordenades de Catalunya, si no, les del món
-      const coords = room.gameMode === 'catalunya'
-        ? randomCatalunyaCoords() // Aquí hauries d'usar una que només doni coordenades de CAT
-        : randomBiasedCoords();
+      let coords;
+      if (room.gameMode === 'catalunya') {
+        coords = randomCatalunyaCoords();
+      } else if (room.gameMode === 'estadis') {
+        coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
+      } else if (room.gameMode === 'cultural') {
+        coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
+      } else {
+        coords = randomBiasedCoords();
+      }
 
       await new Promise<void>((resolve) => {
         service.getPanorama(
           {
             location: coords,
-            radius: room.gameMode === 'catalunya' ? 1000 : 50000, // Radi més petit a CAT per ser més precís
+            // Radi molt petit (50m) per estadis i monuments perquè caigui just a sobre. 
+            radius: room.gameMode === 'catalunya' ? 1000 : (room.gameMode === 'estadis' || room.gameMode === 'cultural' ? 50 : 50000),
             source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
             preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
           },
@@ -467,6 +474,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         <StreetViewPane
           key={`sv-${room.currentRound}`}
           location={room.locations[room.currentRound]}
+          gameMode={room.gameMode}
         />
       )}
 

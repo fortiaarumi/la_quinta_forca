@@ -30,7 +30,7 @@ export type GameState =
   | 'finished';
 
 // Tipus de modes de joc
-export type GameMode = 'world' | 'catalunya';
+export type GameMode = 'world' | 'catalunya' | 'estadis' | 'cultural';
 
 // NOU: Tipus per al ritme de la partida
 export type TimeMode = 'bala' | 'normal' | 'infinit';
