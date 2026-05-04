@@ -949,6 +949,53 @@ export default function HomeScreen() {
         </div>
 
       </div>
+
+      {/* ── NOU: MANUAL, CONTACTE I SUPORT (PEU DE PÀGINA) ── */}
+      <div className="w-full max-w-4xl relative z-10 mx-auto px-6 mb-12">
+
+        {/* Manual de Suno */}
+        <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700 p-6 rounded-2xl w-full text-left mb-6 shadow-xl">
+          <h3 className="text-xl font-black text-blue-400 mb-4 flex items-center gap-2">
+            🤖 Manual d'Instal·lació: Bot de Suno
+          </h3>
+          <div className="text-gray-300 space-y-3 text-sm">
+            <p>Per tenir música generada per IA a les teves partides, has de configurar el bot de Suno. Segueix aquests passos:</p>
+            <ol className="list-decimal pl-5 space-y-2 text-gray-400 font-medium">
+              <li>Crea un compte a <a href="https://suno.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Suno.com</a>.</li>
+              <li>Aconsegueix la teva clau d'API o el token de sessió des de la configuració del teu perfil.</li>
+              <li>Copia el token i enganxa'l a la configuració del teu compte de <i>La Quinta Forca</i> (menú d'Admin).</li>
+              <li>Assegura't de tenir crèdits disponibles a Suno perquè el bot pugui generar les cançons al final de la partida.</li>
+            </ol>
+          </div>
+        </div>
+
+        {/* Contacte i PayPal (Costat a costat en PC) */}
+        <div className="flex flex-col md:flex-row gap-4 justify-center items-stretch">
+
+          {/* Contacte */}
+          <div className="flex-1 bg-black/40 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-center justify-center text-center">
+            <span className="text-2xl mb-2">✉️</span>
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Contacte i Errors</p>
+            <a href="mailto:laquintaforca.joc@gmail.com" className="text-emerald-400 font-black hover:text-emerald-300 transition-colors text-sm">
+              laquintaforca.joc@gmail.com
+            </a>
+          </div>
+
+          {/* PayPal */}
+          <div className="flex-1 bg-black/40 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col items-center justify-center text-center">
+            <span className="text-2xl mb-2">☕</span>
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Col·labora amb el projecte</p>
+            <p className="text-gray-500 text-xs mb-2">Si t'agrada el joc i vols donar suport:</p>
+            <a href="https://paypal.me/fortiaarumi" target="_blank" rel="noreferrer" className="text-yellow-400 font-black hover:text-yellow-300 transition-colors text-sm flex items-center gap-2">
+              {/* Icona vectorial de PayPal per donar-li un toc PRO */}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 3.72a.636.636 0 0 1 .625-.538h6.945c3.086 0 5.289.873 6.002 3.22.404 1.32.298 3.195-.89 5.275-1.077 1.884-2.836 2.946-4.996 2.946H10.45a.638.638 0 0 0-.622.502l-1.393 8.358a.295.295 0 0 1-.291.246h-1.068zM19.043 6.643c-.417-1.13-1.636-1.528-3.327-1.528H9.378a.332.332 0 0 0-.326.282L6.155 20.354a.148.148 0 0 0 .146.173h2.645a.64.64 0 0 0 .633-.538l1.196-7.172a.642.642 0 0 1 .632-.536h1.226c1.64 0 3.018-.8 3.864-2.279.855-1.493.963-2.905.658-3.83z" /></svg>
+              fortiaarumi@gmail.com
+            </a>
+          </div>
+
+        </div>
+      </div>
+
       {/* ── MODAL D'INVITACIÓ ── */}
       {activeInvite && (
         <div style={{

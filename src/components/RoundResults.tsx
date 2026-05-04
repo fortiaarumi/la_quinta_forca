@@ -82,7 +82,14 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
   const handleFelicitar = () => {
     setHasCongratulated(true);
     setCongratulatedBy(room.players[playerId]?.name || 'Algú'); // Agafa el teu propi nom
-    playSiu();
+
+    // MÀGIA DEL VÍDEO: Busquem l'etiqueta de vídeo i la forcem a reproduir-se de nou amb el so actiu
+    const videoEl = document.getElementById('siu-video') as HTMLVideoElement;
+    if (videoEl) {
+      videoEl.currentTime = 0;
+      videoEl.play().catch(e => console.log("L'usuari ha de fer clic a la pantalla per reproduir àudio", e));
+    }
+
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 10000 });
 
     // Amagar el missatge de felicitació al cap de 3 segons
@@ -173,20 +180,36 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
         }}>
           <div style={{
             background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', border: '2px solid #60a5fa', borderRadius: '30px',
-            padding: '40px', textAlign: 'center', boxShadow: '0 0 150px rgba(59, 130, 246, 0.8)',
-            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '500px'
+            padding: '30px', textAlign: 'center', boxShadow: '0 0 150px rgba(59, 130, 246, 0.8)',
+            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '500px', width: '90%'
           }}>
-            <div style={{ fontSize: '80px', marginBottom: '15px', filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.5))', animation: 'pulse 1s infinite' }}>🐐</div>
-            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 15px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
+            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
               SIUUUUU!
             </h2>
-            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: '0 0 30px 0', lineHeight: 1.4 }}>
+            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: '0 0 20px 0', lineHeight: 1.4 }}>
               Felicitats! {perfectScorers.length > 1 ? 'Els jugadors' : 'El jugador'} <br />
               <span style={{ color: '#fcd34d', fontSize: '28px', display: 'block', marginTop: '5px' }}>
                 {perfectScorers.join(', ').replace(/, ([^,]*)$/, ' i $1')}
               </span>
               {perfectScorers.length > 1 ? 'han clavat' : 'ha clavat'} els 5.000 punts!
             </p>
+
+            {/* ── NOU: EL VÍDEO ── */}
+            <video
+              id="siu-video"
+              src="/siu.mp4"
+              autoPlay
+              playsInline
+              style={{
+                width: '100%',
+                maxHeight: '250px',
+                objectFit: 'cover',
+                borderRadius: '16px',
+                marginBottom: '20px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                background: '#000'
+              }}
+            />
 
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button
