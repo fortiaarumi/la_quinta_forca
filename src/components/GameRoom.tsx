@@ -402,13 +402,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
       updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner)
         .then((newBadges) => {
           console.log('Estadístiques guardades amb èxit!');
-          // Si hem guanyat alguna insígnia nova, mostrem el toast
           if (newBadges && newBadges.length > 0) {
             newBadges.forEach((b, i) => {
               setTimeout(() => {
                 setBadgeToast(b);
                 setTimeout(() => setBadgeToast(null), 5000);
-              }, i * 6000); // 6 segons entre cada insígnia si en guanyem més d'una
+              }, i * 6000);
             });
           }
         })
@@ -416,25 +415,23 @@ export default function GameRoom({ roomId, playerId }: Props) {
     }
   }, [room?.gameState, room?.totalScores, room?.rounds, room?.gameMode, user, isGuest, playerId]);
 
+  let content;
+
   if (loading) {
-    return (
+    content = (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-xl animate-pulse">Carregant sala...</div>
       </div>
     );
-  }
-
-  if (error || !room) {
-    return (
+  } else if (error || !room) {
+    content = (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center gap-4">
         <div className="text-red-400 text-2xl">{error || 'Sala no trobada'}</div>
         <a href="/" className="text-green-400 underline">Tornar a l&apos;inici</a>
       </div>
     );
-  }
-
-  if (isSinglePlayer && (room.gameState === 'lobby' || room.gameState === 'generating')) {
-    return (
+  } else if (isSinglePlayer && (room.gameState === 'lobby' || room.gameState === 'generating')) {
+    content = (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center gap-4">
         <div className="text-6xl animate-spin-slow">🌍</div>
         <div className="text-white text-xl animate-pulse font-bold">
@@ -443,10 +440,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
         <div className="text-gray-400 text-sm">Això pot trigar uns segons</div>
       </div>
     );
-  }
-
-  if (!isSinglePlayer && (room.gameState === 'lobby' || room.gameState === 'generating')) {
-    return (
+  } else if (!isSinglePlayer && (room.gameState === 'lobby' || room.gameState === 'generating')) {
+    content = (
       <LobbyScreen
         room={room}
         roomId={roomId}
@@ -457,20 +452,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
         mapsReady={mapsReady}
       />
     );
-  }
-
-  if (room.gameState === 'finished') {
-    return <FinalResults
-      roomId={roomId}
-      room={room}
-      playerId={playerId}
-      onRestart={generateLocations}
-      isHost={isHost}
-    />;
-  }
-
-  if (room.gameState === 'roundResults') {
-    return (
+  } else if (room.gameState === 'finished') {
+    content = (
+      <FinalResults
+        roomId={roomId}
+        room={room}
+        playerId={playerId}
+        onRestart={generateLocations}
+        isHost={isHost}
+      />
+    );
+  } else if (room.gameState === 'roundResults') {
+    content = (
       <RoundResults
         room={room}
         round={room.currentRound}
@@ -480,57 +473,106 @@ export default function GameRoom({ roomId, playerId }: Props) {
         mapsReady={mapsReady}
       />
     );
-  }
-
-  const allPlayerIds = Object.keys(room.players);
-  const modeBadge = room.gameMode === 'catalunya' ? '🔴🟡 Catalunya' : null;
-
-  return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-black">
-      {mapsReady && room.locations?.[room.currentRound] && (
-        <StreetViewPane
-          key={`sv-${room.currentRound}`}
-          location={room.locations[room.currentRound]}
-          gameMode={room.gameMode}
-        />
-      )}
-
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
-        <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
-          Ronda {room.currentRound + 1} / 5
-        </div>
-        {modeBadge && (
-          <div className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 px-3 py-1 rounded-full text-xs font-semibold">
-            {modeBadge}
-          </div>
+  } else {
+    const allPlayerIds = Object.keys(room.players);
+    content = (
+      <div className="relative w-full h-[100dvh] overflow-hidden bg-black">
+        {mapsReady && room.locations?.[room.currentRound] && (
+          <StreetViewPane
+            key={`sv-${room.currentRound}`}
+            location={room.locations[room.currentRound]}
+            gameMode={room.gameMode}
+          />
         )}
-      </div>
-      {/* ⏱️ EL RELLOTGE I ALERTA DE PÀNIC */}
-      {timeLeft !== null && room.gameState === 'playing' && (
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center pointer-events-none">
-          <div className={`px-6 py-3 rounded-full font-black text-3xl shadow-2xl transition-all duration-300 ${timeLeft <= 15
-            ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]'
-            : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
-            }`}>
-            ⏱️ {timeLeft}s
-          </div>
 
-          {/* Missatge si l'altre ha tirat i a tu et queda poc temps */}
-          {timeLeft <= 15 && !hasGuessed && !isSinglePlayer && (
-            <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
-              ⚠️ L'altre jugador ha tirat!
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+          <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
+            Ronda {room.currentRound + 1} / 5
+          </div>
+          {room.gameMode === 'catalunya' && (
+            <div className="bg-red-600/20 border border-red-500/40 text-red-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+              🚩 Catalunya
+            </div>
+          )}
+          {room.timeMode !== 'infinit' && room.roundEndsAt && (
+            <div className="flex flex-col items-center">
+              <div className={`px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 ${timeLeft <= 15
+                ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]'
+                : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
+                }`}>
+                ⏱️ {timeLeft}s
+              </div>
+              {timeLeft <= 15 && !hasGuessed && !isSinglePlayer && (
+                <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
+                  ⚠️ L'altre jugador ha tirat!
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
 
-      {/* ── ALERTA 10 SEGONS (MÉS PETITA) ── */}
+        <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
+          {allPlayerIds.map((id, i) => {
+            const player = room.players[id];
+            const isMe = id === playerId;
+            return (
+              <div
+                key={id}
+                className={`flex items-center justify-between gap-3 text-sm ${i > 0 ? 'mt-2 pt-2 border-t border-white/10' : ''}`}
+              >
+                <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
+                  {isMe ? '★ ' : ''}{player.name}
+                </span>
+                <span className="text-yellow-400 font-bold">
+                  {(room.totalScores?.[id] ?? 0).toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
+          {!hasGuessed && !showGuessMap && (
+            <button
+              onClick={() => setShowGuessMap(true)}
+              className="w-full bg-green-500 hover:bg-green-400 active:scale-95 text-white font-black py-5 rounded-full shadow-[0_10px_30px_rgba(34,197,94,0.4)] transition-all text-xl border-2 border-green-300/30 uppercase tracking-wide"
+            >
+              📍 Endevinar
+            </button>
+          )}
+          {hasGuessed && !isSinglePlayer && (
+            <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl">
+              ⏳ Esperant {Object.entries(room.players).find(([id]) => id !== playerId)?.[1]?.name ?? "l'adversari"}... ({timeLeft}s)
+            </div>
+          )}
+          {hasGuessed && isSinglePlayer && (
+            <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl animate-pulse">
+              ✅ Endevinança enviada...
+            </div>
+          )}
+        </div>
+
+        {showGuessMap && mapsReady && (
+          <GuessMap
+            onGuess={submitGuess}
+            onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }}
+            onClose={() => setShowGuessMap(false)}
+            gameMode={room.gameMode}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {content}
+
       {showAlert && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyItems: 'center',
           pointerEvents: 'none', animation: 'fadeIn 0.2s ease-out'
         }}>
-          {/* Posicionat a dalt al mig perquè no tapi el mapa sencer */}
           <div style={{
             position: 'absolute', top: '150px', left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(239, 68, 68, 0.95)', backdropFilter: 'blur(5px)', border: '2px solid #fca5a5',
@@ -545,57 +587,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
       )}
 
-      <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
-        {allPlayerIds.map((id, i) => {
-          const player = room.players[id];
-          const isMe = id === playerId;
-          return (
-            <div
-              key={id}
-              className={`flex items-center justify-between gap-3 text-sm ${i > 0 ? 'mt-2 pt-2 border-t border-white/10' : ''}`}
-            >
-              <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
-                {isMe ? '★ ' : ''}{player.name}
-              </span>
-              <span className="text-yellow-400 font-bold">
-                {(room.totalScores?.[id] ?? 0).toLocaleString()}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
-        {!hasGuessed && !showGuessMap && (
-          <button
-            onClick={() => setShowGuessMap(true)}
-            className="w-full bg-green-500 hover:bg-green-400 active:scale-95 text-white font-black py-5 rounded-full shadow-[0_10px_30px_rgba(34,197,94,0.4)] transition-all text-xl border-2 border-green-300/30 uppercase tracking-wide"
-          >
-            📍 Endevinar
-          </button>
-        )}
-        {hasGuessed && !isSinglePlayer && (
-          <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl">
-            ⏳ Esperant {Object.entries(room.players).find(([id]) => id !== playerId)?.[1]?.name ?? "l'adversari"}... ({timeLeft}s)
-          </div>
-        )}
-        {hasGuessed && isSinglePlayer && (
-          <div className="bg-black/80 backdrop-blur-md text-white px-6 py-3 rounded-full border border-white/20 text-sm shadow-xl animate-pulse">
-            ✅ Endevinança enviada...
-          </div>
-        )}
-      </div>
-
-      {showGuessMap && mapsReady && (
-        <GuessMap
-          onGuess={submitGuess}
-          onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }} // 👈 AFEGIT: Actualitza la nostra memòria en temps real
-          onClose={() => setShowGuessMap(false)}
-          gameMode={room.gameMode}
-        />
-      )}
-
-      {/* ── TOAST DE NOVA INSÍGNIA ── */}
       {badgeToast && (
         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-[320px] bg-gradient-to-r from-indigo-900 to-indigo-800 border-2 border-yellow-400/50 rounded-2xl p-5 shadow-[0_20px_50px_rgba(79,70,229,0.4)] flex items-center gap-4 animate-in slide-in-from-top-full duration-700">
           <div className="w-14 h-14 rounded-2xl bg-yellow-400 flex items-center justify-center text-3xl shadow-lg animate-bounce">🏅</div>
@@ -608,6 +599,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

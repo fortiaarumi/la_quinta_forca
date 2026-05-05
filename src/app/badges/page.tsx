@@ -1,11 +1,18 @@
-'use client';
-
 import { useAuth } from '@/lib/authContext';
 import { ALL_BADGES } from '@/lib/badges';
+import { getUserProfile, UserProfile } from '@/lib/userStats';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function BadgesPage() {
   const { badges, user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      getUserProfile(user.uid).then(setProfile);
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-[#06080f] text-white p-6 font-sans">
@@ -39,16 +46,21 @@ export default function BadgesPage() {
                 <tbody>
                   {ALL_BADGES.map((b) => {
                     const isUnlocked = badges.includes(b.id);
-                    const profile: any = user || {};
-                    const currentVal = b.field ? (profile[b.field] || 0) : 0;
+                    const userData: any = profile || {};
+                    const currentVal = b.field ? (userData[b.field] || 0) : 0;
                     const hasProgress = !!b.totalGoal;
                     const progressPercent = hasProgress ? Math.min(100, (currentVal / b.totalGoal!) * 100) : 0;
 
                     return (
                       <tr key={b.id} className={`border-b border-white/5 transition-all duration-500 ${isUnlocked ? 'bg-indigo-500/5' : 'opacity-60 grayscale'}`}>
                         <td className="p-5">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-xl border ${isUnlocked ? 'bg-indigo-600/20 border-indigo-500/40' : 'bg-gray-800 border-white/5'}`}>
-                            {isUnlocked ? '🏅' : '🔒'}
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl border transition-all ${isUnlocked ? 'bg-indigo-600/30 border-indigo-500/50 scale-110' : 'bg-gray-800/50 border-white/5'}`}>
+                            <span style={{ 
+                              filter: isUnlocked ? 'drop-shadow(0 0 10px rgba(99,102,241,0.5))' : 'none',
+                              paddingTop: '4px' // 👈 Evita que quedi massa a dalt
+                            }}>
+                              {isUnlocked ? '🏅' : '🔒'}
+                            </span>
                           </div>
                         </td>
                         <td className="p-5">
