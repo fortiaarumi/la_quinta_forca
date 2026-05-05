@@ -39,8 +39,13 @@ export default function BadgesPage() {
                 <tbody>
                   {ALL_BADGES.map((b) => {
                     const isUnlocked = badges.includes(b.id);
+                    const profile: any = user || {};
+                    const currentVal = b.field ? (profile[b.field] || 0) : 0;
+                    const hasProgress = !!b.totalGoal;
+                    const progressPercent = hasProgress ? Math.min(100, (currentVal / b.totalGoal!) * 100) : 0;
+
                     return (
-                      <tr key={b.id} className={`border-b border-white/5 transition-all duration-500 ${isUnlocked ? 'bg-indigo-500/5' : 'opacity-40 grayscale'}`}>
+                      <tr key={b.id} className={`border-b border-white/5 transition-all duration-500 ${isUnlocked ? 'bg-indigo-500/5' : 'opacity-60 grayscale'}`}>
                         <td className="p-5">
                           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-xl border ${isUnlocked ? 'bg-indigo-600/20 border-indigo-500/40' : 'bg-gray-800 border-white/5'}`}>
                             {isUnlocked ? '🏅' : '🔒'}
@@ -49,6 +54,22 @@ export default function BadgesPage() {
                         <td className="p-5">
                           <h3 className={`font-black text-lg ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>{b.label}</h3>
                           <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wider">{b.desc}</p>
+                          
+                          {/* Barra de Progrés */}
+                          {hasProgress && !isUnlocked && (
+                            <div className="mt-3 w-full max-w-[200px]">
+                              <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-gray-500 mb-1">
+                                <span>Progrés</span>
+                                <span>{currentVal} / {b.totalGoal}</span>
+                              </div>
+                              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                <div 
+                                  className="h-full bg-indigo-500 transition-all duration-1000 ease-out" 
+                                  style={{ width: `${progressPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td className="p-5 text-center">
                           <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${

@@ -145,6 +145,12 @@ export default function HomeScreen() {
     return () => unsubFriends();
   }, [user, isGuest]);
 
+  // Sincronitzem el playerName quan el nickname canvia
+  useEffect(() => {
+    if (nickname) setPlayerName(nickname);
+    else if (localStorage.getItem('geoGuestName')) setPlayerName(localStorage.getItem('geoGuestName')!);
+  }, [nickname]);
+
   // ── Llegir Vídeo Dinàmic des de Firebase ──
   useEffect(() => {
     const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
@@ -442,11 +448,11 @@ export default function HomeScreen() {
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
         players: { [playerId]: { 
-          name: playerName.trim(), 
+          name: (playerName.trim() || nickname || 'Explorador'), 
           joinedAt: Date.now(), 
           isAdmin: !!isAdmin,
-          avatarUrl: avatarUrl || undefined, // 👈 NOU
-          badges: badges || []               // 👈 NOU
+          avatarUrl: avatarUrl || null,
+          badges: badges || []
         } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: true, gameMode, timeMode,
@@ -473,11 +479,11 @@ export default function HomeScreen() {
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
         players: { [playerId]: { 
-          name: playerName.trim(), 
+          name: (playerName.trim() || nickname || 'Explorador'), 
           joinedAt: Date.now(), 
           isAdmin: !!isAdmin,
-          avatarUrl: avatarUrl || undefined, // 👈 NOU
-          badges: badges || []               // 👈 NOU
+          avatarUrl: avatarUrl || null,
+          badges: badges || []
         } },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
@@ -513,11 +519,11 @@ export default function HomeScreen() {
 
           if (!existing.includes(playerId)) {
             await set(ref(db, `rooms/${code}/players/${playerId}`), { 
-              name: playerName.trim(), 
+              name: (playerName.trim() || nickname || 'Explorador'), 
               joinedAt: Date.now(), 
               isAdmin: !!isAdmin,
-              avatarUrl: avatarUrl || undefined, // 👈 NOU
-              badges: badges || []               // 👈 NOU
+              avatarUrl: avatarUrl || null,
+              badges: badges || []
             });
             await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
           }
@@ -549,11 +555,11 @@ export default function HomeScreen() {
       }
       if (!existing.includes(playerId)) {
         await set(ref(db, `rooms/${code}/players/${playerId}`), { 
-          name: playerName.trim(), 
+          name: (playerName.trim() || nickname || 'Explorador'), 
           joinedAt: Date.now(), 
           isAdmin: !!isAdmin,
-          avatarUrl: avatarUrl || undefined, // 👈 NOU
-          badges: badges || []               // 👈 NOU
+          avatarUrl: avatarUrl || null,
+          badges: badges || []
         });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }

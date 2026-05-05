@@ -102,6 +102,12 @@ export default function AdminPanel() {
         bestScoreCatalunya_bala: Number(editingUser.bestScoreCatalunya_bala) || 0,
         bestScoreCatalunya_normal: Number(editingUser.bestScoreCatalunya_normal) || 0,
         bestScoreCatalunya_infinit: Number(editingUser.bestScoreCatalunya_infinit) || 0,
+        bestScoreEstadis_bala: Number(editingUser.bestScoreEstadis_bala) || 0,
+        bestScoreEstadis_normal: Number(editingUser.bestScoreEstadis_normal) || 0,
+        bestScoreEstadis_infinit: Number(editingUser.bestScoreEstadis_infinit) || 0,
+        bestScoreCultural_bala: Number(editingUser.bestScoreCultural_bala) || 0,
+        bestScoreCultural_normal: Number(editingUser.bestScoreCultural_normal) || 0,
+        bestScoreCultural_infinit: Number(editingUser.bestScoreCultural_infinit) || 0,
         total5k: Number(editingUser.total5k) || 0,
         badges: editingUser.badges || [], // 👈 NOU
       });
@@ -442,6 +448,24 @@ export default function AdminPanel() {
                       <input type="number" placeholder="Bala" value={editingUser.bestScoreCatalunya_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
                       <input type="number" placeholder="Normal" value={editingUser.bestScoreCatalunya_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
                       <input type="number" placeholder="Infinit" value={editingUser.bestScoreCatalunya_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCatalunya_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 border-b border-blue-900/50 pb-1">Estadis</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScoreEstadis_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreEstadis_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScoreEstadis_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreEstadis_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScoreEstadis_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreEstadis_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1 border-b border-purple-900/50 pb-1">Cultural</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScoreCultural_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCultural_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScoreCultural_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCultural_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScoreCultural_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreCultural_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
                     </div>
                   </div>
                 </div>

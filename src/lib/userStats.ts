@@ -66,9 +66,9 @@ export async function updateUserStatsAfterGame(
   totalGameScore: number,
   roundScores: number[],
   isWinner: boolean // 👈 NOU: Necessitem saber si ha guanyat
-): Promise<void> {
+): Promise<string[]> {
   const profile: any = await getUserProfile(uid);
-  if (!profile) return;
+  if (!profile) return [];
 
   // Construïm el nom de la caixa exacta depenent del mode i el temps
   let bestField = `bestScoreWorld_${timeMode}`;
@@ -92,7 +92,7 @@ export async function updateUserStatsAfterGame(
   // 2. Actualitzar millor puntuació
   if (totalGameScore > currentBest) {
     updates[bestField] = totalGameScore;
-    
+
     // També actualitzem el camp global per al rànquing
     let globalField = 'bestScoreWorld';
     if (gameMode === 'catalunya') globalField = 'bestScoreCatalunya';
@@ -114,43 +114,40 @@ export async function updateUserStatsAfterGame(
   // 4. LÒGICA D'INSÍGNIES (Automàtica)
   const currentBadges = profile.badges || [];
   const newBadges = [...currentBadges];
+  const earnedNow: string[] = [];
+
+  const checkAndAdd = (id: string) => {
+    if (!newBadges.includes(id)) {
+      newBadges.push(id);
+      earnedNow.push(id);
+    }
+  };
 
   // Brúixola d'Or (10 partides)
-  if (updates.totalGames >= 10 && !newBadges.includes("Brúixola d'Or")) {
-    newBadges.push("Brúixola d'Or");
-  }
+  if (updates.totalGames >= 10) checkAndAdd("Brúixola d'Or");
 
   // Franctirador (Un 5k perfecte)
   const has5kThisRound = roundScores.some(s => s >= 5000);
-  if (has5kThisRound && !newBadges.includes("Franctirador")) {
-    newBadges.push("Franctirador");
-  }
+  if (has5kThisRound) checkAndAdd("Franctirador");
 
   // Pubilla/Hereu de la Forca (Guanyar a Catalunya)
-  if (gameMode === 'catalunya' && isWinner && !newBadges.includes("Pubilla/Hereu de la Forca")) {
-    newBadges.push("Pubilla/Hereu de la Forca");
-  }
+  if (gameMode === 'catalunya' && isWinner) checkAndAdd("Pubilla/Hereu de la Forca");
 
   // Llegendari (50 victòries)
-  if (updates.totalWins >= 50 && !newBadges.includes("Llegendari")) {
-    newBadges.push("Llegendari");
-  }
+  if (updates.totalWins >= 50) checkAndAdd("Llegendari");
 
   // Lofish the goat (Guanya la teva primera partida)
-  if (updates.totalWins >= 1 && !newBadges.includes("Lofish the goat")) {
-    newBadges.push("Lofish the goat");
-  }
+  if (updates.totalWins >= 1) checkAndAdd("Lofish the goat");
 
   // Uri Badia (Guanya a estadis)
-  if (gameMode === 'estadis' && updates.totalWins >= 1 && !newBadges.includes("Uri Badia")) {
-    newBadges.push("Uri Badia");
-  }
+  if (gameMode === 'estadis' && isWinner) checkAndAdd("Uri Badia");
 
-  if (newBadges.length > currentBadges.length) {
+  if (earnedNow.length > 0) {
     updates.badges = newBadges;
   }
 
   await update(ref(db, `users/${uid}`), updates);
+  return earnedNow;
 }
 
 // Top 10 per mode

@@ -48,6 +48,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const statsSavedRef = useRef(false);
   const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
   const [showAlert, setShowAlert] = useState(false);
+  const [badgeToast, setBadgeToast] = useState<string | null>(null); // 👈 NOU
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic } = useAudio();
@@ -399,7 +400,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       // 3. Enviem les dades al nostre perfil (afegim el timeMode i isWinner)
       updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner)
-        .then(() => console.log('Estadístiques guardades amb èxit!'))
+        .then((newBadges) => {
+          console.log('Estadístiques guardades amb èxit!');
+          // Si hem guanyat alguna insígnia nova, mostrem el toast
+          if (newBadges && newBadges.length > 0) {
+            newBadges.forEach((b, i) => {
+              setTimeout(() => {
+                setBadgeToast(b);
+                setTimeout(() => setBadgeToast(null), 5000);
+              }, i * 6000); // 6 segons entre cada insígnia si en guanyem més d'una
+            });
+          }
+        })
         .catch(e => console.error('Error guardant estadístiques:', e));
     }
   }, [room?.gameState, room?.totalScores, room?.rounds, room?.gameMode, user, isGuest, playerId]);
@@ -581,6 +593,20 @@ export default function GameRoom({ roomId, playerId }: Props) {
           onClose={() => setShowGuessMap(false)}
           gameMode={room.gameMode}
         />
+      )}
+
+      {/* ── TOAST DE NOVA INSÍGNIA ── */}
+      {badgeToast && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-[320px] bg-gradient-to-r from-indigo-900 to-indigo-800 border-2 border-yellow-400/50 rounded-2xl p-5 shadow-[0_20px_50px_rgba(79,70,229,0.4)] flex items-center gap-4 animate-in slide-in-from-top-full duration-700">
+          <div className="w-14 h-14 rounded-2xl bg-yellow-400 flex items-center justify-center text-3xl shadow-lg animate-bounce">🏅</div>
+          <div className="flex-1">
+            <p className="text-[10px] font-black text-yellow-400 uppercase tracking-[0.2em] mb-1">Nova Insígnia!</p>
+            <p className="text-white text-lg font-black leading-tight uppercase tracking-tighter italic">
+              {badgeToast}
+            </p>
+            <p className="text-indigo-200 text-[9px] font-bold mt-1">Enhorabona, explorador!</p>
+          </div>
+        </div>
       )}
     </div>
   );
