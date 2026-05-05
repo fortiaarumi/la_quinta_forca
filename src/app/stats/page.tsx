@@ -136,7 +136,8 @@ export default function StatsPage() {
                   {ranking.map((player, index) => (
                     <tr
                       key={player.uid}
-                      className={`border-b border-white/5 transition-colors hover:bg-white/[0.02] ${user?.uid === player.uid ? 'bg-emerald-500/10' : ''}`}
+                      className={`border-b border-white/5 transition-colors hover:bg-white/[0.02] animate-slide-up opacity-0 ${user?.uid === player.uid ? 'bg-emerald-500/10' : ''}`}
+                      style={{ animationDelay: `${index * 0.05}s` }}
                     >
                       <td className="p-6 font-black text-xl italic opacity-30 italic">#{index + 1}</td>
                       <td className="p-6">

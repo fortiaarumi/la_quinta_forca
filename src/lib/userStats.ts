@@ -84,10 +84,8 @@ export async function updateUserStatsAfterGame(
   const updates: Record<string, any> = {};
 
   // 1. Comptar 5K
-  if (gameMode === 'world' || gameMode === 'catalunya') {
-    const new5k = roundScores.filter((s) => s >= 5000).length;
-    updates.total5k = (profile.total5k ?? 0) + new5k;
-  }
+  const new5k = roundScores.filter((s) => s >= 5000).length;
+  updates.total5k = (profile.total5k ?? 0) + new5k;
 
   // 2. Actualitzar millor puntuació
   if (totalGameScore > currentBest) {

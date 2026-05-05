@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
 
   const goToStep = (step: typeof setupStep, direction: 'forward' | 'backward' = 'forward') => {
+    if (step === setupStep) return; // No fem transició si és el mateix pas (toggling options)
     setAnimDirection(direction);
     setSetupStep(step);
   };
@@ -482,7 +483,7 @@ export default function HomeScreen() {
               <h1 className="text-5xl font-black uppercase tracking-tighter italic">La Quinta Forca</h1>
             </div>
             <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] ml-1">
-              Creat per <span className="text-yellow-500/80">Roger Bernadó</span> & <span className="text-indigo-400/80">Gemma Guinovart</span>
+              Creat per <span className="text-yellow-500/80">Fortià Arumí Casals</span>
             </p>
           </div>
 
@@ -583,7 +584,7 @@ export default function HomeScreen() {
                   <div className="flex items-center gap-4">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                      {onlineCount} Exploradors online
+                      {onlineCount} Jugadors en línia
                     </span>
                   </div>
                   {user && !isGuest && (
@@ -698,7 +699,10 @@ export default function HomeScreen() {
         <footer className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left animate-fade-in pb-12">
           <div className="flex flex-wrap gap-12 justify-center">
             <button onClick={() => setShowSunoManual(true)} className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-yellow-500 transition-colors bg-transparent border-none cursor-pointer">📖 Manual Suno</button>
-            <a href="mailto:fortiaarumi@gmail.com" className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-indigo-400 transition-colors no-underline">✉️ Contactar</a>
+            <a href="mailto:laquintaforca.joc@gmail.com" className="flex flex-col text-left no-underline group">
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-400 transition-colors">✉️ Contactar</span>
+              <span className="text-[8px] font-bold text-gray-700 lowercase tracking-widest group-hover:text-indigo-300 transition-colors">laquintaforca.joc@gmail.com</span>
+            </a>
             <a href="https://paypal.me/fortiaarumi" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-emerald-400 transition-colors no-underline">☕ Donar Suport</a>
           </div>
           <p className="text-[9px] font-bold text-gray-800 uppercase tracking-[0.3em]">© 2026 La Quinta Forca • Tots els drets reservats</p>
@@ -714,22 +718,34 @@ export default function HomeScreen() {
               <h2 className="text-3xl font-black uppercase tracking-tighter italic text-white">Música al Lobby</h2>
               <button onClick={() => setShowSunoManual(false)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-2xl text-white border-none cursor-pointer">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-10 space-y-8 text-gray-400 text-base">
-              <p>Seguiu aquests passos per tenir la vostra música personalitzada:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { step: "01", title: "Crea", desc: "Aneu a Suno.com i creeu el vostre beat." },
-                  { step: "02", title: "Enllaç", desc: "Copieu l'enllaç públic de la cançó." },
-                  { step: "03", title: "Envia", desc: "Passeu l'enllaç a l'admin del joc." },
-                  { step: "04", title: "Sona", desc: "La cançó sonarà al lobby per a tothom!" }
-                ].map(s => (
-                  <div key={s.step} className="bg-white/5 p-6 rounded-3xl border border-white/5">
-                    <span className="text-yellow-500 font-black text-2xl italic">{s.step}</span>
-                    <h4 className="text-white font-black uppercase tracking-widest text-sm mt-2">{s.title}</h4>
-                    <p className="text-xs mt-2 text-gray-500 font-bold">{s.desc}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="flex-1 overflow-y-auto p-10 space-y-8 text-gray-400 text-sm leading-relaxed">
+              <p>Vols que la teva música soni al lobby? Aquest joc és open-source i qualsevol jugador pot fer de servidor!</p>
+              
+              <section className="space-y-4">
+                <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">1</span>
+                  Instal·lació del Bot
+                </h3>
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
+                  <p>• Descarrega el codi des de <strong>GitHub</strong>.</p>
+                  <p>• Instal·la <strong>Node.js</strong> i <strong>Git</strong> al teu ordinador.</p>
+                  <p>• Executa <code>npm install</code> a la carpeta del projecte.</p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">2</span>
+                  Configuració
+                </h3>
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
+                  <p>• Crea un fitxer <code>.env.local</code> amb les teves claus de Firebase.</p>
+                  <p>• Executa <code>node --env-file=.env.local suno-puppeteer.mjs</code>.</p>
+                  <p>• S'obrirà Chrome: inicia sessió a <strong>Suno.com</strong> i llest!</p>
+                </div>
+              </section>
+
+              <p className="text-[10px] text-gray-600 italic">Un cop engegat, el sistema detectarà el teu bot automàticament i permetrà generar cançons satíriques a tothom!</p>
             </div>
           </div>
         </div>
@@ -816,7 +832,7 @@ export default function HomeScreen() {
               <h2 className="text-3xl font-black uppercase tracking-tighter italic text-white">Comunitat</h2>
               <button onClick={() => setActiveMenu('play')} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-2xl text-white border-none cursor-pointer">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-10">
+            <div className="flex-1 overflow-y-auto px-10 pb-10">
               <FriendsTab />
             </div>
           </div>

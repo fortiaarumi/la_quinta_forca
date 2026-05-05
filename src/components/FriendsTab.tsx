@@ -216,7 +216,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl animate-fade-in-up">
+    <div className="animate-fade-in-up">
       
       {/* Afegir Amic */}
       <div className="flex gap-2 mb-4">
