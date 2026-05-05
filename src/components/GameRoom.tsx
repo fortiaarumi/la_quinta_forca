@@ -496,13 +496,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
           )}
           {room.timeMode !== 'infinit' && room.roundEndsAt && (
             <div className="flex flex-col items-center">
-              <div className={`px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 ${timeLeft <= 15
+              <div className={`px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 ${(timeLeft ?? 100) <= 15
                 ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]'
                 : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
                 }`}>
                 ⏱️ {timeLeft}s
               </div>
-              {timeLeft <= 15 && !hasGuessed && !isSinglePlayer && (
+              {(timeLeft ?? 100) <= 15 && !hasGuessed && !isSinglePlayer && (
                 <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
                   ⚠️ L'altre jugador ha tirat!
                 </div>

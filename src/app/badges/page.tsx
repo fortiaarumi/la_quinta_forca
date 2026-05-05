@@ -1,8 +1,10 @@
+'use client';
+
 import { useAuth } from '@/lib/authContext';
 import { ALL_BADGES } from '@/lib/badges';
 import { getUserProfile, UserProfile } from '@/lib/userStats';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function BadgesPage() {
   const { badges, user } = useAuth();
