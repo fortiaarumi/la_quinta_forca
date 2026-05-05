@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/authContext';
@@ -30,6 +30,15 @@ export const metadata: Metadata = {
   verification: {
     google: 'fUuJHjL2IjEfzQfHH8ctRaJnumXrxI2G6zOXWskDE-s',
   },
+  manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#d4af37',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
