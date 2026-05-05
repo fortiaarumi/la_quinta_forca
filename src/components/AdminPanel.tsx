@@ -198,10 +198,10 @@ export default function AdminPanel() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 border-b border-white/10 pb-6">
           <div>
             <div className="text-emerald-400 text-[10px] font-black tracking-[0.3em] uppercase mb-1">Centre de Comandament</div>
-            <h1 className="text-4xl font-black tracking-tight">Panell d'Admin 👑</h1>
+            <h1 className="text-4xl font-black tracking-tight">Panell d&apos;Admin 👑</h1>
           </div>
           <button onClick={() => window.location.href = '/'} className="bg-white/10 hover:bg-white/20 px-5 py-2 rounded-xl text-sm font-bold transition-all">
-            Sortir de l'Admin
+            Sortir de l&apos;Admin
           </button>
         </div>
 
@@ -227,7 +227,7 @@ export default function AdminPanel() {
         {/* ── CONTINGUT PESTANYA APP (VÍDEO I TEXT) ── */}
         {activeTab === 'app' && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 animate-fade-in-up">
-            <h2 className="text-xl font-black mb-6 text-emerald-400 border-b border-white/10 pb-4">Personalització de l'Inici</h2>
+            <h2 className="text-xl font-black mb-6 text-emerald-400 border-b border-white/10 pb-4">Personalització de l&apos;Inici</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">

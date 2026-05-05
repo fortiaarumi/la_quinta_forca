@@ -210,7 +210,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   if (isGuest) {
     return (
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 text-center text-gray-400">
-        <p>Has d'iniciar sessió per afegir amics.</p>
+        <p>Has d&apos;iniciar sessió per afegir amics.</p>
       </div>
     );
   }
