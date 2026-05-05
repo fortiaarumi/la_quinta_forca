@@ -94,7 +94,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         if (data.lastEvent && data.lastEvent.timestamp > lastEventRef.current) {
           lastEventRef.current = data.lastEvent.timestamp;
           if (data.lastEvent.type === 'leave') {
-            setSystemMessage(`${data.lastEvent.playerName} ha abandonat la partida.`);
+            setSystemMessage(`${data.lastEvent.playerName} ha abandonat la partida!.`);
             setTimeout(() => setSystemMessage(null), 4000);
           }
         }
