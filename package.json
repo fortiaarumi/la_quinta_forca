@@ -14,7 +14,7 @@
     "canvas-confetti": "^1.9.4",
     "firebase": "^12.12.1",
     "groq-sdk": "^1.1.2",
-    "next": "15.1.4",
+    "next": "15.1.11",
     "nodemailer": "^8.0.7",
     "react": "19.0.0",
     "react-dom": "19.0.0",
