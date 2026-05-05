@@ -209,7 +209,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           // 1. Tancar el mapa i enviar el pin auto-guardat si s'ha esgotat el temps
           if (isTimeUp && !hasGuessed) {
             if (tempPinRef.current) {
-              await submitGuess(tempPinRef.current.lat, tempPinRef.current.lng); // Esperem que s'enviï
+              await submitGuess(tempPinRef.current.lat, tempPinRef.current.lng); // Esperem que s'enviï siusplau
             } else {
               setShowGuessMap(false);
               setHasGuessed(true);
