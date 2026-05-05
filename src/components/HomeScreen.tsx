@@ -12,6 +12,7 @@ import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import { useAudio } from '@/lib/AudioContext';
+import PWAInstallPrompt from './PWAInstallPrompt';
 
 // Per a convidats: manté el localStorage ID
 import { ALL_BADGES } from '@/lib/badges';
@@ -906,6 +907,7 @@ export default function HomeScreen() {
           </div>
         </div>
       )}
+      <PWAInstallPrompt />
     </main>
   );
 }
