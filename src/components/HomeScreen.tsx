@@ -793,7 +793,6 @@ export default function HomeScreen() {
               <section className="space-y-4">
                 <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">1</span>
-                  Instal·lació del Bot
                 </h3>
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
                   <p>• Descarrega el codi des de <strong>GitHub</strong>.</p>
@@ -810,7 +809,7 @@ export default function HomeScreen() {
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
                   <p>• Crea un fitxer <code>.env.local</code> amb les teves claus de Firebase.</p>
                   <p>• Executa <code>node --env-file=.env.local suno-puppeteer.mjs</code>.</p>
-                  <p>• S'obrirà Chrome: inicia sessió a <strong>Suno.com</strong> i llest!</p>
+                  <p>• S&apos;obrirà Chrome: inicia sessió a <strong>Suno.com</strong> i llest!</p>
                 </div>
               </section>
 
@@ -871,7 +870,7 @@ export default function HomeScreen() {
           <div className="bg-[#0c0f1a] border border-indigo-500/30 rounded-[3rem] p-8 shadow-2xl flex items-center gap-8 backdrop-blur-xl">
             <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center text-4xl shadow-2xl">🤝</div>
             <div>
-              <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Petició d'amistat</p>
+              <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Petició d&apos;amistat</p>
               <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{activeFriendReq.nickname}</h3>
               <div className="flex gap-3 mt-5">
                 <button onClick={async () => { await acceptFriendRequest(user!.uid, activeFriendReq.uid); setActiveFriendReq(null); }} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-xl cursor-pointer border-none">Acceptar</button>

@@ -343,7 +343,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           )}
 
           <button onClick={onLeave} className="w-full bg-transparent text-gray-500 hover:text-white font-black py-4 rounded-2xl text-[10px] transition-all uppercase tracking-[0.4em]">
-            🏠 Tornar a l'inici
+            🏠 Tornar a l&apos;inici
           </button>
         </div>
       </div>
