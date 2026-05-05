@@ -48,7 +48,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const statsSavedRef = useRef(false);
   const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
   const [showAlert, setShowAlert] = useState(false);
-  const [badgeToast, setBadgeToast] = useState<string | null>(null); // 👈 NOU
+  const [badgeToast, setBadgeToast] = useState<string | null>(null);
+  const [systemMessage, setSystemMessage] = useState<string | null>(null); // 👈 NOU
+  const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic } = useAudio();
@@ -87,6 +89,16 @@ export default function GameRoom({ roomId, playerId }: Props) {
           setLoading(false);
           return;
         }
+
+        // ── NOU: Escolta d'esdeveniments del sistema (jugadors que marxen) ──
+        if (data.lastEvent && data.lastEvent.timestamp > lastEventRef.current) {
+          lastEventRef.current = data.lastEvent.timestamp;
+          if (data.lastEvent.type === 'leave') {
+            setSystemMessage(`${data.lastEvent.playerName} ha abandonat la partida.`);
+            setTimeout(() => setSystemMessage(null), 4000);
+          }
+        }
+
         setRoom(data);
         setLoading(false);
       },
@@ -111,6 +123,44 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
   const isSinglePlayer = room?.isSinglePlayer ?? false;
   const isHost = room?.hostId === playerId;
+
+  // ── LÒGICA D'ABANDONAR (UNIFICADA) ──
+  const handleLeave = useCallback(async () => {
+    if (!room) return;
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const playerIds = Object.keys(room.players);
+
+    if (playerIds.length <= 1) {
+      // Únic jugador: eliminem la sala
+      await set(roomRef, null);
+      window.location.href = '/';
+      return;
+    }
+
+    const remainingPlayers = playerIds
+      .filter(id => id !== playerId)
+      .map(id => ({ id, joinedAt: (room.players[id] as any).joinedAt || 0 }))
+      .sort((a, b) => a.joinedAt - b.joinedAt);
+
+    const updates: any = {};
+    updates[`players/${playerId}`] = null;
+    updates[`totalScores/${playerId}`] = null; // Netegem també puntuació
+
+    // Si som el host, migrem al següent
+    if (isHost && remainingPlayers.length > 0) {
+      updates.hostId = remainingPlayers[0].id;
+    }
+
+    // Notifiquem als altres
+    updates.lastEvent = {
+      type: 'leave',
+      playerName: room.players[playerId]?.name || 'Un jugador',
+      timestamp: Date.now()
+    };
+
+    await update(roomRef, updates);
+    window.location.href = '/';
+  }, [room, roomId, playerId, isHost]);
 
   // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
@@ -448,6 +498,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         playerId={playerId}
         isHost={isHost}
         onStart={generateLocations}
+        onLeave={handleLeave} // 👈 Passem el nou handler
         isGenerating={room.gameState === 'generating'}
         mapsReady={mapsReady}
       />
@@ -459,6 +510,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         room={room}
         playerId={playerId}
         onRestart={generateLocations}
+        onLeave={handleLeave}
         isHost={isHost}
       />
     );
@@ -470,6 +522,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         isHost={isHost}
         playerId={playerId}
         onNext={nextRound}
+        onLeave={handleLeave} // 👈 NOU: Per abandonar a mig joc
         mapsReady={mapsReady}
       />
     );
@@ -596,6 +649,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
               {badgeToast}
             </p>
             <p className="text-indigo-200 text-[9px] font-bold mt-1">Enhorabona, explorador!</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST DE SISTEMA (ABANDONAMENTS) ── */}
+      {systemMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-[350px] bg-red-950/90 border border-red-500/50 backdrop-blur-xl rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 animate-in slide-in-from-top-10 duration-500">
+          <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-xl">🏃</div>
+          <div className="flex-1">
+            <p className="text-white text-sm font-black italic uppercase tracking-tighter">
+              {systemMessage}
+            </p>
           </div>
         </div>
       )}

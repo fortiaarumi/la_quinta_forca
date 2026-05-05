@@ -5,7 +5,7 @@ import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransact
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
-import { GameMode } from '@/lib/types';
+import { GameMode, Room } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
 import { getUserProfile } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
@@ -59,8 +59,9 @@ export default function HomeScreen() {
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
 
   // ── NOU: ESTATS PER AL FLUX DE CONFIGURACIÓ ELEGANT ──
-  const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'mode' | 'time' | 'join'>('idle');
+  const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'mode' | 'time' | 'join' | 'joinChoice'>('idle');
   const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
+  const [publicRooms, setPublicRooms] = useState<{id: string, room: Room}[]>([]); // 👈 NOU
 
   const goToStep = (step: typeof setupStep, direction: 'forward' | 'backward' = 'forward') => {
     if (step === setupStep) return; // No fem transició si és el mateix pas (toggling options)
@@ -284,6 +285,26 @@ export default function HomeScreen() {
     return () => unsub();
   }, [user]);
 
+  // Escolta de sales públiques
+  useEffect(() => {
+    if (setupStep === 'joinChoice') {
+      const roomsRef = ref(db, 'rooms');
+      const unsub = onValue(roomsRef, (snap) => {
+        if (snap.exists()) {
+          const all = snap.val();
+          const listed = Object.entries(all)
+            .filter(([_, r]: any) => r.isPublic && r.gameState === 'lobby' && !r.isSinglePlayer)
+            .map(([id, r]: any) => ({ id, room: r }))
+            .sort((a, b) => (b.room.createdAt || 0) - (a.room.createdAt || 0));
+          setPublicRooms(listed);
+        } else {
+          setPublicRooms([]);
+        }
+      });
+      return () => unsub();
+    }
+  }, [setupStep]);
+
   const acceptInvite = async () => {
     if (!activeInvite || !user) return;
     const code = activeInvite.roomId;
@@ -394,9 +415,7 @@ export default function HomeScreen() {
     } catch { setError('Error en crear la sala.'); setLoading(false); }
   };
 
-  const handleJoin = async () => {
-    const code = joinCode.trim().toUpperCase();
-    if (!code) return setError('Introdueix el codi');
+  const handleJoinDirect = async (code: string) => {
     setLoading(true); setError('');
     const playerId = getPlayerId();
     try {
@@ -416,6 +435,12 @@ export default function HomeScreen() {
       }
       router.push(`/room/${code}`);
     } catch { setError('Error en entrar.'); setLoading(false); }
+  };
+
+  const handleJoin = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code) return setError('Introdueix el codi');
+    handleJoinDirect(code);
   };
 
   // COMPONENTS ELEGANTS
@@ -601,11 +626,12 @@ export default function HomeScreen() {
             <div className="w-full max-w-xl mx-auto py-12">
               <button 
                 onClick={() => {
-                  const prevMap: Record<string, 'idle' | 'type' | 'mode' | 'time' | 'join'> = { 
+                  const prevMap: Record<string, 'idle' | 'type' | 'mode' | 'time' | 'join' | 'joinChoice'> = { 
                     'type': 'idle', 
                     'mode': 'type', 
                     'time': 'mode', 
-                    'join': 'type' 
+                    'join': 'joinChoice',
+                    'joinChoice': 'type'
                   };
                   goToStep(prevMap[setupStep], 'backward');
                 }}
@@ -632,10 +658,53 @@ export default function HomeScreen() {
                     />
                     <OptionCard 
                       title="Unir-se" 
-                      desc="Entra en una sala amb un codi." 
+                      desc="Entra en una sala pública o per codi." 
                       icon="🔑"
+                      onClick={() => goToStep('joinChoice')}
+                    />
+                  </div>
+                </StepWrapper>
+              )}
+
+              {setupStep === 'joinChoice' && (
+                <StepWrapper direction={animDirection}>
+                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter">Com vols entrar?</h3>
+                  <div className="space-y-4">
+                    <OptionCard 
+                      title="Codi de Sala" 
+                      desc="Si t'han passat un codi privat." 
+                      icon="🔢"
                       onClick={() => goToStep('join')}
                     />
+                    
+                    <div className="pt-8">
+                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-6 italic text-center">Sales Públiques Disponibles</p>
+                      
+                      {publicRooms.length > 0 ? (
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                          {publicRooms.map(({ id, room }) => (
+                            <button
+                              key={id}
+                              onClick={() => handleJoinDirect(id)}
+                              className="w-full bg-white/5 border border-white/10 hover:border-yellow-500/50 hover:bg-white/10 p-5 rounded-3xl flex items-center justify-between transition-all group"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🌍</div>
+                                <div className="text-left">
+                                  <p className="text-white font-black uppercase text-xs tracking-widest">{Object.values(room.players)[0]?.name || 'Explorador'}&apos;s Room</p>
+                                  <p className="text-[8px] text-gray-500 font-bold uppercase tracking-wider">{room.gameMode} • {room.timeMode} • {Object.keys(room.players).length} jugadors</p>
+                                </div>
+                              </div>
+                              <span className="text-yellow-500 font-black tracking-widest text-xs group-hover:translate-x-1 transition-transform">ENTRAR →</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-white/5 border border-white/5 p-10 rounded-3xl text-center">
+                          <p className="text-gray-600 text-[10px] font-black uppercase tracking-widest italic">No hi ha sales públiques en aquest moment.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </StepWrapper>
               )}

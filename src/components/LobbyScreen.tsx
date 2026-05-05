@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Room } from '@/lib/types';
-import { ref, onValue, set, get } from 'firebase/database';
+import { ref, onValue, set, get, update } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import LobbyChat from './LobbyChat';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   room: Room;
@@ -16,13 +17,24 @@ interface Props {
   onStart: () => void;
   isGenerating: boolean;
   mapsReady: boolean;
+  onLeave: () => void;
 }
 
 export default function LobbyScreen({
-  room, roomId, playerId, isHost, onStart, isGenerating, mapsReady,
+  room, roomId, playerId, isHost, onStart, isGenerating, mapsReady, onLeave
 }: Props) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const players = Object.entries(room.players);
+  const [showHostMessage, setShowHostMessage] = useState(false);
+  
+  useEffect(() => {
+    if (room.hostId === playerId && !isHost) {
+      setShowHostMessage(true);
+      setTimeout(() => setShowHostMessage(false), 5000);
+    }
+  }, [room.hostId, playerId, isHost]);
+
+  const players = Object.entries(room.players).sort((a, b) => (a[1].joinedAt || 0) - (b[1].joinedAt || 0));
   const canStart = isHost && players.length >= 2 && mapsReady && !isGenerating;
 
   const { user, nickname } = useAuth();
@@ -31,10 +43,7 @@ export default function LobbyScreen({
   const [myFriends, setMyFriends] = useState<string[]>([]);
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
 
-  // Vídeo dinàmic de la sala d'espera
   const [lobbyVideo, setLobbyVideo] = useState({ url: '/Rochaesquiant.mp4', caption: 'Vídeo del dia' });
-
-  // ── NOU: Petició d'amistat en temps real al lobby ──
   const [activeFriendReq, setActiveFriendReq] = useState<{ uid: string; nickname: string } | null>(null);
 
   useEffect(() => {
@@ -50,7 +59,6 @@ export default function LobbyScreen({
     return () => unsub();
   }, []);
 
-  // ── NOU: Radar de peticions d'amistat al lobby ──
   useEffect(() => {
     if (!user) return;
     const reqRef = ref(db, `users/${user.uid}/friendRequests`);
@@ -79,23 +87,19 @@ export default function LobbyScreen({
     setActiveFriendReq(null);
   };
 
-  // Busquem els amics que estiguin 'online'
   useEffect(() => {
     if (!user) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
-
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) {
         setOnlineFriends([]);
         setMyFriends([]);
         return;
       }
-
       const friendUids = Object.keys(snap.val());
       setMyFriends(friendUids);
       const unsubList: (() => void)[] = [];
       const friendsMap = new Map();
-
       friendUids.forEach(uid => {
         const userRef = ref(db, `users/${uid}`);
         const unsub = onValue(userRef, (uSnap) => {
@@ -111,10 +115,8 @@ export default function LobbyScreen({
         });
         unsubList.push(unsub);
       });
-
       return () => unsubList.forEach(u => u());
     });
-
     return () => unsubFriends();
   }, [user]);
 
@@ -137,73 +139,57 @@ export default function LobbyScreen({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 text-white flex flex-col items-center justify-center p-8">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-3">🌍</div>
-          <h1 className="text-3xl font-black">Sala d&apos;espera</h1>
+    <div className="min-h-screen bg-[#06080f] text-white flex flex-col items-center justify-center p-8 relative overflow-hidden">
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-yellow-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-sm relative z-10">
+        <div className="text-center mb-10">
+          <div className="text-7xl mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">🌍</div>
+          <h1 className="text-4xl font-black uppercase italic tracking-tighter">Sala d&apos;espera</h1>
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">La Quinta Forca — Multiplayer</p>
         </div>
 
-        {/* Codi de sala */}
-        <div className="bg-gray-800/80 border border-gray-700 rounded-2xl p-6 mb-6 text-center shadow-xl">
-          <p className="text-gray-400 text-xs uppercase tracking-widest mb-2">Codi de Sala</p>
-          <p className="text-5xl font-black font-mono tracking-[0.3em] mb-4 text-white">{roomId}</p>
-          <button
-            onClick={copyCode}
-            className="text-sm text-green-400 hover:text-green-300 transition-colors font-medium"
-          >
-            {copied ? '✓ Copiat!' : '📋 Copiar codi'}
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 mb-8 text-center shadow-2xl">
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4 italic">Codi de Sala</p>
+          <p className="text-6xl font-black font-mono tracking-[0.3em] mb-6 text-yellow-500 drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">{roomId}</p>
+          <button onClick={copyCode} className="text-[10px] uppercase font-black tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors bg-transparent border-none cursor-pointer">
+            {copied ? '✓ Copiat al porta-retalls' : '📋 Copiar codi'}
           </button>
         </div>
 
-        {/* Jugadors */}
-        <div className="mb-8">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Jugadors ({players.length}/10)
-          </p>
-          <div className="space-y-2">
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+              Jugadors <span className="text-white italic">({players.length}/10)</span>
+            </p>
+          </div>
+          <div className="space-y-3">
             {players.map(([id, player]) => (
-              <div key={id} className="flex items-center gap-3 bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div key={id} className={`flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10 ${id === playerId ? 'border-indigo-500/30' : ''}`}>
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
-                    {player.avatarUrl ? (
-                      <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-lg opacity-40">👤</span>
-                    )}
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex items-center justify-center shadow-inner">
+                    {player.avatarUrl ? <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" /> : <span className="text-xl opacity-40">👤</span>}
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-gray-800 animate-pulse" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0c0f1a] shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-semibold text-sm">
-                    {player.name}{id === playerId ? ' (Tu)' : ''}
-                  </span>
+                  <span className="font-black text-sm uppercase tracking-tight">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
                   {player.badges && player.badges.length > 0 && (
-                    <div className="flex gap-1 mt-0.5 overflow-hidden">
-                      {player.badges.slice(0, 2).map((b, bi) => (
-                        <span key={bi} className="text-[7px] text-indigo-300 font-bold uppercase truncate">🏅 {b}</span>
-                      ))}
+                    <div className="flex gap-1 mt-1">
+                      {player.badges.slice(0, 2).map((b, bi) => <span key={bi} className="text-[7px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>)}
                     </div>
                   )}
                 </div>
-
                 <div className="ml-auto flex items-center gap-2">
-                  {id === room.hostId && (
-                    <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
-                      HOST
-                    </span>
-                  )}
+                  {id === room.hostId && <span className="text-[8px] bg-yellow-500/20 text-yellow-500 px-3 py-1 rounded-full font-black uppercase tracking-widest border border-yellow-500/30">HOST</span>}
                   {user && id !== playerId && !myFriends.includes(id) && (
                     <button
-                      onClick={async () => {
-                        await sendFriendRequest(user.uid, id);
-                        setFriendReqSent(prev => ({ ...prev, [id]: true }));
-                      }}
+                      onClick={async () => { await sendFriendRequest(user.uid, id); setFriendReqSent(prev => ({ ...prev, [id]: true })); }}
                       disabled={friendReqSent[id]}
-                      className={`text-[10px] uppercase font-black px-3 py-1.5 rounded-lg transition-all ${friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'
-                        }`}
+                      className={`text-[9px] uppercase font-black px-3 py-2 rounded-xl transition-all ${friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'}`}
                     >
-                      {friendReqSent[id] ? '✓ Petició Enviada' : '+ Afegir Amic'}
+                      {friendReqSent[id] ? '✓ Enviada' : '+ Amic'}
                     </button>
                   )}
                 </div>
@@ -212,37 +198,25 @@ export default function LobbyScreen({
           </div>
         </div>
 
-        {/* Amics online */}
         {user && onlineFriends.length > 0 && (
-          <div className="mb-8 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl p-5 shadow-xl">
-            <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3 text-center">
-              Amics en línia ({onlineFriends.length})
-            </p>
-            <div className="space-y-2">
+          <div className="mb-10 bg-indigo-900/10 border border-indigo-500/20 rounded-3xl p-6 shadow-2xl">
+            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4 text-center">Amics en línia ({onlineFriends.length})</p>
+            <div className="space-y-3">
               {onlineFriends.map((friend) => (
-                <div key={friend.uid} className="flex items-center justify-between bg-black/40 rounded-xl p-3 border border-white/5">
-                  <div className="flex items-center gap-2">
+                <div key={friend.uid} className="flex items-center justify-between bg-black/40 rounded-2xl p-3 border border-white/5 transition-all hover:border-white/10">
+                  <div className="flex items-center gap-3">
                     <div className="relative">
-                      <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
-                        {friend.avatarUrl ? (
-                          <img src={friend.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-xs opacity-40">👤</span>
-                        )}
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                        {friend.avatarUrl ? <img src={friend.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-xs opacity-40">👤</span>}
                       </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                     </div>
-                    <span className="font-bold text-sm">{friend.nickname}</span>
+                    <span className="font-black text-sm uppercase tracking-tight">{friend.nickname}</span>
                   </div>
                   <button
                     onClick={() => sendInvite(friend.uid)}
                     disabled={invited[friend.uid] || Object.keys(room.players).includes(friend.uid)}
-                    className={`text-xs px-4 py-2 rounded-lg font-black tracking-wider uppercase transition-all ${Object.keys(room.players).includes(friend.uid)
-                      ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                      : invited[friend.uid]
-                        ? 'bg-emerald-500/20 text-emerald-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 shadow-lg'
-                      }`}
+                    className={`text-[9px] px-4 py-2 rounded-xl font-black tracking-widest uppercase transition-all ${Object.keys(room.players).includes(friend.uid) ? 'bg-gray-500/20 text-gray-400' : invited[friend.uid] ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'}`}
                   >
                     {Object.keys(room.players).includes(friend.uid) ? 'A la sala' : invited[friend.uid] ? '✓ Enviat' : 'Convidar'}
                   </button>
@@ -252,92 +226,74 @@ export default function LobbyScreen({
           </div>
         )}
 
-        {/* ── NOU: XAT DEL LOBBY ── */}
         <div className="mb-8">
           <LobbyChat roomId={roomId} playerId={playerId} room={room} />
         </div>
 
-        {/* Vídeo del dia */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">📹 Entreteniment</span>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-            <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3 relative">
-              <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent opacity-50 pointer-events-none" />
-              <video src={lobbyVideo.url} autoPlay loop muted playsInline className="w-full h-[200px] object-contain relative z-10" />
-            </div>
-            <div className="flex items-center gap-3 px-2">
-              <span className="text-xl">⛷️</span>
-              <div>
-                <p className="text-gray-300 text-xs font-bold m-0">{lobbyVideo.caption}</p>
-                <p className="text-gray-500 text-[9px] uppercase tracking-widest m-0 mt-1">Video del dia</p>
+        <div className="mb-10">
+          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-5 shadow-2xl backdrop-blur-xl">
+            <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black flex justify-center mb-4 relative group">
+              <video src={lobbyVideo.url} autoPlay loop muted playsInline className="w-full h-[220px] object-cover transition-transform duration-700 group-hover:scale-110" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60" />
+              <div className="absolute bottom-4 left-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-black text-sm shadow-lg">📹</div>
+                <div>
+                  <p className="text-white text-[10px] font-black uppercase tracking-widest leading-none">{lobbyVideo.caption}</p>
+                  <p className="text-gray-400 text-[8px] uppercase tracking-widest mt-1">Vídeo del dia</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Botó / estat */}
-        {isHost ? (
-          <>
-            <button
-              onClick={onStart}
-              disabled={!canStart}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-6 rounded-3xl text-xl shadow-[0_10px_20px_rgba(16,185,129,0.2)] transition-all active:scale-95 disabled:opacity-20 uppercase tracking-tighter mt-4"
-            >
-              {isGenerating
-                ? '⌛ GENERANT MAPA...'
-                : !mapsReady
-                  ? '⌛ CARREGANT...'
-                  : players.length < 2
-                    ? '⏳ ESPERANT JUGADORS...'
-                    : '🚀 INICIAR PARTIDA'}
-            </button>
-            {!canStart && mapsReady && !isGenerating && players.length < 2 && (
-              <p className="text-center text-gray-500 text-sm mt-3">
-                Esperant almenys 1 jugador més per iniciar...
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="text-center py-4">
-            <div className="text-gray-400 text-lg">
-              {isGenerating
-                ? '⚙️ El host genera les ubicacions...'
-                : '⏳ Esperant que el host iniciï...'}
+        <div className="flex flex-col gap-4">
+          {isHost ? (
+            <>
+              <button
+                onClick={onStart}
+                disabled={!canStart}
+                className={`w-full py-6 rounded-[2rem] text-xl font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-20
+                  ${canStart 
+                    ? 'bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)]' 
+                    : 'bg-white/10 text-gray-500'}`}
+              >
+                {isGenerating ? '⌛ GENERANT...' : !mapsReady ? '⌛ CARREGANT...' : players.length < 2 ? '⏳ ESPERANT JUGADORS...' : '🚀 COMENÇAR PARTIDA'}
+              </button>
+            </>
+          ) : (
+            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl p-6 text-center">
+              <div className="text-gray-400 text-sm font-black uppercase tracking-widest animate-pulse">
+                {isGenerating ? '⚙️ Generant ubicacions...' : '⏳ Esperant que el host iniciï...'}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          <button
+            onClick={onLeave}
+            className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-gray-500 hover:text-white hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-[0.3em] mt-2"
+          >
+            🚪 Sortir de la sala
+          </button>
+        </div>
       </div>
 
-      {/* ── POP-UP DE PETICIÓ D'AMISTAT AL LOBBY ── */}
+      {showHostMessage && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[5000]">
+          <div className="bg-yellow-500 text-black px-8 py-4 rounded-full font-black uppercase tracking-widest shadow-2xl flex items-center gap-4">
+            <span className="text-2xl">👑</span> ARA ETS EL HOST DE LA PARTIDA!
+          </div>
+        </div>
+      )}
+
       {activeFriendReq && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-        }}>
-          <div style={{
-            background: '#0f172a', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '32px',
-            maxWidth: '360px', width: '90%', textAlign: 'center', boxShadow: '0 24px 50px rgba(16,185,129,0.2)',
-            animation: 'none'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>👋</div>
-            <h3 style={{ color: 'white', fontSize: '22px', fontWeight: 900, margin: '0 0 8px 0' }}>Nou Amic!</h3>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
-              <strong style={{ color: '#34d399', fontSize: '16px' }}>{activeFriendReq.nickname}</strong> vol afegir-te a la seva pinya.
-            </p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={declineFriend} style={{
-                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: 'rgba(255,255,255,0.05)',
-                color: 'rgba(255,255,255,0.5)', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s'
-              }}>Rebutjar</button>
-              <button onClick={acceptFriend} style={{
-                flex: 1, padding: '14px', borderRadius: '14px', border: 'none', background: '#10b981',
-                color: 'black', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s',
-                boxShadow: '0 8px 24px rgba(16,185,129,0.4)'
-              }}>Acceptar</button>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-indigo-500/30 rounded-[2rem] p-8 maxWidth-[360px] width-[90%] text-center shadow-2xl">
+            <div className="text-5xl mb-4">👋</div>
+            <h3 className="text-white text-2xl font-black mb-2">Nou Amic!</h3>
+            <p className="text-gray-400 text-sm mb-6"><strong>{activeFriendReq.nickname}</strong> vol afegir-te.</p>
+            <div className="flex gap-4">
+              <button onClick={declineFriend} className="flex-1 p-4 rounded-xl bg-white/5 text-gray-500 font-black">Rebutjar</button>
+              <button onClick={acceptFriend} className="flex-1 p-4 rounded-xl bg-emerald-500 text-black font-black shadow-lg">Acceptar</button>
             </div>
           </div>
         </div>

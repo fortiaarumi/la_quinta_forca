@@ -47,9 +47,15 @@ export interface Room {
   totalScores?: Record<string, number>;
   createdAt: number;
   isSinglePlayer?: boolean;
+  isPublic?: boolean; // 👈 NOU
   gameMode?: GameMode;
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
   roundEndsAt?: number;
+  lastEvent?: { // 👈 NOU
+    type: 'leave';
+    playerName: string;
+    timestamp: number;
+  };
   songState?: {
     status: 'idle' | 'generating_lyrics' | 'waiting_for_bot' | 'generating_music' | 'ready' | 'playing' | 'error';
     lyrics?: string;

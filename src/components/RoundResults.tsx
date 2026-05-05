@@ -11,12 +11,13 @@ interface Props {
   isHost: boolean;
   playerId: string;
   onNext: () => void;
+  onLeave: () => void;
   mapsReady: boolean;
 }
 
 const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B'];
 
-export default function RoundResults({ room, round, isHost, playerId, onNext, mapsReady }: Props) {
+export default function RoundResults({ room, round, isHost, playerId, onNext, onLeave, mapsReady }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const actual = room.locations?.[round];
   const guesses = room.rounds?.[round]?.guesses ?? {};
@@ -356,18 +357,27 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, ma
         </div>
 
         {/* Botó / espera */}
-        {isHost ? (
+        <div className="flex gap-3 mt-4">
           <button
-            onClick={onNext}
-            className="w-full bg-green-500 hover:bg-green-400 active:scale-[0.98] text-white font-black py-3.5 rounded-xl text-lg transition-all shadow-lg shadow-green-500/20"
+            onClick={onLeave}
+            className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-3.5 rounded-xl text-sm transition-all border border-red-500/20 uppercase tracking-widest active:scale-95"
           >
-            {round >= 4 ? '🏆 Resultats Finals' : 'Ronda Següent →'}
+            🏃 Abandonar
           </button>
-        ) : (
-          <div className="text-center text-gray-500 py-3.5 text-sm">
-            Esperant que el host continuï...
-          </div>
-        )}
+          
+          {isHost ? (
+            <button
+              onClick={onNext}
+              className="flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-3.5 rounded-xl text-lg transition-all shadow-lg active:scale-[0.98] uppercase tracking-tighter italic"
+            >
+              {round >= 4 ? '🏆 Resultats Finals' : 'Ronda Següent →'}
+            </button>
+          ) : (
+            <div className="flex-[2] text-center text-gray-500 py-3.5 text-xs font-black uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 animate-pulse flex items-center justify-center">
+              ⏳ Esperant l'amfitrió...
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
