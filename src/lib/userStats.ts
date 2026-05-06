@@ -65,7 +65,9 @@ export async function updateUserStatsAfterGame(
   timeMode: string,
   totalGameScore: number,
   roundScores: number[],
-  isWinner: boolean // 👈 NOU: Necessitem saber si ha guanyat
+  isWinner: boolean, // 👈 NOU: Necessitem saber si ha guanyat
+  gameType: string = 'classic', // 👈 NOU
+  roundHints: boolean[] = [] // 👈 NOU
 ): Promise<string[]> {
   const profile: any = await getUserProfile(uid);
   if (!profile) return [];
@@ -83,12 +85,12 @@ export async function updateUserStatsAfterGame(
   const currentBest = profile[bestField] ?? 0;
   const updates: Record<string, any> = {};
 
-  // 1. Comptar 5K
-  const new5k = roundScores.filter((s) => s >= 5000).length;
+  // 1. Comptar 5K (Només si no s'ha usat pista!)
+  const new5k = roundScores.filter((s, idx) => s >= 5000 && !roundHints[idx]).length;
   updates.total5k = (profile.total5k ?? 0) + new5k;
 
-  // 2. Actualitzar millor puntuació
-  if (totalGameScore > currentBest) {
+  // 2. Actualitzar millor puntuació (Només en mode clàssic!)
+  if (gameType === 'classic' && totalGameScore > currentBest) {
     updates[bestField] = totalGameScore;
 
     // També actualitzem el camp global per al rànquing
@@ -124,8 +126,8 @@ export async function updateUserStatsAfterGame(
   // Brúixola d'Or (10 partides)
   if (updates.totalGames >= 10) checkAndAdd("Brúixola d'Or");
 
-  // Franctirador (Un 5k perfecte)
-  const has5kThisRound = roundScores.some(s => s >= 5000);
+  // Franctirador (Un 5k perfecte i sense pista)
+  const has5kThisRound = roundScores.some((s, idx) => s >= 5000 && !roundHints[idx]);
   if (has5kThisRound) checkAndAdd("Franctirador");
 
   // Pubilla/Hereu de la Forca (Guanyar a Catalunya)

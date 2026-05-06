@@ -11,6 +11,7 @@ export interface PlayerGuess {
   score: number;
   guessCountry?: string;
   actualCountry?: string;
+  usedHint?: boolean; // 👈 NOU
 }
 
 export interface RoundData {
@@ -22,6 +23,8 @@ export interface Player {
   joinedAt: number;
   avatarUrl?: string; // 👈 NOU
   badges?: string[];  // 👈 NOU
+  health?: number;    // 👈 NOU (per a 1vs1)
+  isEliminated?: boolean; // 👈 NOU (per a Battle Royale)
 }
 
 export type GameState =
@@ -50,6 +53,8 @@ export interface Room {
   isPublic?: boolean; // 👈 NOU
   gameMode?: GameMode;
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
+  gameType?: 'classic' | '1vs1' | 'battle_royale'; // 👈 NOU
+  hintsEnabled?: boolean; // 👈 NOU
   roundEndsAt?: number;
   lastEvent?: { // 👈 NOU
     type: 'leave';

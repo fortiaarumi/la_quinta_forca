@@ -53,14 +53,25 @@ export default function HomeScreen() {
   const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
   const [gameMode, setGameMode] = useState<GameMode>('world');
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
+  const [gameType, setGameType] = useState<'classic' | '1vs1' | 'battle_royale'>('classic'); // 👈 NOU
+  const [hintsEnabled, setHintsEnabled] = useState(false); // 👈 NOU
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Per canviar entre menú de joc i menú d'amics
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
 
+  // ── NOU: ESTAT PEL MODAL DE MÚSICA ──
+  const [showMusicModal, setShowMusicModal] = useState(false);
+
+  useEffect(() => {
+    if (!hasInteracted) {
+      setShowMusicModal(true);
+    }
+  }, [hasInteracted]);
+
   // ── NOU: ESTATS PER AL FLUX DE CONFIGURACIÓ ELEGANT ──
-  const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'mode' | 'time' | 'join' | 'joinChoice'>('idle');
+  const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'>('idle');
   const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
   const [publicRooms, setPublicRooms] = useState<{id: string, room: Room}[]>([]); // 👈 NOU
 
@@ -374,17 +385,21 @@ export default function HomeScreen() {
     try {
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
+      const initialPlayer: any = { 
+        name: (playerName.trim() || nickname || 'Explorador'), 
+        joinedAt: Date.now(), 
+        isAdmin: !!isAdmin,
+        avatarUrl: avatarUrl || null,
+        badges: badges || []
+      };
+      if (gameType === '1vs1') initialPlayer.health = 10000;
+
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { 
-          name: (playerName.trim() || nickname || 'Explorador'), 
-          joinedAt: Date.now(), 
-          isAdmin: !!isAdmin,
-          avatarUrl: avatarUrl || null,
-          badges: badges || []
-        } },
+        players: { [playerId]: initialPlayer },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: true, gameMode, timeMode,
+        gameType, hintsEnabled
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       router.push(`/room/${roomCode}`);
@@ -398,18 +413,22 @@ export default function HomeScreen() {
       if (!canCreate) { setLoading(false); return setError(`Límit diari de sales assolit.`); }
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
+      const initialPlayer: any = { 
+        name: (playerName.trim() || nickname || 'Explorador'), 
+        joinedAt: Date.now(), 
+        isAdmin: !!isAdmin,
+        avatarUrl: avatarUrl || null,
+        badges: badges || []
+      };
+      if (gameType === '1vs1') initialPlayer.health = 10000;
+
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
-        players: { [playerId]: { 
-          name: (playerName.trim() || nickname || 'Explorador'), 
-          joinedAt: Date.now(), 
-          isAdmin: !!isAdmin,
-          avatarUrl: avatarUrl || null,
-          badges: badges || []
-        } },
+        players: { [playerId]: initialPlayer },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
-        isPublic: isPublicRoom
+        isPublic: isPublicRoom,
+        gameType, hintsEnabled
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       router.push(`/room/${roomCode}`);
@@ -627,10 +646,12 @@ export default function HomeScreen() {
             <div className="w-full max-w-xl mx-auto py-12">
               <button 
                 onClick={() => {
-                  const prevMap: Record<string, 'idle' | 'type' | 'mode' | 'time' | 'join' | 'joinChoice'> = { 
+                  const prevMap: Record<string, typeof setupStep> = { 
                     'type': 'idle', 
-                    'mode': 'type', 
+                    'gameType': 'type',
+                    'mode': 'gameType', 
                     'time': 'mode', 
+                    'hints': 'time',
                     'join': 'joinChoice',
                     'joinChoice': 'type'
                   };
@@ -649,13 +670,13 @@ export default function HomeScreen() {
                       title="Individual" 
                       desc="Explora al teu ritme i bat el rànquing." 
                       icon="👤"
-                      onClick={() => { setTab('solo'); goToStep('mode'); }}
+                      onClick={() => { setTab('solo'); goToStep('gameType'); }}
                     />
                     <OptionCard 
                       title="Crear Sala" 
                       desc="Convida amics i demostra qui és millor." 
                       icon="🏠"
-                      onClick={() => { setTab('create'); goToStep('mode'); }}
+                      onClick={() => { setTab('create'); goToStep('gameType'); }}
                     />
                     <OptionCard 
                       title="Unir-se" 
@@ -728,9 +749,22 @@ export default function HomeScreen() {
                 </StepWrapper>
               )}
 
+               {setupStep === 'gameType' && (
+                <StepWrapper direction={animDirection}>
+                  <h3 className="text-5xl font-black uppercase italic mb-4 tracking-tighter leading-none">Tipus de Joc</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ L'1vs1 i el Battle Royale no sumen al rànquing global.</p>
+                  <div className="space-y-4">
+                    <OptionCard selected={gameType === 'classic'} title="Clàssic" desc="Puntuació estàndard de 5 rondes." icon="⭐" onClick={() => setGameType('classic')} />
+                    <OptionCard selected={gameType === '1vs1'} title="1vs1 (Duel)" desc="10.000 de vida. Si perds punts, reps dany." icon="⚔️" onClick={() => setGameType('1vs1')} />
+                    <OptionCard selected={gameType === 'battle_royale'} title="Battle Royale" desc="L'últim en fer punts queda eliminat." icon="👑" onClick={() => setGameType('battle_royale')} />
+                  </div>
+                  <GoldButton onClick={() => goToStep('mode')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
+                </StepWrapper>
+              )}
+
               {setupStep === 'mode' && (
                 <StepWrapper direction={animDirection}>
-                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter">Escull el Mode</h3>
+                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Escull el Mode</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <OptionCard selected={gameMode === 'world'} title="Món" desc="Ubicacions de tot el planeta." icon="🌎" onClick={() => setGameMode('world')} />
                     <OptionCard selected={gameMode === 'catalunya'} title="Catalunya" desc="Pobles i ciutats de casa nostra." icon="🔴" onClick={() => setGameMode('catalunya')} />
@@ -743,11 +777,23 @@ export default function HomeScreen() {
 
               {setupStep === 'time' && (
                 <StepWrapper direction={animDirection}>
-                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter">Temps per Ronda</h3>
+                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Temps per Ronda</h3>
                   <div className="space-y-4">
                     <OptionCard selected={timeMode === 'bala'} title="Mode Bala" desc="Ràpid com un llamp (30s)." icon="⚡" onClick={() => setTimeMode('bala')} />
                     <OptionCard selected={timeMode === 'normal'} title="Mode Normal" desc="Equilibri perfecte (60s)." icon="⏱️" onClick={() => setTimeMode('normal')} />
                     <OptionCard selected={timeMode === 'infinit'} title="Infinit" desc="Gaudeix de les vistes (Sense límit)." icon="♾️" onClick={() => setTimeMode('infinit')} />
+                  </div>
+                  <GoldButton onClick={() => goToStep('hints')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
+                </StepWrapper>
+              )}
+
+              {setupStep === 'hints' && (
+                <StepWrapper direction={animDirection}>
+                  <h3 className="text-5xl font-black uppercase italic mb-4 tracking-tighter leading-none">Activar Pistes</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ Redueix els punts un 50% a canvi d'informació clau. No guarden insígnies.</p>
+                  <div className="space-y-4">
+                    <OptionCard selected={hintsEnabled === true} title="Activat" desc="Permet demanar ajuda durant la ronda." icon="💡" onClick={() => setHintsEnabled(true)} />
+                    <OptionCard selected={hintsEnabled === false} title="Desactivat" desc="Juga de forma pura sense ajudes." icon="🚫" onClick={() => setHintsEnabled(false)} />
                   </div>
                   <GoldButton 
                     onClick={() => { if (tab === 'create') handleCreate(); else handleSolo(); }} 
@@ -779,6 +825,30 @@ export default function HomeScreen() {
         </footer>
 
       </div>
+
+      {/* MODAL DE PERMÍS DE MÚSICA */}
+      {showMusicModal && (
+        <div className="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-[#0c101d] border border-white/10 p-12 rounded-[3rem] max-w-md w-full text-center shadow-2xl shadow-yellow-500/10">
+            <div className="text-6xl mb-6 text-yellow-500">🎵</div>
+            <h2 className="text-3xl font-black uppercase italic mb-4 tracking-tighter">Vols activar la música?</h2>
+            <p className="text-gray-400 text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed">
+              La Quinta Forca té una banda sonora original per a una experiència immersiva.
+            </p>
+            <div className="flex flex-col gap-4">
+              <GoldButton onClick={() => { setHasInteracted(true); setShowMusicModal(false); }} className="w-full py-6 rounded-2xl">
+                SÍ, ACTIVAR ARA
+              </GoldButton>
+              <button 
+                onClick={() => setShowMusicModal(false)}
+                className="py-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors"
+              >
+                No, prefereixo el silenci
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODALS */}
       {showSunoManual && (

@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
+import { ref, update } from 'firebase/database';
+import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 
 interface Props {
   room: Room;
+  roomId: string; // 👈 NOU
   round: number;
   isHost: boolean;
   playerId: string;
@@ -17,7 +20,7 @@ interface Props {
 
 const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B'];
 
-export default function RoundResults({ room, round, isHost, playerId, onNext, onLeave, mapsReady }: Props) {
+export default function RoundResults({ room, roomId, round, isHost, playerId, onNext, onLeave, mapsReady }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const actual = room.locations?.[round];
   const guesses = room.rounds?.[round]?.guesses ?? {};
@@ -39,6 +42,75 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, on
     setPerfectScorers([]);
     setHasCongratulated(false);
   }, [round]);
+
+  // ── LÒGICA DE MODES ESPECIALS (NOMÉS HOST) ──
+  const logicProcessedRef = useRef<number>(-1);
+
+  useEffect(() => {
+    if (!isHost || !room || logicProcessedRef.current === round) return;
+    logicProcessedRef.current = round;
+
+    const calculateSpecialLogic = async () => {
+      const updates: any = {};
+      let needsUpdate = false;
+
+      // 1. LÒGICA 1VS1
+      if (room.gameType === '1vs1') {
+        const pIds = Object.keys(room.players);
+        if (pIds.length === 2) {
+          const p1 = pIds[0];
+          const p2 = pIds[1];
+          const s1 = guesses[p1]?.score || 0;
+          const s2 = guesses[p2]?.score || 0;
+
+          if (s1 !== s2) {
+            const winner = s1 > s2 ? p1 : p2;
+            const loser = s1 > s2 ? p2 : p1;
+            const diff = Math.abs(s1 - s2);
+            // Dany = (Punts_guanyador - Punts_perdedor) * (1 + (Ronda * 0.5))
+            const damage = Math.round(diff * (1 + (round * 0.5)));
+            
+            const currentHealth = room.players[loser]?.health ?? 10000;
+            const newHealth = Math.max(0, currentHealth - damage);
+            
+            updates[`players/${loser}/health`] = newHealth;
+            needsUpdate = true;
+
+            if (newHealth <= 0) {
+              updates.gameState = 'finished';
+            }
+          }
+        }
+      }
+
+      // 2. LÒGICA BATTLE ROYALE
+      if (room.gameType === 'battle_royale') {
+        const activePlayers = Object.entries(room.players)
+          .filter(([id, p]) => !p.isEliminated)
+          .map(([id, p]) => ({ id, score: guesses[id]?.score || 0 }));
+
+        if (activePlayers.length > 1) {
+          // Busquem el que ha fet menys punts en aquesta ronda
+          const sorted = [...activePlayers].sort((a, b) => a.score - b.score);
+          const worst = sorted[0];
+          
+          updates[`players/${worst.id}/isEliminated`] = true;
+          needsUpdate = true;
+
+          // Si només queda 1, s'acaba la partida
+          if (activePlayers.length <= 2) {
+            updates.gameState = 'finished';
+          }
+        }
+      }
+
+      if (needsUpdate) {
+        await update(ref(db, `rooms/${roomId}`), updates);
+      }
+    };
+
+    calculateSpecialLogic();
+  }, [isHost, round, guesses, room, roomId]);
 
   // Guardarem una referència a la música de fons de la web
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -283,9 +355,12 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, on
             return (
               <div
                 key={pid}
-                className={`rounded-xl p-4 ${isMe ? 'ring-2 ring-white/20' : ''}`}
+                className={`rounded-xl p-4 relative overflow-hidden ${isMe ? 'ring-2 ring-white/20' : ''} ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`}
                 style={{ background: `${color}18`, borderLeft: `3px solid ${color}` }}
               >
+                {player?.isEliminated && (
+                  <div className="absolute top-2 right-2 text-2xl animate-bounce">💀</div>
+                )}
                 <div className="flex items-center gap-3 mb-2">
                   <div className="relative">
                     <div
@@ -324,11 +399,28 @@ export default function RoundResults({ room, round, isHost, playerId, onNext, on
                       {Math.round(guess.distance).toLocaleString()} km
                     </div>
                     <div className="text-yellow-400 font-black text-xl">
-                      +{guess.score.toLocaleString()}
+                      +{Math.round(guess.score / (guess.usedHint ? 2 : 1)).toLocaleString()}
+                      {guess.usedHint && <span className="text-[10px] ml-2 text-yellow-600/70 italic">(Pista: -50%)</span>}
                     </div>
                   </>
                 ) : (
                   <div className="text-gray-500 text-xs italic">Sense endevinança</div>
+                )}
+
+                {/* VIDA (1vs1) */}
+                {room.gameType === '1vs1' && player?.health !== undefined && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1">
+                      <span>Vida</span>
+                      <span>{player.health} / 10000</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
+                      <div 
+                        className={`h-full transition-all duration-1000 ${player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${(player.health / 10000) * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             );

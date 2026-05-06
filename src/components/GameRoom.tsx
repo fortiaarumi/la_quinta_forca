@@ -51,6 +51,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
   const [systemMessage, setSystemMessage] = useState<string | null>(null); // 👈 NOU
   const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
+  const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
+  const [currentHint, setCurrentHint] = useState<string | null>(null); // 👈 NOU
+  const [hintLoading, setHintLoading] = useState(false); // 👈 NOU
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic } = useAudio();
@@ -117,6 +120,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setShowGuessMap(false);
       transitionedRef.current = false;
       tempPinRef.current = null; // 👈 AFEGIT: Netejem el pin al canviar de ronda
+      setHasUsedHint(false); // 👈 NOU
+      setCurrentHint(null);  // 👈 NOU
       prevRoundRef.current = room.currentRound;
     }
   }, [room?.currentRound]);
@@ -227,7 +232,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
               const updates: Record<string, any> = { gameState: 'roundResults' };
 
               playerIds.forEach(id => {
-                const roundScore = finalGuesses[id]?.score || 0; // Fem servir les dades fresques!
+                const g = finalGuesses[id];
+                let roundScore = g?.score || 0;
+                if (g?.usedHint) roundScore = Math.min(2500, Math.round(roundScore / 2)); // 👈 NOU: Penalització
+                
                 const currentTotal = room.totalScores?.[id] || 0;
                 updates[`totalScores/${id}`] = currentTotal + roundScore;
               });
@@ -366,6 +374,44 @@ export default function GameRoom({ roomId, playerId }: Props) {
     });
   };
 
+  const fetchHint = async () => {
+    if (!room?.locations || hasUsedHint || hintLoading) return;
+    setHintLoading(true);
+    const actual = room.locations[room.currentRound];
+    
+    try {
+      // Busquem el país primer per saber què demanar a restcountries
+      const countryName = await getLocationName(actual.lat, actual.lng, 'world');
+      
+      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`);
+      const data = await res.json();
+      
+      if (data && data.length > 0) {
+        const country = data[0];
+        const options = [
+          { type: 'Bandera', value: country.flag },
+          { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
+          { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
+          { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' }
+        ];
+        
+        const randomHint = options[Math.floor(Math.random() * options.length)];
+        setCurrentHint(`${randomHint.type}: ${randomHint.value}`);
+        setHasUsedHint(true);
+      } else {
+        // Fallback si l'API falla o no troba el país exacte
+        setCurrentHint(`Hemisferi: ${actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️'}`);
+        setHasUsedHint(true);
+      }
+    } catch (e) {
+      console.error("Error obtenint pista:", e);
+      setCurrentHint(`Hemisferi: ${actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️'}`);
+      setHasUsedHint(true);
+    } finally {
+      setHintLoading(false);
+    }
+  };
+
   const submitGuess = useCallback(
     async (guessLat: number, guessLng: number) => {
       if (!room?.locations || hasGuessed) return;
@@ -380,7 +426,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
         lat: guessLat,
         lng: guessLng,
         distance,
-        score
+        score,
+        usedHint: hasUsedHint // 👈 NOU
       };
 
       const guessRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`);
@@ -447,9 +494,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx =>
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
+      const myRoundHints = [0, 1, 2, 3, 4].map(roundIdx =>
+        !!room.rounds?.[roundIdx]?.guesses?.[playerId]?.usedHint
+      );
 
-      // 3. Enviem les dades al nostre perfil (afegim el timeMode i isWinner)
-      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner)
+      // 3. Enviem les dades al nostre perfil (afegim el timeMode, isWinner, gameType i hints)
+      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner, room.gameType || 'classic', myRoundHints)
         .then((newBadges) => {
           console.log('Estadístiques guardades amb èxit!');
           if (newBadges && newBadges.length > 0) {
@@ -518,6 +568,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     content = (
       <RoundResults
         room={room}
+        roomId={roomId} // 👈 NOU
         round={room.currentRound}
         isHost={isHost}
         playerId={playerId}
@@ -583,6 +634,24 @@ export default function GameRoom({ roomId, playerId }: Props) {
             );
           })}
         </div>
+
+        {room.hintsEnabled && !hasGuessed && (
+          <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
+            {!hasUsedHint ? (
+              <button
+                onClick={fetchHint}
+                disabled={hintLoading}
+                className="bg-indigo-600/80 backdrop-blur-md hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-400/30 shadow-xl transition-all active:scale-95 flex items-center gap-2"
+              >
+                {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
+              </button>
+            ) : (
+              <div className="bg-yellow-500 text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.4)] animate-in zoom-in duration-300">
+                ✨ PISTA: {currentHint}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
           {!hasGuessed && !showGuessMap && (
