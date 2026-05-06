@@ -278,12 +278,12 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               disabled={hasLaughed}
               className={`bg-white text-black px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center gap-3 mx-auto border-none ${hasLaughed ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
             >
-              😂 {hasLaughed ? 'JA T\'E N\'HAS ENRIGUT' : 'ENRIURE\'S-EN'}
+              😂 {hasLaughed ? 'JA TE N\'HAS ENRIGUT' : 'ENRIURE\'S-EN'}
             </button>
 
             <button
               onClick={() => setEliminatedPlayer(null)}
-              className="mt-4 text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all cursor-pointer bg-transparent border-none"
+              className="mt-6 px-8 py-3 text-white/60 text-sm font-black uppercase tracking-widest hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer bg-transparent border border-white/20"
             >
               Tancar avís
             </button>
