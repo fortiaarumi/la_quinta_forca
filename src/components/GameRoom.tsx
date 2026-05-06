@@ -287,42 +287,31 @@ export default function GameRoom({ roomId, playerId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room, roomId, playerId, isSinglePlayer, hasGuessed]);
 
-  const generateLocations = useCallback(async () => {
+  const addMoreLocations = useCallback(async (count = 5) => {
     if (!mapsReady || !room) return;
-    await update(ref(db, `rooms/${roomId}`), { gameState: 'generating' });
-
     const service = new (google.maps as any).StreetViewService();
-    const locations: { lat: number; lng: number; panoId: string }[] = [];
+    const newLocations: any[] = [];
     let attempts = 0;
 
-    // Aquest bucle s'assegura que cada ubicació tingui foto real
-    while (locations.length < 5 && attempts < 150) {
+    while (newLocations.length < count && attempts < 150) {
       attempts++;
-
       let coords;
-      if (room.gameMode === 'catalunya') {
-        coords = randomCatalunyaCoords();
-      } else if (room.gameMode === 'estadis') {
-        coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
-      } else if (room.gameMode === 'cultural') {
-        coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
-      } else {
-        coords = randomBiasedCoords();
-      }
+      if (room.gameMode === 'catalunya') coords = randomCatalunyaCoords();
+      else if (room.gameMode === 'estadis') coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
+      else if (room.gameMode === 'cultural') coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
+      else coords = randomBiasedCoords();
 
       await new Promise<void>((resolve) => {
         service.getPanorama(
           {
             location: coords,
-            // Radi molt petit (50m) per estadis i monuments perquè caigui just a sobre. 
             radius: room.gameMode === 'catalunya' ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
             source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
             preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
           },
           (data: any, status: any) => {
-            // NOMÉS afegim la ubicació si Google ens confirma que l'estat és OK
             if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
-              locations.push({
+              newLocations.push({
                 lat: data.location.latLng.lat(),
                 lng: data.location.latLng.lng(),
                 panoId: data.location.pano || '',
@@ -334,27 +323,27 @@ export default function GameRoom({ roomId, playerId }: Props) {
       });
     }
 
-    // Si després de 150 intents no n'hi ha 5 (molt difícil), usem els fallbacks
-    while (locations.length < 5) {
-      locations.push(FALLBACK_LOCATIONS[locations.length]);
+    const currentLocations = room.locations || [];
+    const updatedLocations = [...currentLocations, ...newLocations];
+
+    if (room.gameState === 'lobby' || room.gameState === 'generating') {
+      const initialScores = Object.fromEntries(Object.keys(room.players).map((id) => [id, 0]));
+      const tSettings = getTimeSettings(room.timeMode);
+      await update(ref(db, `rooms/${roomId}`), {
+        locations: updatedLocations,
+        gameState: 'playing',
+        currentRound: 0,
+        totalScores: initialScores,
+        rounds: null,
+        songState: null,
+        roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
+      });
+    } else {
+      await update(ref(db, `rooms/${roomId}`), { locations: updatedLocations });
     }
+  }, [mapsReady, roomId, room]);
 
-    const initialScores = Object.fromEntries(
-      Object.keys(room.players).map((id) => [id, 0])
-    );
-
-    const tSettings = getTimeSettings(room.timeMode);
-
-    await update(ref(db, `rooms/${roomId}`), {
-      locations,
-      gameState: 'playing',
-      currentRound: 0,
-      totalScores: initialScores,
-      rounds: null,
-      songState: null,
-      roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
-    });
-  }, [mapsReady, roomId, room]);;
+  const generateLocations = () => addMoreLocations(5);
 
   useEffect(() => {
     if (!room || !mapsReady || !isHost) return;
@@ -502,17 +491,31 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const nextRound = useCallback(async () => {
     if (!room || !isHost) return;
     const next = room.currentRound + 1;
-    if (next >= 5) {
+
+    // LÒGICA DE FINALITZACIÓ SEGONS MODE
+    const isSpecialMode = room.gameType === '1vs1' || room.gameType === 'battle_royale';
+    
+    // Si és mode clàssic, acabem a la ronda 5
+    if (!isSpecialMode && next >= 5) {
       await update(ref(db, `rooms/${roomId}`), { gameState: 'finished' });
-    } else {
-      const tSettings = getTimeSettings(room.timeMode);
-      await update(ref(db, `rooms/${roomId}`), {
-        currentRound: next,
-        gameState: 'playing',
-        roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
-      });
+      return;
     }
-  }, [room, isHost, roomId]);
+
+    // Si estem en mode especial però algú ja ha guanyat (marcat per RoundResults)
+    if (isSpecialMode && room.gameState === 'finished') return;
+
+    // Si ens quedem sense ubicacions, n'afegim més abans de passar de ronda
+    if (room.locations && next >= room.locations.length) {
+      await addMoreLocations(1); // Afegim una de nova
+    }
+
+    const tSettings = getTimeSettings(room.timeMode);
+    await update(ref(db, `rooms/${roomId}`), {
+      currentRound: next,
+      gameState: 'playing',
+      roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
+    });
+  }, [room, isHost, roomId, addMoreLocations]);
 
   // ── GUARDAR ESTADÍSTIQUES AL FINAL DE LA PARTIDA ────────────────────────
   useEffect(() => {

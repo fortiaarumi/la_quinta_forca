@@ -26,6 +26,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const guesses = room.rounds?.[round]?.guesses ?? {};
   const playerIds = Object.keys(room.players);
 
+  if (!actual) return null;
+
   const [perfectScorers, setPerfectScorers] = useState<string[]>([]);
   const [hasClosedPopup, setHasClosedPopup] = useState(false);
   const [hasCongratulated, setHasCongratulated] = useState(false);
@@ -38,6 +40,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const { playSiu, playRiure, isMuted } = useAudio();
   const [showPenalty, setShowPenalty] = useState(false);
 
+  // NOU: Lògica per detectar dany rebut i mostrar missatges
+  const prevHealthRef = useRef<Record<string, number>>({});
+  const [damageDealt, setDamageDealt] = useState<Record<string, number>>({});
+  const [damageMsg, setDamageMsg] = useState<string | null>(null);
+
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
@@ -45,9 +52,34 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     setHasLaughed(false);
     setShowPenalty(false);
     setEliminatedPlayer(null);
+    setDamageDealt({});
+    setDamageMsg(null);
 
     const timer = setTimeout(() => {
       setShowPenalty(true);
+      
+      // Quan mostrem la penalització, comparem vida per veure el dany
+      if (room.gameType === '1vs1') {
+        const pIds = Object.keys(room.players);
+        pIds.forEach(pid => {
+          const oldH = prevHealthRef.current[pid] ?? 10000;
+          const newH = room.players[pid]?.health ?? 10000;
+          if (newH < oldH) {
+            const diff = oldH - newH;
+            setDamageDealt(prev => ({ ...prev, [pid]: diff }));
+            setDamageMsg(`${room.players[pid].name} ha perdut ${diff} de vida!`);
+            setTimeout(() => setDamageMsg(null), 5000);
+          }
+        });
+      }
+      
+      // Actualitzem la ref per la següent ronda
+      const currentHealths: Record<string, number> = {};
+      Object.keys(room.players).forEach(pid => {
+        currentHealths[pid] = room.players[pid]?.health ?? 10000;
+      });
+      prevHealthRef.current = currentHealths;
+
     }, 1500);
     return () => clearTimeout(timer);
   }, [round]);
@@ -261,11 +293,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     map.fitBounds(bounds, 80);
   }, [mapsReady, actual]);
 
-  if (!actual) return null;
+
+  // Funció per saber si el joc s'hauria d'acabar per rondes (només Classic)
+  const isInfiniteMode = room.gameType === '1vs1' || room.gameType === 'battle_royale';
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
-
+      
       {/* OVERLAY ELIMINACIÓ */}
       {eliminatedPlayer && (
         <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
@@ -331,7 +365,12 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
       <div ref={mapRef} className="flex-1 min-h-0" />
 
-      <div className="bg-gray-900 border-t border-gray-700/50 p-5 flex-shrink-0">
+      <div className="bg-gray-900 border-t border-gray-700/50 p-5 flex-shrink-0 relative">
+        {damageMsg && (
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-2 rounded-full font-black uppercase text-sm animate-bounce shadow-2xl z-50">
+            {damageMsg}
+          </div>
+        )}
         <h2 className="text-white text-xl font-black text-center mb-1 uppercase tracking-tighter italic">Resultats — Ronda {round + 1}</h2>
         <p className="text-gray-500 text-[10px] text-center mb-4 font-mono tracking-widest uppercase">{actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}</p>
 
@@ -341,35 +380,61 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             const player = room.players[pid];
             const color = COLORS[i % COLORS.length];
             const isMe = pid === playerId;
+
+            // Calcular dany rebut per animació
+            const lostHP = damageDealt[pid];
+            const isHurt = showPenalty && lostHP > 0;
+
             return (
               <div key={pid} className={`rounded-xl p-4 relative overflow-hidden transition-all duration-1000 ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`} style={{ background: `${color}10`, borderLeft: `4px solid ${color}` }}>
                 {player?.isEliminated && <div className="absolute top-2 right-2 text-2xl animate-pulse">💀</div>}
+                
+                {/* Overlay de dany */}
+                {isHurt && (
+                  <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none">
+                    <span className="text-white font-black text-4xl italic uppercase tracking-tighter drop-shadow-lg">DANY!</span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/10 bg-black/40">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 bg-black/40">
                     {player?.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs opacity-40">👤</div>}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-white font-black text-[10px] uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
+                    <span className="text-white font-black text-xs uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
                   </div>
                 </div>
                 {guess ? (
-                  <div className="text-yellow-400 font-black text-2xl flex items-center gap-2">
+                  <div className="text-yellow-400 font-black text-3xl flex items-center gap-2">
                     <span className="transition-all duration-1000" style={{ transform: showPenalty && guess.usedHint ? 'scale(0.8)' : 'scale(1)', opacity: showPenalty && guess.usedHint ? 0.5 : 1 }}>
                       +{Math.round(showPenalty || !guess.usedHint ? (guess.score / (guess.usedHint ? 2 : 1)) : guess.score).toLocaleString()}
                     </span>
-                    {guess.usedHint && showPenalty && <span className="text-[8px] text-red-500 font-black animate-bounce bg-red-500/10 px-1.5 py-1 rounded border border-red-500/20"> -50% PISTA</span>}
+                    {guess.usedHint && showPenalty && (
+                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_150px_rgba(239,68,68,0.5)]"> 
+                        -50% PISTA
+                      </span>
+                    )}
                   </div>
                 ) : <div className="text-gray-500 text-[10px] font-black uppercase italic">Sense tirada</div>}
 
                 {room.gameType === '1vs1' && player?.health !== undefined && (
-                  <div className="mt-3">
-                    <div className="flex justify-between text-[7px] font-black uppercase tracking-widest mb-1">
-                      <span>Salut</span>
-                      <span>{player.health} / 10000</span>
+                  <div className="mt-4 relative">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1.5">
+                      <span className="text-gray-400">Vida Restant</span>
+                      <span className={`text-sm ${player.health > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{player.health} / 10000</span>
                     </div>
-                    <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-                      <div className={`h-full transition-all duration-1000 ${player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${(player.health / 10000) * 100}%` }} />
+                    <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
+                      <div 
+                        className={`h-full transition-all duration-1000 ${isHurt ? 'bg-red-600 animate-pulse' : (player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
+                        style={{ width: `${(player.health / 10000) * 100}%` }} 
+                      />
                     </div>
+                    {/* Missatge de dany flotant */}
+                    {isHurt && (
+                       <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                         -{lostHP} HP
+                       </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -381,7 +446,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
           {isHost ? (
             <button onClick={onNext} className="flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg active:scale-95 uppercase tracking-tighter italic border-none cursor-pointer">
-              {round >= 4 ? '🏆 Resultats Finals' : 'Ronda Següent →'}
+              {room.gameState === 'finished' ? '🏆 Resultats Finals' : 'Ronda Següent →'}
             </button>
           ) : (
             <div className="flex-[2] text-center text-gray-500 py-4 text-xs font-black uppercase tracking-widest bg-white/5 rounded-2xl border border-white/5 animate-pulse flex items-center justify-center italic">⏳ Esperant Host...</div>
