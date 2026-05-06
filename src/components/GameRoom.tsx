@@ -415,69 +415,76 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
 
     try {
-      const getCountryCode = (): Promise<string | null> => {
+      // 1. Obtenir codi de país (mètode més segur)
+      const getCountryInfo = (): Promise<{ code: string | null, name: string | null }> => {
         return new Promise((resolve) => {
           const geocoder = new (google.maps as any).Geocoder();
           geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-            if (status === 'OK' && results) {
-              for (const r of results) {
-                const c = r.address_components.find((comp: any) => comp.types.includes('country'));
-                if (c) { resolve(c.short_name); return; }
-              }
+            if (status === 'OK' && results?.[0]) {
+              const comps = results[0].address_components;
+              const c = comps.find((comp: any) => comp.types.includes('country'));
+              resolve({ code: c?.short_name || null, name: c?.long_name || null });
+            } else {
+              resolve({ code: null, name: null });
             }
-            resolve(null);
           });
         });
       };
 
-      const countryCode = await getCountryCode();
-      let data = null;
+      const { code, name } = await getCountryInfo();
+      let countryData = null;
 
-      if (countryCode) {
-        const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
-        data = await res.json();
+      if (code) {
+        const res = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
+        const data = await res.json();
+        countryData = Array.isArray(data) ? data[0] : data;
       }
 
-      const country = Array.isArray(data) ? data[0] : data;
+      const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
 
-      if (country && !country.status) {
-        // Preparem la llista d'opcions a l'atzar
-        const currencyKey = country.currencies ? Object.keys(country.currencies)[0] : null;
-        const currency = currencyKey ? country.currencies[currencyKey] : null;
+      // PISTES BASADES EN API (Si tenim dades del país)
+      if (countryData && !countryData.status) {
+        const currencyKey = countryData.currencies ? Object.keys(countryData.currencies)[0] : null;
+        const currency = currencyKey ? countryData.currencies[currencyKey] : null;
 
-        const options = [
-          { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
-          { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
-          { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
-          { type: 'Població', value: `${(country.population / 1000000).toFixed(1)} Milions d'habitants` },
+        options.push(
+          { type: 'Bandera', value: countryData.flag, imageUrl: countryData.flags?.png },
+          { type: 'Continent', value: countryData.continents?.[0] || 'Desconegut' },
+          { type: 'Idioma', value: countryData.languages ? Object.values(countryData.languages)[0] as string : 'Desconegut' },
+          { type: 'Població', value: `${(countryData.population / 1000000).toFixed(1)} Milions d'habitants` },
           { type: 'Moneda', value: currency ? `${currency.name} (${currency.symbol})` : 'Desconeguda' },
-          { type: 'Fus Horari', value: country.timezones?.[0] || 'Desconegut' },
-          { type: 'Conducció', value: `Es condueix per la ${country.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` },
-          { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
-          { type: 'Domini Internet', value: country.tld?.[0] || '.com' },
-          { type: 'Prefix Telefònic', value: country.idd ? `${country.idd.root}${country.idd.suffixes?.[0] || ''}` : 'Desconegut' }
-        ];
-
-        // Filtrem opcions que puguin ser nul·les o buides per seguretat
-        const validOptions = options.filter(opt => opt.value && opt.value !== 'Desconegut' && opt.value !== 'Desconeguda');
-        const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
-
-        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
-        setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
-        setHasUsedHint(true);
-      } else {
-        throw new Error("Dades de l'API no disponibles");
+          { type: 'Fus Horari', value: countryData.timezones?.[0] || 'Desconegut' },
+          { type: 'Conducció', value: `Es condueix per la ${countryData.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` },
+          { type: 'Codi Internet', value: countryData.tld?.[0] || '.com' }
+        );
       }
+
+      // PISTES DE SEGURETAT (Sempre funcionen, basades en coordenades)
+      options.push(
+        { type: 'Hemisferi', value: actual.lat > 0 ? 'Et trobes al Nord ⬆️' : 'Et trobes al Sud ⬇️' },
+        { type: 'Latitud', value: `Estàs a ${Math.abs(Math.round(actual.lat))}° de l'Equador` },
+        { type: 'Clima', value: Math.abs(actual.lat) < 23.5 ? 'Zona Tropical ☀️' : 'Zona Temperada/Freda ❄️' }
+      );
+
+      // Si havíem detectat el nom del país però l'API ha fallat, afegim la pista de localització com una més
+      if (name && (!countryData || countryData.status)) {
+        options.push({ type: 'País', value: `Aquesta ubicació és a ${name}` });
+      }
+
+      // Triem una pista a l'atzar de la llista final filtrant les "Desconegut"
+      const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut'));
+      const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
+
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
+      setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
+      setHasUsedHint(true);
+
     } catch (e) {
-      console.error("Error obtenint pista:", e);
-      // Fallback intel·ligent: Hemisferi segons coordenades
-      const fallbackHint = {
-        type: 'Hemisferi',
-        value: actual.lat > 0 ? "Et trobes a l'Hemisferi Nord ⬆️" : "Et trobes a l'Hemisferi Sud ⬇️",
-        isFree: true
-      };
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: fallbackHint });
-      setCurrentHint(`${fallbackHint.value}`);
+      console.error("Error crític en pistes:", e);
+      // Fallback definitiu si tot peta (fins i tot el geocoder)
+      const finalFallback = { type: 'Hemisferi', value: actual.lat > 0 ? "Hemisferi Nord ⬆️" : "Hemisferi Sud ⬇️", isFree: true };
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: finalFallback });
+      setCurrentHint(finalFallback.value);
       setHasUsedHint(true);
     } finally {
       setHintLoading(false);
