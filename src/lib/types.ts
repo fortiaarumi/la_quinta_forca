@@ -20,6 +20,7 @@ export interface RoundData {
     type: string;
     value: string;
     imageUrl?: string;
+    isFree?: boolean; // 👈 NOU
   };
 }
 
