@@ -69,6 +69,11 @@ export interface Room {
     playerName: string;
     timestamp: number;
   };
+  tieBreak?: {
+    players: string[];
+    loserId: string;
+    timestamp: number;
+  };
   songState?: {
     status: 'idle' | 'generating_lyrics' | 'waiting_for_bot' | 'generating_music' | 'ready' | 'playing' | 'error';
     lyrics?: string;

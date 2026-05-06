@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Room } from '@/lib/types';
+import { Room, PlayerGuess } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
+import GoldButton from './GoldButton';
 import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
@@ -57,6 +58,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [combatFinalDamage, setCombatFinalDamage] = useState(0);
   const [combatLoser, setCombatLoser] = useState<string | null>(null);
   const [combatWinner, setCombatWinner] = useState<string | null>(null);
+  const [showRoulette, setShowRoulette] = useState(false);
+  const [rouletteWinnerId, setRouletteWinnerId] = useState<string | null>(null);
 
   // NOU: Vida visual per evitar salts en l'animació
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
@@ -227,13 +230,27 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
         if (activePlayers.length > 1) {
           const sorted = [...activePlayers].sort((a, b) => a.score - b.score);
-          const worst = sorted[0];
+          const minScore = sorted[0].score;
+          const tiedPlayers = sorted.filter(p => p.score === minScore);
 
-          updates[`players/${worst.id}/isEliminated`] = true;
-          needsUpdate = true;
+          if (tiedPlayers.length > 1) {
+            // DESEMPAT AMB RULETA
+            const loser = tiedPlayers[Math.floor(Math.random() * tiedPlayers.length)];
+            updates.tieBreak = {
+              players: tiedPlayers.map(p => p.id),
+              loserId: loser.id,
+              timestamp: Date.now()
+            };
+            needsUpdate = true;
+          } else {
+            const worst = sorted[0];
+            updates[`players/${worst.id}/isEliminated`] = true;
+            needsUpdate = true;
+            setEliminatedPlayer(room.players[worst.id]?.name || 'Algú');
 
-          if (activePlayers.length <= 2) {
-            updates.gameState = 'finished';
+            if (activePlayers.length <= 2) {
+              updates.gameState = 'finished';
+            }
           }
         }
       }
@@ -273,6 +290,49 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       unsubCongrats();
     };
   }, [roomId, room.lastLaughAt, room.lastCongratsAt]);
+
+  // Lògica per la ruleta de desempat
+  useEffect(() => {
+    if (room.tieBreak && room.tieBreak.timestamp > (room.createdAt || 0)) {
+      setShowRoulette(true);
+      setRouletteWinnerId(null);
+      
+      // Simulem el gir de la ruleta
+      const spinTime = 4000;
+      setTimeout(() => {
+        setRouletteWinnerId(room.tieBreak!.loserId);
+        
+        // El host executa l'eliminació final després de la ruleta
+        if (isHost) {
+          setTimeout(async () => {
+            const updates: any = {};
+            updates[`players/${room.tieBreak!.loserId}/isEliminated`] = true;
+            
+            // Si només queda un, final de partida
+            const activeCount = Object.values(room.players).filter(p => !p.isEliminated).length;
+            if (activeCount <= 2) {
+              updates.gameState = 'finished';
+            }
+            
+            await update(ref(db, `rooms/${roomId}`), updates);
+          }, 2000);
+        }
+      }, spinTime);
+    }
+  }, [room.tieBreak?.timestamp, isHost, roomId]);
+
+  // Detectar eliminacions per a tots els jugadors (no només el host)
+  const prevEliminatedRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!room?.players) return;
+    playerIds.forEach(pid => {
+      const isEliminated = !!room.players[pid]?.isEliminated;
+      if (isEliminated && !prevEliminatedRef.current[pid]) {
+        setEliminatedPlayer(room.players[pid].name);
+      }
+      prevEliminatedRef.current[pid] = isEliminated;
+    });
+  }, [room?.players]);
 
   const triggerLaughEffect = (from: string) => {
     setLaughedBy(from);
@@ -389,6 +449,54 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
       
+      {/* MODAL RULETA DESEMPAT */}
+      {showRoulette && room.tieBreak && (
+        <div className="fixed inset-0 z-[15000] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="text-center w-full max-w-lg">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-yellow-500 mb-2 animate-pulse">EMPATS AL LÍMIT!</h2>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-12">La ruleta decidirà qui abandona la competició...</p>
+            
+            <div className="relative w-64 h-64 mx-auto mb-12">
+              {/* La fletxa indicadora */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 text-4xl">🔽</div>
+              
+              {/* El cercle de la ruleta */}
+              <div 
+                className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)`}
+                style={{ 
+                  transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 + (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length))}deg)` : 'rotate(0deg)',
+                  background: 'conic-gradient(from 0deg, #4f46e5 0%, #7c3aed 25%, #4f46e5 50%, #7c3aed 75%, #4f46e5 100%)'
+                }}
+              >
+                {room.tieBreak.players.map((pid, idx) => (
+                  <div 
+                    key={pid}
+                    className="absolute top-0 left-1/2 h-1/2 w-1 origin-bottom flex flex-col items-center"
+                    style={{ transform: `rotate(${(360 / room.tieBreak.players.length) * idx}deg)` }}
+                  >
+                    <div className="text-[10px] font-black text-white whitespace-nowrap bg-black/40 px-2 py-1 rounded-full mt-4 -rotate-90 origin-center">
+                      {room.players[pid]?.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {rouletteWinnerId && (
+              <div className="animate-in zoom-in duration-500">
+                <div className="text-6xl mb-4">💀</div>
+                <h3 className="text-3xl font-black uppercase text-red-500 mb-6">
+                  {room.players[rouletteWinnerId]?.name} ELIMINAT!
+                </h3>
+                <GoldButton onClick={() => setShowRoulette(false)} className="px-12 py-4 rounded-2xl">
+                  CONTINUAR
+                </GoldButton>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* OVERLAY ELIMINACIÓ */}
       {eliminatedPlayer && (
         <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
@@ -401,7 +509,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               disabled={hasLaughed}
               className={`bg-white text-black px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center gap-3 mx-auto border-none ${hasLaughed ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
             >
-              😂 {hasLaughed ? 'JA TE N\'HAS ENRIGUT' : 'ENRIURE\'S-EN'}
+              😂 {hasLaughed ? 'JA TE N\'HAS ENRIGUT' : 'ENRIURE-SE\'N'}
             </button>
 
             <button
@@ -438,7 +546,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       {laughedBy && (
         <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[12000] animate-bounce pointer-events-none">
           <div className="bg-yellow-500 text-black px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-2xl border-4 border-black text-xl">
-            {laughedBy} S&apos;ESTÀ RIUENT! 😂
+            {laughedBy} SE N&apos;ESTÀ ENRIENT! 😂
           </div>
         </div>
       )}

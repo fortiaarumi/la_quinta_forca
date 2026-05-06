@@ -12,6 +12,7 @@ import GuessMap from './GuessMap';
 import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
+import GoldButton from './GoldButton';
 import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame } from '@/lib/userStats';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
@@ -34,22 +35,6 @@ const getTimeSettings = (mode?: string) => {
   return { total: 60000, panic: 15000 }; // Bala (per defecte)
 };
 
-// COMPONENTS ELEGANTS
-const GoldButton = ({ onClick, children, className = "", disabled = false, pulse = false }: any) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`relative group overflow-hidden px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50
-      ${pulse ? 'animate-gold-pulse' : ''}
-      bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 
-      text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)]
-      hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)] hover:-translate-y-1
-      ${className}`}
-  >
-    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-    <span className="relative z-10 flex items-center justify-center gap-3">{children}</span>
-  </button>
-);
 
 export default function GameRoom({ roomId, playerId }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
@@ -422,10 +407,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
     // 1. Comprovar si ja hi ha una pista compartida per aquesta ronda
     const roundData = room.rounds?.[room.currentRound];
     if (roundData?.sharedHint) {
-      setCurrentHint(`${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
-      if (!roundData.sharedHint.isFree) {
-        setHasUsedHint(true);
-      }
+      setCurrentHint(roundData.sharedHint.isFree ? roundData.sharedHint.value : `${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
+      setHasUsedHint(true);
       return;
     }
 
@@ -459,12 +442,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
       } else {
-        const fallbackHint = { type: 'Zona', value: 'Informació no disponible (Gratis ✨)', isFree: true };
+        const fallbackHint = { type: 'Avís', value: "No s'han trobat pistes, no se't descomptaran punts! ✨", isFree: true };
         await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
           sharedHint: fallbackHint
         });
-        setCurrentHint(`${fallbackHint.type}: ${fallbackHint.value}`);
-        // No cridem a setHasUsedHint(true) perquè és gratis
+        setCurrentHint(`${fallbackHint.value}`);
+        setHasUsedHint(true); // El marquem com usat perquè desaparegui el botó, però no decontarà punts
       }
     } catch (e) {
       console.error("Error obtenint pista:", e);
@@ -483,12 +466,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const score = calculateScore(distance, room.gameMode);
 
       // 1. Guardem l'estimació BASE ràpidament per no bloquejar el joc
+      const isFreeHint = room.rounds?.[room.currentRound]?.sharedHint?.isFree;
       const baseGuess: PlayerGuess = {
         lat: guessLat,
         lng: guessLng,
         distance,
         score,
-        usedHint: hasUsedHint // 👈 NOU
+        usedHint: hasUsedHint && !isFreeHint
       };
 
       const guessRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`);
