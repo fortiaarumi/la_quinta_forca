@@ -646,16 +646,20 @@ export default function HomeScreen() {
             <div className="w-full max-w-xl mx-auto py-12">
               <button 
                 onClick={() => {
-                  const prevMap: Record<string, 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'> = { 
-                    'type': 'idle', 
-                    'gameType': 'type',
-                    'mode': 'gameType', 
-                    'time': 'mode', 
-                    'hints': 'time',
-                    'join': 'joinChoice',
-                    'joinChoice': 'type'
+                  const getPrevStep = (): 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice' => {
+                    if (setupStep === 'mode' && tab === 'solo') return 'type';
+                    const prevMap: Record<string, 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'> = { 
+                      'type': 'idle', 
+                      'gameType': 'type',
+                      'mode': 'gameType', 
+                      'time': 'mode', 
+                      'hints': 'time',
+                      'join': 'joinChoice',
+                      'joinChoice': 'type'
+                    };
+                    return prevMap[setupStep] || 'idle';
                   };
-                  goToStep(prevMap[setupStep], 'backward');
+                  goToStep(getPrevStep(), 'backward');
                 }}
                 className="mb-12 text-gray-500 hover:text-white flex items-center gap-3 font-black uppercase tracking-[0.3em] text-[10px] transition-all group bg-transparent border-none cursor-pointer"
               >
@@ -670,7 +674,7 @@ export default function HomeScreen() {
                       title="Individual" 
                       desc="Explora al teu ritme i bat el rànquing." 
                       icon="👤"
-                      onClick={() => { setTab('solo'); goToStep('gameType'); }}
+                      onClick={() => { setTab('solo'); setGameType('classic'); goToStep('mode'); }}
                     />
                     <OptionCard 
                       title="Crear Sala" 
@@ -783,7 +787,14 @@ export default function HomeScreen() {
                     <OptionCard selected={timeMode === 'normal'} title="Mode Normal" desc="Equilibri perfecte (60s)." icon="⏱️" onClick={() => setTimeMode('normal')} />
                     <OptionCard selected={timeMode === 'infinit'} title="Infinit" desc="Gaudeix de les vistes (Sense límit)." icon="♾️" onClick={() => setTimeMode('infinit')} />
                   </div>
-                  <GoldButton onClick={() => goToStep('hints')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
+                  <GoldButton onClick={() => {
+                    if (gameMode === 'catalunya') {
+                      setHintsEnabled(false);
+                      if (tab === 'create') handleCreate(); else handleSolo();
+                    } else {
+                      goToStep('hints');
+                    }
+                  }} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
                 </StepWrapper>
               )}
 

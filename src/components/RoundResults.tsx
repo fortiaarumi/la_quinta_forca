@@ -37,10 +37,19 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [congratulatedBy, setCongratulatedBy] = useState<string | null>(null);
 
   // NOU: Reiniciem els cadenats cada cop que la ronda canvia
+  const [showPenalty, setShowPenalty] = useState(false);
+
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
     setHasCongratulated(false);
+    setShowPenalty(false);
+
+    // Retard per mostrar l'animació de la penalització
+    const timer = setTimeout(() => {
+      setShowPenalty(true);
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [round]);
 
   // ── LÒGICA DE MODES ESPECIALS (NOMÉS HOST) ──
@@ -397,9 +406,18 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                     <div className="text-gray-400 text-xs">
                       {Math.round(guess.distance).toLocaleString()} km
                     </div>
-                    <div className="text-yellow-400 font-black text-xl">
-                      +{Math.round(guess.score / (guess.usedHint ? 2 : 1)).toLocaleString()}
-                      {guess.usedHint && <span className="text-[10px] ml-2 text-yellow-600/70 italic">(Pista: -50%)</span>}
+                    <div className="text-yellow-400 font-black text-xl flex items-center gap-2">
+                      <span className="transition-all duration-1000" style={{ 
+                        transform: showPenalty && guess.usedHint ? 'scale(0.9)' : 'scale(1)', 
+                        opacity: showPenalty && guess.usedHint ? 0.6 : 1 
+                      }}>
+                        +{Math.round(showPenalty || !guess.usedHint ? (guess.score / (guess.usedHint ? 2 : 1)) : guess.score).toLocaleString()}
+                      </span>
+                      {guess.usedHint && showPenalty && (
+                        <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 whitespace-nowrap">
+                          -50% PISTA
+                        </span>
+                      )}
                     </div>
                   </>
                 ) : (

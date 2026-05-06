@@ -363,27 +363,101 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
               ))}
             </div>
             <div className="flex-1 overflow-y-auto p-6 text-gray-300 text-sm space-y-6">
-              <section>
-                <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">1. Requisits</h3>
-                <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
-                  <p>• <strong>Node.js:</strong> <a href="https://nodejs.org/" target="_blank" className="text-emerald-400">nodejs.org</a></p>
-                  <p>• <strong>Git:</strong> <a href="https://git-scm.com/" target="_blank" className="text-emerald-400">git-scm.com</a></p>
-                </div>
-              </section>
-              <section>
-                <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">2. Instal·lació</h3>
-                <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400 overflow-x-auto">
-                  git clone https://github.com/fortiaarumi/la_quinta_forca.git\n
-                  cd la_quinta_forca\n
-                  npm install
-                </pre>
-              </section>
-              <section>
-                <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">3. Execució</h3>
-                <pre className="bg-black p-3 rounded-lg border border-white/10 text-xs text-emerald-400">
-                  node --env-file=.env.local suno-puppeteer.mjs
-                </pre>
-              </section>
+              {manualTab === 'windows' && (
+                <>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">1. Instal·lar el motor</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <p className="text-xs">1. Baixa el botó verd &quot;LTS&quot; de <a href="https://nodejs.org/" target="_blank" className="text-emerald-400 underline">nodejs.org</a>.</p>
+                      <p className="text-xs">2. Baixa i instal·la Git de <a href="https://gitforwindows.org/" target="_blank" className="text-emerald-400 underline">gitforwindows.org</a>.</p>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">2. Descarregar el robot</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <p className="text-xs">Obre el <code className="text-white">cmd</code> i posa aquestes ordres:</p>
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-[10px] text-emerald-400 overflow-x-auto">
+                        git clone https://github.com/fortiaarumi/la_quinta_forca.git{"\n"}
+                        cd la_quinta_forca{"\n"}
+                        npm install
+                      </pre>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">3. Configurar fitxer .env.local</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <p className="text-[10px]">Crea un fitxer <code className="text-white">.env.local</code> amb el Bloc de Notes i enganxa-hi això:</p>
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-[8px] text-emerald-400 overflow-x-auto">
+                        NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58{"\n"}
+                        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=onsom-dade5.firebaseapp.com{"\n"}
+                        NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://onsom-dade5-default-rtdb.europe-west1.firebasedatabase.app{"\n"}
+                        NEXT_PUBLIC_FIREBASE_PROJECT_ID=onsom-dade5{"\n"}
+                        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=onsom-dade5.firebasestorage.app{"\n"}
+                        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=812916118386{"\n"}
+                        NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb
+                      </pre>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">4. Engegar</h3>
+                    <code className="block bg-black p-4 rounded text-xs text-emerald-400">node --env-file=.env.local suno-puppeteer.mjs</code>
+                  </section>
+                </>
+              )}
+
+              {manualTab === 'linux' && (
+                <>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">1. Programes bàsics</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5">
+                      <p className="text-xs">Obre la Terminal (Ctrl+Alt+T) i posa:</p>
+                      <code className="block bg-black p-2 mt-2 rounded text-[10px] text-emerald-400">sudo apt update && sudo apt install nodejs npm git -y</code>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">2. Robot i Configuració</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <p className="text-[10px]">Copia/enganxa ordres i claus al fitxer:</p>
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-[10px] text-emerald-400 overflow-x-auto">
+                        git clone https://github.com/fortiaarumi/la_quinta_forca.git{"\n"}
+                        cd la_quinta_forca{"\n"}
+                        npm install{"\n"}
+                        nano .env.local
+                      </pre>
+                      <p className="text-[9px] text-gray-500 italic">Dins del nano, enganxa les claus que hi ha al README.md o al manual de Windows.</p>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">3. Engegar</h3>
+                    <code className="block bg-black p-4 rounded text-xs text-emerald-400">node --env-file=.env.local suno-puppeteer.mjs</code>
+                  </section>
+                </>
+              )}
+
+              {manualTab === 'mac' && (
+                <>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">1. Motor i Terminal</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <p className="text-xs">1. Baixa l&apos;instal·lador LTS de <a href="https://nodejs.org/" target="_blank" className="text-emerald-400 underline">nodejs.org</a>.</p>
+                      <p className="text-xs">2. Obre la Terminal i posa <code className="text-white">git --version</code> per instal·lar les eines.</p>
+                    </div>
+                  </section>
+                  <section>
+                    <h3 className="text-indigo-400 font-black uppercase text-xs mb-3">2. Robot i Engegar</h3>
+                    <div className="bg-black/30 p-4 rounded-xl border border-white/5 space-y-2">
+                      <pre className="bg-black p-3 rounded-lg border border-white/10 text-[10px] text-emerald-400 overflow-x-auto">
+                        git clone https://github.com/fortiaarumi/la_quinta_forca.git{"\n"}
+                        cd la_quinta_forca{"\n"}
+                        npm install{"\n"}
+                        nano .env.local{"\n"}
+                        node --env-file=.env.local suno-puppeteer.mjs
+                      </pre>
+                      <p className="text-[9px] text-gray-500 italic">Dins del nano, enganxa les claus que hi ha al README.md o al manual de Windows.</p>
+                    </div>
+                  </section>
+                </>
+              )}
             </div>
             <div className="p-6 border-t border-white/10 bg-indigo-900/10 flex justify-center">
               <button onClick={() => setShowManual(false)} className="bg-indigo-600 text-white font-black px-10 py-3 rounded-xl uppercase text-xs">Entès!</button>
