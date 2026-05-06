@@ -51,7 +51,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     logicProcessedRef.current = round;
 
     const calculateSpecialLogic = async () => {
-      const updates: any = {};
+      const updates: Record<string, any> = {};
       let needsUpdate = false;
 
       // 1. LÒGICA 1VS1
@@ -64,7 +64,6 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           const s2 = guesses[p2]?.score || 0;
 
           if (s1 !== s2) {
-            const winner = s1 > s2 ? p1 : p2;
             const loser = s1 > s2 ? p2 : p1;
             const diff = Math.abs(s1 - s2);
             // Dany = (Punts_guanyador - Punts_perdedor) * (1 + (Ronda * 0.5))
@@ -86,7 +85,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       // 2. LÒGICA BATTLE ROYALE
       if (room.gameType === 'battle_royale') {
         const activePlayers = Object.entries(room.players)
-          .filter(([id, p]) => !p.isEliminated)
+          .filter(([, p]) => !p.isEliminated)
           .map(([id, p]) => ({ id, score: guesses[id]?.score || 0 }));
 
         if (activePlayers.length > 1) {
@@ -466,7 +465,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             </button>
           ) : (
             <div className="flex-[2] text-center text-gray-500 py-3.5 text-xs font-black uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 animate-pulse flex items-center justify-center">
-              ⏳ Esperant l'amfitrió...
+              ⏳ Esperant l&apos;amfitrió...
             </div>
           )}
         </div>

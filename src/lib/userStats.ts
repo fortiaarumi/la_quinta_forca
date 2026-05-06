@@ -69,7 +69,7 @@ export async function updateUserStatsAfterGame(
   gameType: string = 'classic', // 👈 NOU
   roundHints: boolean[] = [] // 👈 NOU
 ): Promise<string[]> {
-  const profile: any = await getUserProfile(uid);
+  const profile: Record<string, any> | null = await getUserProfile(uid);
   if (!profile) return [];
 
   // Construïm el nom de la caixa exacta depenent del mode i el temps

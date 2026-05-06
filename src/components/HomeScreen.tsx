@@ -385,7 +385,7 @@ export default function HomeScreen() {
     try {
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
-      const initialPlayer: any = { 
+      const initialPlayer: Record<string, any> = { 
         name: (playerName.trim() || nickname || 'Explorador'), 
         joinedAt: Date.now(), 
         isAdmin: !!isAdmin,
@@ -413,7 +413,7 @@ export default function HomeScreen() {
       if (!canCreate) { setLoading(false); return setError(`Límit diari de sales assolit.`); }
       const playerId = getPlayerId();
       const roomCode = generateRoomCode();
-      const initialPlayer: any = { 
+      const initialPlayer: Record<string, any> = { 
         name: (playerName.trim() || nickname || 'Explorador'), 
         joinedAt: Date.now(), 
         isAdmin: !!isAdmin,
@@ -646,7 +646,7 @@ export default function HomeScreen() {
             <div className="w-full max-w-xl mx-auto py-12">
               <button 
                 onClick={() => {
-                  const prevMap: Record<string, typeof setupStep> = { 
+                  const prevMap: Record<string, 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'> = { 
                     'type': 'idle', 
                     'gameType': 'type',
                     'mode': 'gameType', 
@@ -752,7 +752,7 @@ export default function HomeScreen() {
                {setupStep === 'gameType' && (
                 <StepWrapper direction={animDirection}>
                   <h3 className="text-5xl font-black uppercase italic mb-4 tracking-tighter leading-none">Tipus de Joc</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ L'1vs1 i el Battle Royale no sumen al rànquing global.</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ L&apos;1vs1 i el Battle Royale no sumen al rànquing global.</p>
                   <div className="space-y-4">
                     <OptionCard selected={gameType === 'classic'} title="Clàssic" desc="Puntuació estàndard de 5 rondes." icon="⭐" onClick={() => setGameType('classic')} />
                     <OptionCard selected={gameType === '1vs1'} title="1vs1 (Duel)" desc="10.000 de vida. Si perds punts, reps dany." icon="⚔️" onClick={() => setGameType('1vs1')} />
@@ -790,7 +790,7 @@ export default function HomeScreen() {
               {setupStep === 'hints' && (
                 <StepWrapper direction={animDirection}>
                   <h3 className="text-5xl font-black uppercase italic mb-4 tracking-tighter leading-none">Activar Pistes</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ Redueix els punts un 50% a canvi d'informació clau. No guarden insígnies.</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-10">⚠️ Redueix els punts un 50% a canvi d&apos;informació clau. No guarden insígnies.</p>
                   <div className="space-y-4">
                     <OptionCard selected={hintsEnabled === true} title="Activat" desc="Permet demanar ajuda durant la ronda." icon="💡" onClick={() => setHintsEnabled(true)} />
                     <OptionCard selected={hintsEnabled === false} title="Desactivat" desc="Juga de forma pura sense ajudes." icon="🚫" onClick={() => setHintsEnabled(false)} />
