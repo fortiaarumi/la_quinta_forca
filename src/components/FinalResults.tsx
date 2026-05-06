@@ -70,8 +70,27 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       name: player.name,
       score: room.totalScores?.[id] ?? 0,
       isAdmin: (player as any).isAdmin,
+      isEliminated: player.isEliminated || false,
+      eliminatedAtRound: (player as any).eliminatedAtRound ?? -1,
     }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      if (room.gameType === 'battle_royale') {
+        // 1. Si un està viu i l'altre no, el viu va primer
+        if (!a.isEliminated && b.isEliminated) return -1;
+        if (a.isEliminated && !b.isEliminated) return 1;
+
+        // 2. Si tots dos estan eliminats, el que va sobreviure a més rondes guanya
+        if (a.isEliminated && b.isEliminated) {
+          if (b.eliminatedAtRound !== a.eliminatedAtRound) {
+            return b.eliminatedAtRound - a.eliminatedAtRound;
+          }
+        }
+        // 3. Si empaten o estan vius tots dos, desempatem pels punts totals
+        return b.score - a.score;
+      }
+      // Mode Clàssic o 1vs1: Només ens importen els punts
+      return b.score - a.score;
+    });
 
   const winner = sorted[0];
   const iWon = winner?.id === playerId;
@@ -242,7 +261,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                       <div className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-2">
                         {p.name}
                         {p.isAdmin && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
-                        {room.players[p.id]?.isEliminated && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">ELIMINAT</span>}
+                        {p.isEliminated && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">ELIMINAT {p.eliminatedAtRound >= 0 ? `(R${p.eliminatedAtRound + 1})` : ''}</span>}
+                        {!p.isEliminated && room.gameType === 'battle_royale' && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.5)]">SUPERVIVENT</span>}
                       </div>
                       {room.players[p.id]?.badges && room.players[p.id].badges!.length > 0 && (
                         <div className="flex gap-1 mb-1">
@@ -310,8 +330,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                 if (pIds.length < 2) return null;
                 const s1 = roundData.guesses[pIds[0]]?.score || 0;
                 const s2 = roundData.guesses[pIds[1]]?.score || 0;
-                const ps1 = roundData.guesses[pIds[0]]?.usedHint ? Math.round(s1/2) : s1;
-                const ps2 = roundData.guesses[pIds[1]]?.usedHint ? Math.round(s2/2) : s2;
+                const ps1 = roundData.guesses[pIds[0]]?.usedHint ? Math.round(s1 / 2) : s1;
+                const ps2 = roundData.guesses[pIds[1]]?.usedHint ? Math.round(s2 / 2) : s2;
                 const diff = Math.abs(ps1 - ps2);
                 const mult = 0.5 + (r * 0.5);
                 const damage = Math.round(diff * mult);
@@ -401,7 +421,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           </button>
         </div>
       </div>
-      
+
       {showManual && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-indigo-500/30 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">

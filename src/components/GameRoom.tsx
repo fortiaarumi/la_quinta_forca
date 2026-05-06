@@ -404,7 +404,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const fetchHint = async () => {
     if (!room?.locations || hasUsedHint || hintLoading) return;
 
-    // 1. Comprovar si ja hi ha una pista compartida per aquesta ronda
     const roundData = room.rounds?.[room.currentRound];
     if (roundData?.sharedHint) {
       setCurrentHint(roundData.sharedHint.isFree ? roundData.sharedHint.value : `${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
@@ -416,7 +415,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
 
     try {
-      // Nova estratègia: Obtenim el CODI UNIVERSAL del país (ex: "ES", "FR")
       const getCountryCode = (): Promise<string | null> => {
         return new Promise((resolve) => {
           const geocoder = new (google.maps as any).Geocoder();
@@ -424,10 +422,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             if (status === 'OK' && results) {
               for (const r of results) {
                 const c = r.address_components.find((comp: any) => comp.types.includes('country'));
-                if (c) {
-                  resolve(c.short_name);
-                  return;
-                }
+                if (c) { resolve(c.short_name); return; }
               }
             }
             resolve(null);
@@ -438,10 +433,17 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const countryCode = await getCountryCode();
       let data = null;
 
+      // PLA A: Buscar per Codi de País (Molt exacte)
       if (countryCode) {
-        // Ara busquem per codi (molt més exacte que per nom)
         const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
         data = await res.json();
+      }
+
+      // PLA B: Si Google no dóna el codi (Llocs remots), busquem pel nom de la zona
+      if (!data || data.status) {
+        const countryName = await getLocationName(actual.lat, actual.lng, 'world');
+        const res2 = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
+        data = await res2.json();
       }
 
       const country = Array.isArray(data) ? data[0] : data;
@@ -457,22 +459,16 @@ export default function GameRoom({ roomId, playerId }: Props) {
         ];
 
         const hintToSave = options[Math.floor(Math.random() * options.length)];
-
-        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
-          sharedHint: hintToSave
-        });
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
       } else {
-        throw new Error("No s'ha trobat país"); // Forcem l'error perquè salti al catch
+        throw new Error("No s'ha trobat país");
       }
     } catch (e) {
       console.error("Error obtenint pista:", e);
-      // FALLBACK SEGUR: Si estem a l'oceà o l'API falla, enviem això
       const fallbackHint = { type: 'Avís', value: "Et trobes en un indret remot. No tenim dades, no se't decontaran punts! ✨", isFree: true };
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
-        sharedHint: fallbackHint
-      });
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: fallbackHint });
       setCurrentHint(`${fallbackHint.value}`);
       setHasUsedHint(true);
     } finally {

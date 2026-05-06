@@ -246,12 +246,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           } else {
             const worst = sorted[0];
             updates[`players/${worst.id}/isEliminated`] = true;
+            updates[`players/${worst.id}/eliminatedAtRound`] = round;
             needsUpdate = true;
             setEliminatedPlayer(room.players[worst.id]?.name || 'Algú');
-
-            if (activePlayers.length <= 2) {
-              updates.gameState = 'finished';
-            }
           }
         }
       }
@@ -310,12 +307,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           setTimeout(async () => {
             const updates: any = {};
             updates[`players/${room.tieBreak!.loserId}/isEliminated`] = true;
-
-            // Si només queda un, final de partida
-            const activeCount = Object.values(room.players).filter(p => !p.isEliminated).length;
-            if (activeCount <= 2) {
-              updates.gameState = 'finished';
-            }
+            updates[`players/${room.tieBreak!.loserId}/eliminatedAtRound`] = round;
+            updates.tieBreak = null;
 
             await update(ref(db, `rooms/${roomId}`), updates);
           }, 2000);
@@ -454,20 +447,22 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
 
-      {/* MODAL RULETA DESEMPAT */}
+      {/* MODAL RULETA DESEMPAT RE-DISSENYAT */}
       {showRoulette && room.tieBreak && (
-        <div className="fixed inset-0 z-[15000] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
-          <div className="text-center w-full max-w-lg">
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-yellow-500 mb-2 animate-pulse">EMPATS AL LÍMIT!</h2>
-            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-12">La ruleta decidirà qui abandona la competició...</p>
+        <div className="fixed inset-0 z-[15000] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="text-center w-full max-w-xl bg-white/5 border border-white/10 p-12 rounded-[4rem] shadow-2xl">
+            <h2 className="text-5xl font-black italic uppercase tracking-tighter text-yellow-500 mb-2">EMPATS AL LÍMIT</h2>
+            <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-12">La sort decidirà qui abandona la competició...</p>
 
-            <div className="relative w-64 h-64 mx-auto mb-12">
-              {/* La fletxa indicadora */}
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 text-4xl">🔽</div>
+            <div className="relative w-72 h-72 mx-auto mb-12">
+              {/* La fletxa indicadora (Més maca) */}
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 w-8 h-10 bg-yellow-500 rounded-b-full shadow-[0_0_20px_rgba(234,179,8,0.8)] border-2 border-white flex items-end justify-center pb-1">
+                <div className="w-2 h-2 bg-black rounded-full" />
+              </div>
 
               {/* El cercle de la ruleta */}
               <div
-                className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1) shadow-[0_0_80px_rgba(79,70,229,0.4)]`}
+                className={`w-full h-full rounded-full border-[12px] border-[#0c0f1a] relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.2, 0.8, 0.1, 1) shadow-[0_0_80px_rgba(255,255,255,0.1)]`}
                 style={{
                   transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 - (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length)) - (360 / (room.tieBreak.players.length * 2))}deg)` : 'rotate(0deg)',
                   background: `conic-gradient(${room.tieBreak!.players.map((_, i) => {
@@ -485,7 +480,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                     className="absolute top-0 left-1/2 h-1/2 w-2 origin-bottom flex flex-col items-center -translate-x-1/2"
                     style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * (idx + 0.5)}deg)` }}
                   >
-                    <div className="mt-8 text-[12px] font-black text-white whitespace-nowrap bg-black/60 px-4 py-1.5 rounded-full border border-white/20 shadow-xl" style={{ transform: 'rotate(0deg)', writingMode: 'vertical-lr' }}>
+                    <div className="mt-8 text-sm font-black text-white whitespace-nowrap bg-black/80 px-4 py-2 rounded-full shadow-xl" style={{ transform: 'rotate(0deg)', writingMode: 'vertical-lr' }}>
                       {room.players[pid]?.name}
                     </div>
                   </div>
@@ -493,17 +488,16 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               </div>
             </div>
 
-            {spinFinished && rouletteWinnerId && (
-              <div className="animate-in zoom-in duration-500 mt-8">
-                <div className="text-8xl mb-4 animate-bounce">💀</div>
-                <h3 className="text-4xl font-black uppercase text-red-500 mb-8 italic tracking-tighter shadow-text">
-                  {room.players[rouletteWinnerId]?.name} ELIMINAT!
-                </h3>
-                <GoldButton onClick={() => setShowRoulette(false)} className="px-16 py-5 rounded-3xl">
-                  D&apos;ACORD
-                </GoldButton>
-              </div>
-            )}
+            {/* NOMÉS S'ENSENYA QUAN HA ACABAT DE GIRAR */}
+            <div className={`transition-all duration-700 ${spinFinished && rouletteWinnerId ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+              <div className="text-6xl mb-4 animate-bounce">💀</div>
+              <h3 className="text-4xl font-black uppercase text-red-500 mb-8 italic tracking-tighter">
+                {room.players[rouletteWinnerId || room.tieBreak.players[0]]?.name} ELIMINAT!
+              </h3>
+              <GoldButton onClick={() => setShowRoulette(false)} className="w-full py-5 rounded-3xl text-lg">
+                D&apos;ACORD
+              </GoldButton>
+            </div>
           </div>
         </div>
       )}
@@ -701,10 +695,17 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             <button
               disabled={combatStage !== 'done'}
               onClick={async () => {
-                // Si algú ha mort, canviem a finished
-                const pIds = Object.keys(room.players);
-                const hasDead = pIds.some(pid => (room.players[pid]?.health ?? 10000) <= 0);
-                if (hasDead) {
+                let shouldFinish = false;
+
+                if (room.gameType === 'battle_royale') {
+                  const activeCount = Object.values(room.players).filter(p => !p.isEliminated).length;
+                  if (activeCount <= 1) shouldFinish = true;
+                } else if (room.gameType === '1vs1') {
+                  const hasDead = Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0);
+                  if (hasDead) shouldFinish = true;
+                }
+
+                if (shouldFinish) {
                   await update(ref(db, `rooms/${roomId}`), { gameState: 'finished' });
                 } else {
                   onNext();
@@ -712,7 +713,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               }}
               className={`flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg uppercase tracking-tighter italic border-none cursor-pointer ${combatStage !== 'done' ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95'}`}
             >
-              {combatStage !== 'done' ? '⚔️ Lluitant...' : (Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0) ? '🏆 Resultats Finals' : 'Ronda Següent →')}
+              {combatStage !== 'done' ? '⚔️ Lluitant...' : (
+                (room.gameType === 'battle_royale' && Object.values(room.players).filter(p => !p.isEliminated).length <= 1) ||
+                  (room.gameType === '1vs1' && Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0))
+                  ? '🏆 Mostrar Resultats Finals' : 'Ronda Següent →'
+              )}
             </button>
           ) : (
             <div className="flex-[2] text-center text-gray-500 py-4 text-xs font-black uppercase tracking-widest bg-white/5 rounded-2xl border border-white/5 animate-pulse flex items-center justify-center italic">⏳ Esperant Host...</div>
