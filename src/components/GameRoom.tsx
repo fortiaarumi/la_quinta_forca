@@ -62,7 +62,19 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const prevRoundRef = useRef(-1);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const { user, isGuest } = useAuth();
+  const [prevHealth, setPrevHealth] = useState<Record<string, number>>({});
   const statsSavedRef = useRef(false);
+  
+  // Sincronitzem la vida prèvia cada cop que comença una ronda nova de joc
+  useEffect(() => {
+    if (room?.gameState === 'playing' && room?.players) {
+      const currentH: Record<string, number> = {};
+      Object.keys(room.players).forEach(pid => {
+        currentH[pid] = room.players[pid]?.health ?? 10000;
+      });
+      setPrevHealth(currentH);
+    }
+  }, [room?.currentRound, room?.gameState]); // S'actualitza en canviar de ronda o tornar a 'playing'
   const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
   const [showAlert, setShowAlert] = useState(false);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
@@ -415,7 +427,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
     
     try {
       const countryName = await getLocationName(actual.lat, actual.lng, 'world');
-      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`);
+      // Fem la crida sense fullText perquè sigui més flexible (trobi "Spain" en comptes d'esperar "Kingdom of Spain")
+      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
       const data = await res.json();
       
       let hintToSave: any = null;
@@ -626,13 +639,14 @@ export default function GameRoom({ roomId, playerId }: Props) {
     content = (
       <RoundResults
         room={room}
-        roomId={roomId} // 👈 NOU
+        roomId={roomId}
         round={room.currentRound}
         isHost={isHost}
         playerId={playerId}
         onNext={nextRound}
-        onLeave={handleLeave} // 👈 NOU: Per abandonar a mig joc
+        onLeave={handleLeave}
         mapsReady={mapsReady}
+        initialHealth={prevHealth}
       />
     );
   } else {
@@ -728,9 +742,23 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
                   {isMe ? '★ ' : ''}{player.name}
                 </span>
-                <span className="text-yellow-400 font-bold">
-                  {(room.totalScores?.[id] ?? 0).toLocaleString()}
-                </span>
+                <div className="flex flex-col items-end">
+                  {room.gameType === '1vs1' ? (
+                    <>
+                      <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
+                        <div 
+                          className={`h-full transition-all duration-1000 ${player.health! > 5000 ? 'bg-emerald-500' : player.health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                          style={{ width: `${(player.health! / 10000) * 100}%` }} 
+                        />
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-bold">{player.health} HP</span>
+                    </>
+                  ) : (
+                    <span className="text-yellow-400 font-bold">
+                      {(room.totalScores?.[id] ?? 0).toLocaleString()}
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}

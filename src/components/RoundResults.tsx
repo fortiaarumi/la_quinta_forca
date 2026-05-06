@@ -16,11 +16,12 @@ interface Props {
   onNext: () => void;
   onLeave: () => void;
   mapsReady: boolean;
+  initialHealth: Record<string, number>;
 }
 
 const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B'];
 
-export default function RoundResults({ room, roomId, round, isHost, playerId, onNext, onLeave, mapsReady }: Props) {
+export default function RoundResults({ room, roomId, round, isHost, playerId, onNext, onLeave, mapsReady, initialHealth }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const actual = room.locations?.[round];
   const guesses = room.rounds?.[round]?.guesses ?? {};
@@ -60,6 +61,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   // NOU: Vida visual per evitar salts en l'animació
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
 
+  // Inicialitzem la vida visual amb la que tenien al començar la ronda (passada per prop)
+  useEffect(() => {
+    setDisplayHealth(initialHealth || {});
+  }, [initialHealth]);
+
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
@@ -87,10 +93,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       // LÒGICA DE COMBAT SEQÜENCIAL (1VS1)
       if (room.gameType === '1vs1') {
         const pIds = Object.keys(room.players);
-        // Inicialitzem la vida visual amb la que tenien en començar la ronda
-        const initialH: Record<string, number> = {};
-        pIds.forEach(pid => initialH[pid] = prevHealthRef.current[pid] ?? 10000);
-        setDisplayHealth(initialH);
+        // La vida visual ja està inicialitzada pel prop initialHealth
 
         if (pIds.length === 2) {
           const p1 = pIds[0];
@@ -124,7 +127,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             setTimeout(() => setCombatStage('impact'), 6500);
             setTimeout(() => {
               setCombatStage('drain');
-              // Actualitzem la vida visual del perdedor
+              // Actualitzem la vida visual del perdedor localment
               setDisplayHealth(prev => ({ 
                 ...prev, 
                 [loser]: Math.max(0, (prev[loser] || 10000) - damage) 
@@ -138,6 +141,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             setTimeout(() => {
               setDamageStage({ [loser]: 'done' });
               setCombatStage('done');
+              
+              // ARA SÍ: Actualitzem la ref per la següent ronda un cop acabada l'animació
+              const finalHealths: Record<string, number> = {};
+              pIds.forEach(pid => {
+                finalHealths[pid] = pid === loser ? Math.max(0, (prevHealthRef.current[pid] || 10000) - damage) : (prevHealthRef.current[pid] || 10000);
+              });
+              prevHealthRef.current = finalHealths;
             }, 11000);
           } else {
              setCombatStage('done');
@@ -146,13 +156,6 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       } else {
         setCombatStage('done');
       }
-
-      // Actualitzem la ref per la següent ronda
-      const currentHealths: Record<string, number> = {};
-      Object.keys(room.players).forEach(pid => {
-        currentHealths[pid] = room.players[pid]?.health ?? 10000;
-      });
-      prevHealthRef.current = currentHealths;
 
     }, 1500);
     return () => clearTimeout(timer);
@@ -517,7 +520,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                       <div 
                         className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
                         style={{ 
-                          width: `${((damageStage[pid] === 'impact' ? (prevHealthRef.current[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%` 
+                          width: `${((damageStage[pid] === 'impact' ? (initialHealth[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%` 
                         }} 
                       />
                     </div>
