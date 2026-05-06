@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       La gràcia de la cançó NO és inventar-se històries genèriques, sinó fer sang i riure's EXCLUSIVAMENT de la falta de punteria dels jugadors. 
       Fes befa de com de cecs estan, de com necessiten ulleres o de lo "tontos" que són, i de la brutal quantitat de quilòmetres que han errat.
       Cal que fassis rimes gracioses amb els seus noms. Els pots insultar ja que és una broma i ningú s'ofendrà. Passa't molt amb els teus insults.
+      La lletra HA DE SER en CATALÀ.
 
       DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis ciutats noves):
       ${guesses}

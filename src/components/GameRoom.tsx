@@ -427,13 +427,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
     
     try {
       const countryName = await getLocationName(actual.lat, actual.lng, 'world');
-      // Fem la crida sense fullText perquè sigui més flexible (trobi "Spain" en comptes d'esperar "Kingdom of Spain")
+      // Fem la crida sense fullText perquè sigui més flexible
       const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
       const data = await res.json();
       
-      let hintToSave: any = null;
-
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         const country = data[0];
         const options = [
           { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
@@ -442,28 +440,23 @@ export default function GameRoom({ roomId, playerId }: Props) {
           { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' }
         ];
         
-        const shuffled = options.sort(() => Math.random() - 0.5);
-        hintToSave = shuffled[0];
+        const hintToSave = options[Math.floor(Math.random() * options.length)];
+        
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
+          sharedHint: hintToSave
+        });
+        setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
+        setHasUsedHint(true);
       } else {
-        // Fallback: Si l'API de països falla, simplement donem el nom del país que ja tenim
-        hintToSave = { type: 'País', value: countryName };
+        const fallbackHint = { type: 'País', value: countryName };
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
+          sharedHint: fallbackHint
+        });
+        setCurrentHint(`${fallbackHint.type}: ${fallbackHint.value}`);
+        setHasUsedHint(true);
       }
-
-      // 2. Guardar la pista a Firebase perquè tothom la vegi
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
-        sharedHint: hintToSave
-      });
-
-      setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
-      setHasUsedHint(true);
     } catch (e) {
       console.error("Error obtenint pista:", e);
-      const fallbackHint = { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' };
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
-        sharedHint: fallbackHint
-      });
-      setCurrentHint(`${fallbackHint.type}: ${fallbackHint.value}`);
-      setHasUsedHint(true);
     } finally {
       setHintLoading(false);
     }
@@ -515,7 +508,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setHasGuessed(true);
       setShowGuessMap(false);
     },
-    [room, roomId, playerId, hasGuessed, isSinglePlayer]
+    [room, roomId, playerId, hasGuessed, isSinglePlayer, hasUsedHint]
   );
 
   const nextRound = useCallback(async () => {
