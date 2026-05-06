@@ -302,7 +302,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 shadow-2xl mb-12 animate-in slide-in-from-bottom duration-1000">
             <h2 className="text-xl font-black uppercase tracking-widest text-red-400 mb-6 italic text-center">⚔️ Historial de Batalla</h2>
             <div className="space-y-3">
-              {[0, 1, 2, 3, 4].map(r => {
+              {Object.keys(room.rounds || {}).map(rKey => {
+                const r = parseInt(rKey);
                 const roundData = room.rounds?.[r];
                 if (!roundData) return null;
                 const pIds = Object.keys(room.players);
@@ -312,7 +313,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                 const ps1 = roundData.guesses[pIds[0]]?.usedHint ? Math.round(s1/2) : s1;
                 const ps2 = roundData.guesses[pIds[1]]?.usedHint ? Math.round(s2/2) : s2;
                 const diff = Math.abs(ps1 - ps2);
-                const damage = Math.round(diff * (1 + (r * 0.5)));
+                const mult = 0.5 + (r * 0.5);
+                const damage = Math.round(diff * mult);
                 const winnerId = ps1 > ps2 ? pIds[0] : pIds[1];
                 const loserId = ps1 > ps2 ? pIds[1] : pIds[0];
 

@@ -375,19 +375,21 @@ export default function GameRoom({ roomId, playerId }: Props) {
             else if (locality) resolve(locality);
             else resolve("un indret remot de Catalunya");
           } else {
-            // Mode Món: Prioritzem sempre el nom sencer del País
-            for (const comp of components) {
-              if (comp.types.includes('country')) {
-                resolve(comp.long_name);
-                return;
-              }
+            // Mode Món: Busquem el país a tots els components de geolocalització
+            const countryComp = components.find((c: any) => c.types.includes('country'));
+            if (countryComp) {
+              resolve(countryComp.long_name);
+              return;
             }
-            // Si no hi ha país, agafem l'última part de l'adreça netejada
-            const fallback = validResult.formatted_address.split(',').pop()?.trim() || "";
-            if (fallback.includes('+') || fallback.length <= 3) {
-              resolve("un indret perdut del món");
+
+            // Si no el troba directament, mirem si l'adreça formatada té el país al final
+            const addressParts = validResult.formatted_address.split(',');
+            const lastPart = addressParts[addressParts.length - 1].trim();
+            // Evitem codis postals o plus codes
+            if (lastPart && !lastPart.includes('+') && isNaN(parseInt(lastPart))) {
+              resolve(lastPart);
             } else {
-              resolve(fallback);
+              resolve("un indret perdut del món");
             }
           }
         } else {
@@ -745,8 +747,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
               </button>
             ) : (
-              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_40px_rgba(234,179,8,0.6)] animate-in zoom-in duration-500 border-4 border-black flex flex-col items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">💡 Pista Desclavada</span>
+              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">✨ Pista Revelada</span>
                 <div className="flex items-center gap-3">
                   {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
                     <div className="flex flex-col items-center gap-2">

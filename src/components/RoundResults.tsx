@@ -49,6 +49,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [isDividing, setIsDividing] = useState<Record<string, boolean>>({});
   const [damageStage, setDamageStage] = useState<Record<string, 'none' | 'impact' | 'draining' | 'done'>>({});
 
+  // NOU: Seqüència de combat 1vs1
+  const [combatStage, setCombatStage] = useState<'idle' | 'scores' | 'collision' | 'diff' | 'mult' | 'impact' | 'drain' | 'done'>('idle');
+  const [combatDiff, setCombatDiff] = useState(0);
+  const [combatMult, setCombatMult] = useState(0);
+  const [combatFinalDamage, setCombatFinalDamage] = useState(0);
+  const [combatLoser, setCombatLoser] = useState<string | null>(null);
+  const [combatWinner, setCombatWinner] = useState<string | null>(null);
+
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
@@ -67,44 +75,65 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         const g = guesses[pid];
         if (g?.usedHint) {
           setIsDividing(prev => ({ ...prev, [pid]: true }));
-          // Després d'un moment, la puntuació baixa
           setTimeout(() => {
             setAnimatedScores(prev => ({ ...prev, [pid]: Math.round(g.score / 2) }));
           }, 800);
         }
       });
 
-      // Quan mostrem la penalització, comparem vida per veure el dany
+      // LÒGICA DE COMBAT SEQÜENCIAL (1VS1)
       if (room.gameType === '1vs1') {
         const pIds = Object.keys(room.players);
-        pIds.forEach(pid => {
-          const oldH = prevHealthRef.current[pid] ?? 10000;
-          const newH = room.players[pid]?.health ?? 10000;
+        if (pIds.length === 2) {
+          const p1 = pIds[0];
+          const p2 = pIds[1];
+          const getS = (pid: string) => {
+            const g = guesses[pid];
+            if (!g) return 0;
+            return g.usedHint ? Math.round(g.score / 2) : g.score;
+          };
+          const s1 = getS(p1);
+          const s2 = getS(p2);
           
-          if (newH < oldH) {
-            const diff = oldH - newH;
-            setDamageDealt(prev => ({ ...prev, [pid]: diff }));
-            
-            // SEQÜÈNCIA D'ANIMACIÓ DE DANY
-            // 1. Impacte (Barra vermella)
-            setDamageStage(prev => ({ ...prev, [pid]: 'impact' }));
-            
-            // 2. Drenatge (La barra baixa)
-            setTimeout(() => {
-              setDamageStage(prev => ({ ...prev, [pid]: 'draining' }));
-            }, 1000);
+          if (s1 !== s2) {
+            const winner = s1 > s2 ? p1 : p2;
+            const loser = s1 > s2 ? p2 : p1;
+            const diff = Math.abs(s1 - s2);
+            const mult = 0.5 + (round * 0.5);
+            const damage = Math.round(diff * mult);
 
-            // 3. Final (Torna al color original)
-            setTimeout(() => {
-              setDamageStage(prev => ({ ...prev, [pid]: 'done' }));
-            }, 3000);
+            setCombatWinner(winner);
+            setCombatLoser(loser);
+            setCombatDiff(diff);
+            setCombatMult(mult);
+            setCombatFinalDamage(damage);
 
-            setDamageMsg(`${room.players[pid]?.name || 'Un jugador'} ha perdut ${diff} de vida!`);
-            setTimeout(() => setDamageMsg(null), 5000);
+            // SEQÜÈNCIA TEMPORITZADA
+            setTimeout(() => setCombatStage('scores'), 500);
+            setTimeout(() => setCombatStage('collision'), 2500);
+            setTimeout(() => setCombatStage('diff'), 3500);
+            setTimeout(() => setCombatStage('mult'), 5000);
+            setTimeout(() => setCombatStage('impact'), 6500);
+            setTimeout(() => {
+              setCombatStage('drain');
+              setDamageDealt({ [loser]: damage });
+              setDamageStage({ [loser]: 'impact' });
+            }, 8000);
+            setTimeout(() => {
+              setDamageStage({ [loser]: 'draining' });
+            }, 9000);
+            setTimeout(() => {
+              setDamageStage({ [loser]: 'done' });
+              setCombatStage('done');
+            }, 11000);
+          } else {
+             setCombatStage('done');
           }
-        });
+        }
+      } else {
+        setCombatStage('done');
       }
-      
+
       // Actualitzem la ref per la següent ronda
       const currentHealths: Record<string, number> = {};
       Object.keys(room.players).forEach(pid => {
@@ -165,10 +194,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
             updates[`players/${loser}/health`] = newHealth;
             needsUpdate = true;
-
-            if (newHealth <= 0) {
-              updates.gameState = 'finished';
-            }
+            // No posem gameState = finished aquí per deixar que l'animació acabi
           }
         }
       }
@@ -449,7 +475,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                   </div>
                 </div>
                 {guess ? (
-                  <div className="text-yellow-400 font-black text-3xl flex items-center gap-2">
+                  <div className={`text-yellow-400 font-black text-3xl flex items-center gap-2 transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
                     <span 
                       className="transition-all duration-700" 
                       style={{ 
@@ -499,11 +525,56 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           })}
         </div>
 
+        {/* OVERLAY COMBAT 1VS1 CENTRAL */}
+        {room.gameType === '1vs1' && (combatStage === 'diff' || combatStage === 'mult' || combatStage === 'impact') && (
+          <div className="fixed inset-0 pointer-events-none z-[2000] flex items-center justify-center">
+            <div className="text-center animate-in zoom-in duration-300">
+               {combatStage === 'diff' && (
+                 <div className="bg-white/10 backdrop-blur-md border-4 border-white/20 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(255,255,255,0.2)]">
+                   <div className="text-gray-400 text-xs font-black uppercase tracking-widest mb-2">Diferència</div>
+                   <div className="text-7xl font-black text-white italic tracking-tighter">
+                     {combatDiff.toLocaleString()}
+                   </div>
+                 </div>
+               )}
+               {combatStage === 'mult' && (
+                 <div className="bg-yellow-500/10 backdrop-blur-md border-4 border-yellow-500 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(234,179,8,0.3)]">
+                   <div className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-2">Multiplicador Ronda {round + 1}</div>
+                   <div className="text-5xl font-black text-yellow-500 italic tracking-tighter mb-4">
+                     x{combatMult.toFixed(1)}
+                   </div>
+                   <div className="text-8xl font-black text-white italic tracking-tighter animate-bounce">
+                     {combatFinalDamage.toLocaleString()}
+                   </div>
+                 </div>
+               )}
+               {combatStage === 'impact' && (
+                 <div className={`text-9xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_50px_rgba(220,38,38,0.5)] ${combatLoser === playerIds[0] ? 'animate-impact-to-p1' : 'animate-impact-to-p2'}`}>
+                   {combatFinalDamage.toLocaleString()}
+                 </div>
+               )}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3 mt-4">
           <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
           {isHost ? (
-            <button onClick={onNext} className="flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg active:scale-95 uppercase tracking-tighter italic border-none cursor-pointer">
-              {room.gameState === 'finished' ? '🏆 Resultats Finals' : 'Ronda Següent →'}
+            <button 
+              disabled={combatStage !== 'done'}
+              onClick={async () => {
+                // Si algú ha mort, canviem a finished
+                const pIds = Object.keys(room.players);
+                const hasDead = pIds.some(pid => (room.players[pid]?.health ?? 10000) <= 0);
+                if (hasDead) {
+                  await update(ref(db, `rooms/${roomId}`), { gameState: 'finished' });
+                } else {
+                  onNext();
+                }
+              }} 
+              className={`flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg uppercase tracking-tighter italic border-none cursor-pointer ${combatStage !== 'done' ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95'}`}
+            >
+              {combatStage !== 'done' ? '⚔️ Lluitant...' : (Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0) ? '🏆 Resultats Finals' : 'Ronda Següent →')}
             </button>
           ) : (
             <div className="flex-[2] text-center text-gray-500 py-4 text-xs font-black uppercase tracking-widest bg-white/5 rounded-2xl border border-white/5 animate-pulse flex items-center justify-center italic">⏳ Esperant Host...</div>
