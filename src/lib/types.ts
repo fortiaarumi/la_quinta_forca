@@ -16,6 +16,11 @@ export interface PlayerGuess {
 
 export interface RoundData {
   guesses: Record<string, PlayerGuess>;
+  sharedHint?: { // 👈 NOU
+    type: string;
+    value: string;
+    imageUrl?: string;
+  };
 }
 
 export interface Player {

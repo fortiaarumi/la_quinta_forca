@@ -399,40 +399,55 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
   const fetchHint = async () => {
     if (!room?.locations || hasUsedHint || hintLoading) return;
+    
+    // 1. Comprovar si ja hi ha una pista compartida per aquesta ronda
+    const roundData = room.rounds?.[room.currentRound];
+    if (roundData?.sharedHint) {
+      setCurrentHint(`${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
+      setHasUsedHint(true);
+      return;
+    }
+
     setHintLoading(true);
     const actual = room.locations[room.currentRound];
     
     try {
-      // Busquem el país primer per saber què demanar a restcountries
       const countryName = await getLocationName(actual.lat, actual.lng, 'world');
-      
       const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`);
       const data = await res.json();
       
+      let hintToSave: any = null;
+
       if (data && data.length > 0) {
         const country = data[0];
         const options = [
-          { type: 'Bandera', value: country.flag },
+          { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
           { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
           { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
           { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' }
         ];
         
-        // Barregem l'array per assegurar aleatorietat real
         const shuffled = options.sort(() => Math.random() - 0.5);
-        const randomHint = shuffled[0];
-        
-        setCurrentHint(`${randomHint.type}: ${randomHint.value}`);
-        setHasUsedHint(true);
+        hintToSave = shuffled[0];
       } else {
-        // Fallback si l'API falla o no troba el país exacte
-        setCurrentHint(`Hemisferi: ${actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️'}`);
-        setHasUsedHint(true);
+        hintToSave = { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' };
       }
+
+      // 2. Guardar la pista a Firebase perquè tothom la vegi
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
+        sharedHint: hintToSave
+      });
+
+      setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
+      setHasUsedHint(true);
     } catch (e) {
       console.error("Error obtenint pista:", e);
-      setCurrentHint(`Hemisferi: ${actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️'}`);
+      const fallbackHint = { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' };
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
+        sharedHint: fallbackHint
+      });
+      setCurrentHint(`${fallbackHint.type}: ${fallbackHint.value}`);
       setHasUsedHint(true);
     } finally {
       setHintLoading(false);
@@ -730,8 +745,24 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
               </button>
             ) : (
-              <div className="bg-yellow-500 text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(234,179,8,0.4)] animate-in zoom-in duration-300">
-                ✨ PISTA: {currentHint}
+              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_40px_rgba(234,179,8,0.6)] animate-in zoom-in duration-500 border-4 border-black flex flex-col items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">💡 Pista Desclavada</span>
+                <div className="flex items-center gap-3">
+                  {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img 
+                        src={room.rounds?.[room.currentRound]?.sharedHint?.imageUrl} 
+                        alt="Flag" 
+                        className="h-20 w-auto rounded-lg shadow-lg border-2 border-black"
+                      />
+                      <span className="font-black uppercase text-xs">{room.rounds?.[room.currentRound]?.sharedHint?.type}</span>
+                    </div>
+                  ) : (
+                    <span className="font-black uppercase tracking-tight text-lg">
+                      {currentHint || `${room.rounds?.[room.currentRound]?.sharedHint?.type || ''}: ${room.rounds?.[room.currentRound]?.sharedHint?.value || ''}`}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

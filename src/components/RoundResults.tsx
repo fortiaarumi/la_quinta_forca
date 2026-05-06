@@ -40,10 +40,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const { playSiu, playRiure, isMuted } = useAudio();
   const [showPenalty, setShowPenalty] = useState(false);
 
-  // NOU: Lògica per detectar dany rebut i mostrar missatges
   const prevHealthRef = useRef<Record<string, number>>({});
   const [damageDealt, setDamageDealt] = useState<Record<string, number>>({});
   const [damageMsg, setDamageMsg] = useState<string | null>(null);
+
+  // NOU: Estats per animacions
+  const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
+  const [isDividing, setIsDividing] = useState<Record<string, boolean>>({});
+  const [damageStage, setDamageStage] = useState<Record<string, 'none' | 'impact' | 'draining' | 'done'>>({});
 
   useEffect(() => {
     setHasClosedPopup(false);
@@ -58,16 +62,44 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     const timer = setTimeout(() => {
       setShowPenalty(true);
       
+      // Iniciem animació de divisió de puntuació per als que han fet servir pista
+      playerIds.forEach(pid => {
+        const g = guesses[pid];
+        if (g?.usedHint) {
+          setIsDividing(prev => ({ ...prev, [pid]: true }));
+          // Després d'un moment, la puntuació baixa
+          setTimeout(() => {
+            setAnimatedScores(prev => ({ ...prev, [pid]: Math.round(g.score / 2) }));
+          }, 800);
+        }
+      });
+
       // Quan mostrem la penalització, comparem vida per veure el dany
       if (room.gameType === '1vs1') {
         const pIds = Object.keys(room.players);
         pIds.forEach(pid => {
           const oldH = prevHealthRef.current[pid] ?? 10000;
           const newH = room.players[pid]?.health ?? 10000;
+          
           if (newH < oldH) {
             const diff = oldH - newH;
             setDamageDealt(prev => ({ ...prev, [pid]: diff }));
-            setDamageMsg(`${room.players[pid].name} ha perdut ${diff} de vida!`);
+            
+            // SEQÜÈNCIA D'ANIMACIÓ DE DANY
+            // 1. Impacte (Barra vermella)
+            setDamageStage(prev => ({ ...prev, [pid]: 'impact' }));
+            
+            // 2. Drenatge (La barra baixa)
+            setTimeout(() => {
+              setDamageStage(prev => ({ ...prev, [pid]: 'draining' }));
+            }, 1000);
+
+            // 3. Final (Torna al color original)
+            setTimeout(() => {
+              setDamageStage(prev => ({ ...prev, [pid]: 'done' }));
+            }, 3000);
+
+            setDamageMsg(`${room.players[pid]?.name || 'Un jugador'} ha perdut ${diff} de vida!`);
             setTimeout(() => setDamageMsg(null), 5000);
           }
         });
@@ -83,6 +115,17 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     }, 1500);
     return () => clearTimeout(timer);
   }, [round]);
+
+  // Inicialitzar puntuacions animades quan canvia la ronda
+  useEffect(() => {
+    const initial: Record<string, number> = {};
+    playerIds.forEach(pid => {
+      initial[pid] = guesses[pid]?.score || 0;
+    });
+    setAnimatedScores(initial);
+    setIsDividing({});
+    setDamageStage({});
+  }, [round, guesses]);
 
   // ── LÒGICA DE MODES ESPECIALS (NOMÉS HOST) ──
   const logicProcessedRef = useRef<number>(-1);
@@ -114,7 +157,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           if (s1 !== s2) {
             const loser = s1 > s2 ? p2 : p1;
             const diff = Math.abs(s1 - s2);
-            const damage = Math.round(diff * (1 + (round * 0.5)));
+            // Multiplicador: 0.5 a la ronda 1 (index 0), 1.0 a la ronda 2, etc.
+            const damage = Math.round(diff * (0.5 + (round * 0.5)));
 
             const currentHealth = room.players[loser]?.health ?? 10000;
             const newHealth = Math.max(0, currentHealth - damage);
@@ -406,12 +450,18 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 </div>
                 {guess ? (
                   <div className="text-yellow-400 font-black text-3xl flex items-center gap-2">
-                    <span className="transition-all duration-1000" style={{ transform: showPenalty && guess.usedHint ? 'scale(0.8)' : 'scale(1)', opacity: showPenalty && guess.usedHint ? 0.5 : 1 }}>
-                      +{Math.round(showPenalty || !guess.usedHint ? (guess.score / (guess.usedHint ? 2 : 1)) : guess.score).toLocaleString()}
+                    <span 
+                      className="transition-all duration-700" 
+                      style={{ 
+                        transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
+                        color: isDividing[pid] ? '#EF4444' : '#FBBF24'
+                      }}
+                    >
+                      +{animatedScores[pid]?.toLocaleString() || 0}
                     </span>
                     {guess.usedHint && showPenalty && (
-                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_150px_rgba(239,68,68,0.5)]"> 
-                        -50% PISTA
+                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]"> 
+                        50% PISTA
                       </span>
                     )}
                   </div>
@@ -425,13 +475,20 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                     </div>
                     <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
                       <div 
-                        className={`h-full transition-all duration-1000 ${isHurt ? 'bg-red-600 animate-pulse' : (player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
-                        style={{ width: `${(player.health / 10000) * 100}%` }} 
+                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : (player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
+                        style={{ 
+                          width: `${((damageStage[pid] === 'impact' ? (prevHealthRef.current[pid] || 10000) : player.health) / 10000) * 100}%` 
+                        }} 
                       />
                     </div>
                     {/* Missatge de dany flotant */}
-                    {isHurt && (
+                    {damageStage[pid] === 'impact' && (
                        <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                         -{lostHP} HP
+                       </div>
+                    )}
+                    {damageStage[pid] === 'draining' && (
+                       <div className="absolute -top-12 right-0 text-red-400 font-black text-2xl animate-out fade-out slide-out-to-top duration-1000 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
                          -{lostHP} HP
                        </div>
                     )}
