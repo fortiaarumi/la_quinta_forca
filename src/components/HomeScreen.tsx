@@ -587,9 +587,22 @@ export default function HomeScreen() {
                 </div>
 
                 <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                  <Link href="/stats" className="px-8 py-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[10px] backdrop-blur-md text-white no-underline">🏆 Rànquing Global</Link>
-                  <Link href="/badges" className="px-8 py-4 bg-indigo-600/20 border border-indigo-500/30 rounded-2xl hover:bg-indigo-600/30 transition-all font-black uppercase tracking-widest text-[10px] text-indigo-300 backdrop-blur-md no-underline">🏅 Les meves Insígnies</Link>
-                  {isAdmin && <Link href="/admin" className="px-8 py-4 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl hover:bg-yellow-500/20 transition-all font-black uppercase tracking-widest text-[10px] text-yellow-500 no-underline">⚡ Administració</Link>}
+                  <Link href="/stats" className="group relative px-10 py-5 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline overflow-hidden flex items-center gap-3 shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/0 via-yellow-500/5 to-yellow-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    <span className="text-xl group-hover:scale-125 transition-transform">🏆</span>
+                    <span>Rànquing Global</span>
+                  </Link>
+                  <Link href="/badges" className="group relative px-10 py-5 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl hover:bg-indigo-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-indigo-200 backdrop-blur-md no-underline overflow-hidden flex items-center gap-3 shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    <span className="text-xl group-hover:rotate-12 transition-transform">🏅</span>
+                    <span>Les meves Insígnies</span>
+                  </Link>
+                  {isAdmin && (
+                    <Link href="/admin" className="group relative px-10 py-5 bg-red-600/10 border border-red-500/20 rounded-3xl hover:bg-red-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-red-400 no-underline flex items-center gap-3">
+                      <span className="text-xl">⚡</span>
+                      <span>Administració</span>
+                    </Link>
+                  )}
                 </div>
               </div>
 
@@ -610,9 +623,14 @@ export default function HomeScreen() {
                   </div>
                   <button 
                     onClick={() => setShowSuggestModal(true)}
-                    className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all text-gray-400"
+                    className="w-full mt-2 py-5 px-6 group bg-gradient-to-br from-indigo-600/20 to-purple-600/20 hover:from-indigo-600/30 hover:to-purple-600/30 border border-indigo-500/30 rounded-3xl transition-all shadow-xl flex flex-col items-center gap-2"
                   >
-                    🚀 Envia el teu vídeo
+                    <span className="text-indigo-300 text-[10px] font-black uppercase tracking-widest group-hover:scale-105 transition-transform">
+                      Vols ser l&apos;autor del següent vídeo del dia?
+                    </span>
+                    <span className="text-white text-[9px] font-black uppercase tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity">
+                      Suggereix un vídeo del dia clicant aquí
+                    </span>
                   </button>
                 </div>
 

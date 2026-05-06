@@ -62,6 +62,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const prevRoundRef = useRef(-1);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const { user, isGuest } = useAuth();
+  // Reset de pistes cada cop que canvia la ronda o l'estat del joc
+  useEffect(() => {
+    setHasUsedHint(false);
+    setCurrentHint(null);
+  }, [room?.currentRound, room?.gameState]);
   const [prevHealth, setPrevHealth] = useState<Record<string, number>>({});
   const statsSavedRef = useRef(false);
   
