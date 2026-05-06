@@ -322,12 +322,24 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   }, [room.tieBreak?.timestamp, isHost, roomId]);
 
   // Detectar eliminacions per a tots els jugadors (no només el host)
+  const initialEliminatedRef = useRef<Set<string>>(new Set());
   const prevEliminatedRef = useRef<Record<string, boolean>>({});
+
+  // Al muntar, guardem qui ja està eliminat per no mostrar avisos antics
+  useEffect(() => {
+    if (room?.players) {
+      Object.entries(room.players).forEach(([pid, p]) => {
+        if (p.isEliminated) initialEliminatedRef.current.add(pid);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (!room?.players) return;
     playerIds.forEach(pid => {
       const isEliminated = !!room.players[pid]?.isEliminated;
-      if (isEliminated && !prevEliminatedRef.current[pid]) {
+      // Només mostrem l'avís si s'acaba d'eliminar ARA (no estava a la llista inicial ni a la prèvia)
+      if (isEliminated && !initialEliminatedRef.current.has(pid) && !prevEliminatedRef.current[pid]) {
         setEliminatedPlayer(room.players[pid].name);
       }
       prevEliminatedRef.current[pid] = isEliminated;

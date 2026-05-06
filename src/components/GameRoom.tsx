@@ -416,10 +416,17 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
     
     try {
-      const countryName = await getLocationName(actual.lat, actual.lng, 'world');
-      // Fem la crida sense fullText perquè sigui més flexible
-      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
-      const data = await res.json();
+      // 👈 MILLORA: Intentem obtenir el nom del país de forma més robusta
+      let countryName = await getLocationName(actual.lat, actual.lng, 'world');
+      
+      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`);
+      let data = await res.json();
+      
+      // Si no troba per nom complet, provem cerca parcial
+      if (!data || data.status === 404 || (Array.isArray(data) && data.length === 0)) {
+        const res2 = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
+        data = await res2.json();
+      }
       
       if (data && Array.isArray(data) && data.length > 0) {
         const country = data[0];
