@@ -425,7 +425,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const options = [
           { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
-          { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
           { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
           { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' }
         ];
@@ -433,7 +432,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const shuffled = options.sort(() => Math.random() - 0.5);
         hintToSave = shuffled[0];
       } else {
-        hintToSave = { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' };
+        // Fallback: Si l'API de països falla, simplement donem el nom del país que ja tenim
+        hintToSave = { type: 'País', value: countryName };
       }
 
       // 2. Guardar la pista a Firebase perquè tothom la vegi

@@ -57,6 +57,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [combatLoser, setCombatLoser] = useState<string | null>(null);
   const [combatWinner, setCombatWinner] = useState<string | null>(null);
 
+  // NOU: Vida visual per evitar salts en l'animació
+  const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
+
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
@@ -84,6 +87,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       // LÒGICA DE COMBAT SEQÜENCIAL (1VS1)
       if (room.gameType === '1vs1') {
         const pIds = Object.keys(room.players);
+        // Inicialitzem la vida visual amb la que tenien en començar la ronda
+        const initialH: Record<string, number> = {};
+        pIds.forEach(pid => initialH[pid] = prevHealthRef.current[pid] ?? 10000);
+        setDisplayHealth(initialH);
+
         if (pIds.length === 2) {
           const p1 = pIds[0];
           const p2 = pIds[1];
@@ -116,6 +124,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             setTimeout(() => setCombatStage('impact'), 6500);
             setTimeout(() => {
               setCombatStage('drain');
+              // Actualitzem la vida visual del perdedor
+              setDisplayHealth(prev => ({ 
+                ...prev, 
+                [loser]: Math.max(0, (prev[loser] || 10000) - damage) 
+              }));
               setDamageDealt({ [loser]: damage });
               setDamageStage({ [loser]: 'impact' });
             }, 8000);
@@ -223,7 +236,10 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       }
 
       if (needsUpdate) {
-        await update(ref(db, `rooms/${roomId}`), updates);
+        // Esperem a què l'animació estigui en fase de drain per sincronitzar Firebase
+        setTimeout(async () => {
+          await update(ref(db, `rooms/${roomId}`), updates);
+        }, 8000);
       }
     };
 
@@ -461,9 +477,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 
                 {/* Overlay de dany */}
                 {isHurt && (
-                  <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none">
-                    <span className="text-white font-black text-4xl italic uppercase tracking-tighter drop-shadow-lg">DANY!</span>
-                  </div>
+                  <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none" />
                 )}
 
                 <div className="flex items-center gap-3 mb-2">
@@ -497,13 +511,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                   <div className="mt-4 relative">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1.5">
                       <span className="text-gray-400">Vida Restant</span>
-                      <span className={`text-sm ${player.health > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{player.health} / 10000</span>
+                      <span className={`text-sm ${(displayHealth[pid] ?? 10000) > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{displayHealth[pid] ?? 10000} / 10000</span>
                     </div>
                     <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
                       <div 
-                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : (player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
+                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
                         style={{ 
-                          width: `${((damageStage[pid] === 'impact' ? (prevHealthRef.current[pid] || 10000) : player.health) / 10000) * 100}%` 
+                          width: `${((damageStage[pid] === 'impact' ? (prevHealthRef.current[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%` 
                         }} 
                       />
                     </div>
@@ -525,22 +539,22 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           })}
         </div>
 
-        {/* OVERLAY COMBAT 1VS1 CENTRAL */}
+        {/* OVERLAY COMBAT 1VS1 CENTRAL (SOBRE EL MAPA) */}
         {room.gameType === '1vs1' && (combatStage === 'diff' || combatStage === 'mult' || combatStage === 'impact') && (
-          <div className="fixed inset-0 pointer-events-none z-[2000] flex items-center justify-center">
+          <div className="absolute top-0 left-0 w-full h-[60%] pointer-events-none z-[2000] flex items-center justify-center">
             <div className="text-center animate-in zoom-in duration-300">
                {combatStage === 'diff' && (
-                 <div className="bg-white/10 backdrop-blur-md border-4 border-white/20 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(255,255,255,0.2)]">
-                   <div className="text-gray-400 text-xs font-black uppercase tracking-widest mb-2">Diferència</div>
+                 <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
+                   <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Diferència</div>
                    <div className="text-7xl font-black text-white italic tracking-tighter">
                      {combatDiff.toLocaleString()}
                    </div>
                  </div>
                )}
                {combatStage === 'mult' && (
-                 <div className="bg-yellow-500/10 backdrop-blur-md border-4 border-yellow-500 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(234,179,8,0.3)]">
-                   <div className="text-yellow-500 text-xs font-black uppercase tracking-widest mb-2">Multiplicador Ronda {round + 1}</div>
-                   <div className="text-5xl font-black text-yellow-500 italic tracking-tighter mb-4">
+                 <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
+                   <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Multiplicador Ronda {round + 1}</div>
+                   <div className="text-5xl font-black text-red-500 italic tracking-tighter mb-4">
                      x{combatMult.toFixed(1)}
                    </div>
                    <div className="text-8xl font-black text-white italic tracking-tighter animate-bounce">
@@ -549,7 +563,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                  </div>
                )}
                {combatStage === 'impact' && (
-                 <div className={`text-9xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_50px_rgba(220,38,38,0.5)] ${combatLoser === playerIds[0] ? 'animate-impact-to-p1' : 'animate-impact-to-p2'}`}>
+                 <div className={`text-9xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_50px_rgba(220,38,38,0.6)] ${combatLoser === playerIds[0] ? 'animate-impact-to-p1' : 'animate-impact-to-p2'}`}>
                    {combatFinalDamage.toLocaleString()}
                  </div>
                )}
