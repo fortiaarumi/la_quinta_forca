@@ -82,7 +82,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
     const timer = setTimeout(() => {
       setShowPenalty(true);
-      
+
       // Iniciem animació de divisió de puntuació per als que han fet servir pista
       playerIds.forEach(pid => {
         const g = guesses[pid];
@@ -109,7 +109,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           };
           const s1 = getS(p1);
           const s2 = getS(p2);
-          
+
           if (s1 !== s2) {
             const winner = s1 > s2 ? p1 : p2;
             const loser = s1 > s2 ? p2 : p1;
@@ -132,9 +132,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             setTimeout(() => {
               setCombatStage('drain');
               // Actualitzem la vida visual del perdedor localment
-              setDisplayHealth(prev => ({ 
-                ...prev, 
-                [loser]: Math.max(0, (prev[loser] || 10000) - damage) 
+              setDisplayHealth(prev => ({
+                ...prev,
+                [loser]: Math.max(0, (prev[loser] || 10000) - damage)
               }));
               setDamageDealt({ [loser]: damage });
               setDamageStage({ [loser]: 'impact' });
@@ -145,7 +145,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             setTimeout(() => {
               setDamageStage({ [loser]: 'done' });
               setCombatStage('done');
-              
+
               // ARA SÍ: Actualitzem la ref per la següent ronda un cop acabada l'animació
               const finalHealths: Record<string, number> = {};
               pIds.forEach(pid => {
@@ -154,7 +154,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               prevHealthRef.current = finalHealths;
             }, 11000);
           } else {
-             setCombatStage('done');
+            setCombatStage('done');
           }
         }
       } else {
@@ -298,25 +298,25 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       setShowRoulette(true);
       setRouletteWinnerId(null);
       setSpinFinished(false);
-      
+
       // Simulem el gir de la ruleta
       const spinTime = 4000;
       setTimeout(() => {
         setRouletteWinnerId(room.tieBreak!.loserId);
         setSpinFinished(true);
-        
+
         // El host executa l'eliminació final després de la ruleta
         if (isHost) {
           setTimeout(async () => {
             const updates: any = {};
             updates[`players/${room.tieBreak!.loserId}/isEliminated`] = true;
-            
+
             // Si només queda un, final de partida
             const activeCount = Object.values(room.players).filter(p => !p.isEliminated).length;
             if (activeCount <= 2) {
               updates.gameState = 'finished';
             }
-            
+
             await update(ref(db, `rooms/${roomId}`), updates);
           }, 2000);
         }
@@ -408,17 +408,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       window.dispatchEvent(new Event('pauseBackgroundMusic'));
     }
 
-    // Elimination Logic
-    if (room.gameType === 'battle_royale') {
-      const pIds = Object.keys(room.players);
-      for (const pid of pIds) {
-        if (room.players[pid]?.isEliminated) {
-          // Només ho mostrem si s'acaba d'eliminar (score pitjor de la ronda)
-          // Comprovar si era un dels actius
-          setEliminatedPlayer(room.players[pid].name);
-        }
-      }
-    }
+    // (Lògica d'eliminació esborrada per evitar que el pop-up reaparegui)
   }, [guesses, playerIds, room.players, hasClosedPopup]);
 
   useEffect(() => {
@@ -463,35 +453,34 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
-      
+
       {/* MODAL RULETA DESEMPAT */}
       {showRoulette && room.tieBreak && (
         <div className="fixed inset-0 z-[15000] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
           <div className="text-center w-full max-w-lg">
             <h2 className="text-4xl font-black italic uppercase tracking-tighter text-yellow-500 mb-2 animate-pulse">EMPATS AL LÍMIT!</h2>
             <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-12">La ruleta decidirà qui abandona la competició...</p>
-            
+
             <div className="relative w-64 h-64 mx-auto mb-12">
               {/* La fletxa indicadora */}
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 text-4xl">🔽</div>
-              
+
               {/* El cercle de la ruleta */}
-              <div 
+              <div
                 className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1) shadow-[0_0_80px_rgba(79,70,229,0.4)]`}
-                style={{ 
+                style={{
                   transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 - (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length)) - (360 / (room.tieBreak.players.length * 2))}deg)` : 'rotate(0deg)',
-                  background: `conic-gradient(${
-                    room.tieBreak!.players.map((_, i) => {
-                      const color = COLORS[i % COLORS.length];
-                      const start = (i * (360 / room.tieBreak!.players.length)).toFixed(1);
-                      const end = ((i + 1) * (360 / room.tieBreak!.players.length)).toFixed(1);
-                      return `${color} ${start}deg ${end}deg`;
-                    }).join(', ')
-                  })`
+                  background: `conic-gradient(${room.tieBreak!.players.map((_, i) => {
+                    const color = COLORS[i % COLORS.length];
+                    const start = (i * (360 / room.tieBreak!.players.length)).toFixed(1);
+                    const end = ((i + 1) * (360 / room.tieBreak!.players.length)).toFixed(1);
+                    return `${color} ${start}deg ${end}deg`;
+                  }).join(', ')
+                    })`
                 }}
               >
                 {room.tieBreak!.players.map((pid, idx) => (
-                  <div 
+                  <div
                     key={pid}
                     className="absolute top-0 left-1/2 h-1/2 w-2 origin-bottom flex flex-col items-center -translate-x-1/2"
                     style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * (idx + 0.5)}deg)` }}
@@ -518,7 +507,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           </div>
         </div>
       )}
-      
+
       {/* OVERLAY ELIMINACIÓ */}
       {eliminatedPlayer && (
         <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
@@ -609,7 +598,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             return (
               <div key={pid} className={`rounded-xl p-4 relative overflow-hidden transition-all duration-1000 ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`} style={{ background: `${color}10`, borderLeft: `4px solid ${color}` }}>
                 {player?.isEliminated && <div className="absolute top-2 right-2 text-2xl animate-pulse">💀</div>}
-                
+
                 {/* Overlay de dany */}
                 {isHurt && (
                   <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none" />
@@ -625,9 +614,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 </div>
                 {guess ? (
                   <div className={`text-yellow-400 font-black text-3xl flex items-center gap-2 transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
-                    <span 
-                      className="transition-all duration-700" 
-                      style={{ 
+                    <span
+                      className="transition-all duration-700"
+                      style={{
                         transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
                         color: isDividing[pid] ? '#EF4444' : '#FBBF24'
                       }}
@@ -635,7 +624,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                       +{animatedScores[pid]?.toLocaleString() || 0}
                     </span>
                     {guess.usedHint && showPenalty && (
-                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]"> 
+                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
                         50% PISTA
                       </span>
                     )}
@@ -649,23 +638,23 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                       <span className={`text-sm ${(displayHealth[pid] ?? 10000) > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{displayHealth[pid] ?? 10000} / 10000</span>
                     </div>
                     <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
-                      <div 
-                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`} 
-                        style={{ 
-                          width: `${((damageStage[pid] === 'impact' ? (initialHealth[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%` 
-                        }} 
+                      <div
+                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`}
+                        style={{
+                          width: `${((damageStage[pid] === 'impact' ? (initialHealth[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%`
+                        }}
                       />
                     </div>
                     {/* Missatge de dany flotant */}
                     {damageStage[pid] === 'impact' && (
-                       <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
-                         -{lostHP} HP
-                       </div>
+                      <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                        -{lostHP} HP
+                      </div>
                     )}
                     {damageStage[pid] === 'draining' && (
-                       <div className="absolute -top-12 right-0 text-red-400 font-black text-2xl animate-out fade-out slide-out-to-top duration-1000 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
-                         -{lostHP} HP
-                       </div>
+                      <div className="absolute -top-12 right-0 text-red-400 font-black text-2xl animate-out fade-out slide-out-to-top duration-1000 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                        -{lostHP} HP
+                      </div>
                     )}
                   </div>
                 )}
@@ -678,30 +667,30 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         {room.gameType === '1vs1' && (combatStage === 'diff' || combatStage === 'mult' || combatStage === 'impact') && (
           <div className="absolute top-0 left-0 w-full h-[60%] pointer-events-none z-[2000] flex items-center justify-center">
             <div className="text-center animate-in zoom-in duration-300">
-               {combatStage === 'diff' && (
-                 <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
-                   <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Diferència</div>
-                   <div className="text-7xl font-black text-white italic tracking-tighter">
-                     {combatDiff.toLocaleString()}
-                   </div>
-                 </div>
-               )}
-               {combatStage === 'mult' && (
-                 <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
-                   <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Multiplicador Ronda {round + 1}</div>
-                   <div className="text-5xl font-black text-red-500 italic tracking-tighter mb-4">
-                     x{combatMult.toFixed(1)}
-                   </div>
-                   <div className="text-8xl font-black text-white italic tracking-tighter animate-bounce">
-                     {combatFinalDamage.toLocaleString()}
-                   </div>
-                 </div>
-               )}
-               {combatStage === 'impact' && (
-                 <div className={`text-9xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_50px_rgba(220,38,38,0.6)] ${combatLoser === playerIds[0] ? 'animate-impact-to-p1' : 'animate-impact-to-p2'}`}>
-                   {combatFinalDamage.toLocaleString()}
-                 </div>
-               )}
+              {combatStage === 'diff' && (
+                <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
+                  <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Diferència</div>
+                  <div className="text-7xl font-black text-white italic tracking-tighter">
+                    {combatDiff.toLocaleString()}
+                  </div>
+                </div>
+              )}
+              {combatStage === 'mult' && (
+                <div className="bg-red-600/20 backdrop-blur-md border-4 border-red-600 p-8 rounded-[3rem] shadow-[0_0_100px_rgba(220,38,38,0.3)]">
+                  <div className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Multiplicador Ronda {round + 1}</div>
+                  <div className="text-5xl font-black text-red-500 italic tracking-tighter mb-4">
+                    x{combatMult.toFixed(1)}
+                  </div>
+                  <div className="text-8xl font-black text-white italic tracking-tighter animate-bounce">
+                    {combatFinalDamage.toLocaleString()}
+                  </div>
+                </div>
+              )}
+              {combatStage === 'impact' && (
+                <div className={`text-9xl font-black text-red-600 italic tracking-tighter drop-shadow-[0_0_50px_rgba(220,38,38,0.6)] ${combatLoser === playerIds[0] ? 'animate-impact-to-p1' : 'animate-impact-to-p2'}`}>
+                  {combatFinalDamage.toLocaleString()}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -709,7 +698,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         <div className="flex gap-3 mt-4">
           <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
           {isHost ? (
-            <button 
+            <button
               disabled={combatStage !== 'done'}
               onClick={async () => {
                 // Si algú ha mort, canviem a finished
@@ -720,7 +709,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 } else {
                   onNext();
                 }
-              }} 
+              }}
               className={`flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg uppercase tracking-tighter italic border-none cursor-pointer ${combatStage !== 'done' ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95'}`}
             >
               {combatStage !== 'done' ? '⚔️ Lluitant...' : (Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0) ? '🏆 Resultats Finals' : 'Ronda Següent →')}

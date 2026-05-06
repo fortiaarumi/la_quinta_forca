@@ -54,7 +54,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }, [room?.currentRound, room?.gameState]);
   const [prevHealth, setPrevHealth] = useState<Record<string, number>>({});
   const statsSavedRef = useRef(false);
-  
+
   // Sincronitzem la vida prèvia cada cop que comença una ronda nova de joc
   useEffect(() => {
     if (room?.gameState === 'playing' && room?.players) {
@@ -271,7 +271,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 const g = finalGuesses[id];
                 let roundScore = g?.score || 0;
                 if (g?.usedHint) roundScore = Math.min(2500, Math.round(roundScore / 2)); // 👈 NOU: Penalització
-                
+
                 const currentTotal = room.totalScores?.[id] || 0;
                 updates[`totalScores/${id}`] = currentTotal + roundScore;
               });
@@ -403,7 +403,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
   const fetchHint = async () => {
     if (!room?.locations || hasUsedHint || hintLoading) return;
-    
+
     // 1. Comprovar si ja hi ha una pista compartida per aquesta ronda
     const roundData = room.rounds?.[room.currentRound];
     if (roundData?.sharedHint) {
@@ -414,50 +414,67 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
     setHintLoading(true);
     const actual = room.locations[room.currentRound];
-    
+
     try {
-      // 👈 MILLORA: Intentem obtenir el nom del país de forma més robusta
-      let countryName = await getLocationName(actual.lat, actual.lng, 'world');
-      
-      const res = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}?fullText=true`);
-      let data = await res.json();
-      
-      // Si no troba per nom complet, provem cerca parcial
-      if (!data || data.status === 404 || (Array.isArray(data) && data.length === 0)) {
-        const res2 = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(countryName)}`);
-        data = await res2.json();
+      // Nova estratègia: Obtenim el CODI UNIVERSAL del país (ex: "ES", "FR")
+      const getCountryCode = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+          const geocoder = new (google.maps as any).Geocoder();
+          geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
+            if (status === 'OK' && results) {
+              for (const r of results) {
+                const c = r.address_components.find((comp: any) => comp.types.includes('country'));
+                if (c) {
+                  resolve(c.short_name);
+                  return;
+                }
+              }
+            }
+            resolve(null);
+          });
+        });
+      };
+
+      const countryCode = await getCountryCode();
+      let data = null;
+
+      if (countryCode) {
+        // Ara busquem per codi (molt més exacte que per nom)
+        const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
+        data = await res.json();
       }
-      
-      if (data && Array.isArray(data) && data.length > 0) {
-        const country = data[0];
+
+      const country = Array.isArray(data) ? data[0] : data;
+
+      if (country && !country.status) {
         const options = [
           { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
           { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
           { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' },
           { type: 'Població', value: `${(country.population / 1000000).toFixed(1)} Milions d'habitants` },
-          { type: 'Moneda', value: country.currencies ? Object.values(country.currencies as any).map((c: any) => `${c.name} (${c.symbol})`).join(', ') : 'Desconeguda' },
-          { type: 'Conducció', value: `Es condueix per la ${country.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` },
-          { type: 'Zona Horària', value: country.timezones?.[0] || 'Desconeguda' }
+          { type: 'Conducció', value: `Es condueix per la ${country.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` }
         ];
-        
+
         const hintToSave = options[Math.floor(Math.random() * options.length)];
-        
+
         await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
           sharedHint: hintToSave
         });
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
       } else {
-        const fallbackHint = { type: 'Avís', value: "No s'han trobat pistes, no se't descomptaran punts! ✨", isFree: true };
-        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
-          sharedHint: fallbackHint
-        });
-        setCurrentHint(`${fallbackHint.value}`);
-        setHasUsedHint(true); // El marquem com usat perquè desaparegui el botó, però no decontarà punts
+        throw new Error("No s'ha trobat país"); // Forcem l'error perquè salti al catch
       }
     } catch (e) {
       console.error("Error obtenint pista:", e);
+      // FALLBACK SEGUR: Si estem a l'oceà o l'API falla, enviem això
+      const fallbackHint = { type: 'Avís', value: "Et trobes en un indret remot. No tenim dades, no se't decontaran punts! ✨", isFree: true };
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
+        sharedHint: fallbackHint
+      });
+      setCurrentHint(`${fallbackHint.value}`);
+      setHasUsedHint(true);
     } finally {
       setHintLoading(false);
     }
@@ -519,7 +536,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
     // LÒGICA DE FINALITZACIÓ SEGONS MODE
     const isSpecialMode = room.gameType === '1vs1' || room.gameType === 'battle_royale';
-    
+
     // Si és mode clàssic, acabem a la ronda 5
     if (!isSpecialMode && next >= 5) {
       await update(ref(db, `rooms/${roomId}`), { gameState: 'finished' });
@@ -672,16 +689,16 @@ export default function GameRoom({ roomId, playerId }: Props) {
               <div className="text-8xl mb-8 animate-bounce">💀</div>
               <h2 className="text-6xl font-black italic uppercase tracking-tighter text-white mb-4">HAS ESTAT ELIMINAT</h2>
               <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-12">
-                {room.gameType === 'battle_royale' 
+                {room.gameType === 'battle_royale'
                   ? `Has quedat a la posició ${Object.values(room.players).filter(p => !p.isEliminated).length + 1}`
                   : "Has perdut tota la teva vida"}
               </p>
-              
+
               <div className="space-y-4">
                 <GoldButton onClick={() => setIsSpectating(true)} className="w-full py-6 rounded-2xl text-lg">
                   QUEDAR-SE COM A ESPECTADOR
                 </GoldButton>
-                <button 
+                <button
                   onClick={handleLeave}
                   className="w-full py-5 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-all"
                 >
@@ -741,9 +758,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
                   {room.gameType === '1vs1' ? (
                     <>
                       <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
-                        <div 
-                          className={`h-full transition-all duration-1000 ${player.health! > 5000 ? 'bg-emerald-500' : player.health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`} 
-                          style={{ width: `${(player.health! / 10000) * 100}%` }} 
+                        <div
+                          className={`h-full transition-all duration-1000 ${player.health! > 5000 ? 'bg-emerald-500' : player.health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                          style={{ width: `${(player.health! / 10000) * 100}%` }}
                         />
                       </div>
                       <span className="text-[10px] text-gray-400 font-bold">{player.health} HP</span>
@@ -775,9 +792,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 <div className="flex items-center gap-3">
                   {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
                     <div className="flex flex-col items-center gap-2">
-                      <img 
-                        src={room.rounds?.[room.currentRound]?.sharedHint?.imageUrl} 
-                        alt="Flag" 
+                      <img
+                        src={room.rounds?.[room.currentRound]?.sharedHint?.imageUrl}
+                        alt="Flag"
                         className="h-20 w-auto rounded-lg shadow-lg border-2 border-black"
                       />
                       <span className="font-black uppercase text-xs">{room.rounds?.[room.currentRound]?.sharedHint?.type}</span>
