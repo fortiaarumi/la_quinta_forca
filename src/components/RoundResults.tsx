@@ -465,7 +465,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)`}
                 style={{ 
                   transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 + (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length))}deg)` : 'rotate(0deg)',
-                  background: 'conic-gradient(from 0deg, #4f46e5 0%, #7c3aed 25%, #4f46e5 50%, #7c3aed 75%, #4f46e5 100%)'
+                  background: `conic-gradient(${
+                    room.tieBreak!.players.map((_, i) => {
+                      const color = COLORS[i % COLORS.length];
+                      const start = (i * (360 / room.tieBreak!.players.length)).toFixed(1);
+                      const end = ((i + 1) * (360 / room.tieBreak!.players.length)).toFixed(1);
+                      return `${color} ${start}deg ${end}deg`;
+                    }).join(', ')
+                  })`
                 }}
               >
                 {room.tieBreak!.players.map((pid, idx) => (
@@ -504,20 +511,22 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             <div className="text-8xl mb-8 animate-bounce">💀</div>
             <h2 className="text-5xl font-black italic uppercase tracking-tighter text-white mb-2">JUGADOR ELIMINAT</h2>
             <p className="text-red-400 text-3xl font-black uppercase tracking-widest mb-10">{eliminatedPlayer}</p>
-            <button
-              onClick={() => { handleLaugh(); }}
-              disabled={hasLaughed}
-              className={`bg-white text-black px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center gap-3 mx-auto border-none ${hasLaughed ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
-            >
-              😂 {hasLaughed ? 'JA TE N\'HAS ENRIGUT' : 'ENRIURE-SE\'N'}
-            </button>
+            <div className="flex flex-col gap-4 items-center">
+              <button
+                onClick={() => { handleLaugh(); }}
+                disabled={hasLaughed}
+                className={`w-full bg-white text-black py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center justify-center gap-3 border-none ${hasLaughed ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
+              >
+                <span className="text-2xl">😂</span> {hasLaughed ? 'JA TE N\'HAS ENRIGUT' : 'ENRIURE-SE\'N'}
+              </button>
 
-            <button
-              onClick={() => setEliminatedPlayer(null)}
-              className="mt-6 px-8 py-3 text-white/60 text-sm font-black uppercase tracking-widest hover:text-white hover:bg-white/10 rounded-xl transition-all cursor-pointer bg-transparent border border-white/20"
-            >
-              Tancar avís
-            </button>
+              <button
+                onClick={() => setEliminatedPlayer(null)}
+                className="w-full py-4 text-white/40 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white hover:bg-white/5 rounded-xl transition-all cursor-pointer bg-transparent border border-white/10"
+              >
+                Tancar avís
+              </button>
+            </div>
           </div>
         </div>
       )}
