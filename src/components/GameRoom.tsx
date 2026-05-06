@@ -415,62 +415,67 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
 
     try {
-      const countryName = await getLocationName(actual.lat, actual.lng, 'world');
+      const getCountryCode = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+          const geocoder = new (google.maps as any).Geocoder();
+          geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
+            if (status === 'OK' && results) {
+              for (const r of results) {
+                const c = r.address_components.find((comp: any) => comp.types.includes('country'));
+                if (c) { resolve(c.short_name); return; }
+              }
+            }
+            resolve(null);
+          });
+        });
+      };
+
+      const countryCode = await getCountryCode();
       let data = null;
 
-      try {
-        const getCountryCode = (): Promise<string | null> => {
-          return new Promise((resolve) => {
-            const geocoder = new (google.maps as any).Geocoder();
-            geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-              if (status === 'OK' && results) {
-                for (const r of results) {
-                  const c = r.address_components.find((comp: any) => comp.types.includes('country'));
-                  if (c) { resolve(c.short_name); return; }
-                }
-              }
-              resolve(null);
-            });
-          });
-        };
-        const countryCode = await getCountryCode();
-        if (countryCode) {
-          const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
-          data = await res.json();
-        }
-      } catch (apiErr) {
-        console.log("Restcountries API fallida, busquem amb Google Maps.");
+      if (countryCode) {
+        const res = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
+        data = await res.json();
       }
 
       const country = Array.isArray(data) ? data[0] : data;
 
       if (country && !country.status) {
-        // L'API funciona
+        // Preparem la llista d'opcions a l'atzar
+        const currencyKey = country.currencies ? Object.keys(country.currencies)[0] : null;
+        const currency = currencyKey ? country.currencies[currencyKey] : null;
+
         const options = [
           { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
           { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
-          { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' },
-          { type: 'Població', value: `${(country.population / 1000000).toFixed(1)} Milions d'habitants` }
+          { type: 'Població', value: `${(country.population / 1000000).toFixed(1)} Milions d'habitants` },
+          { type: 'Moneda', value: currency ? `${currency.name} (${currency.symbol})` : 'Desconeguda' },
+          { type: 'Fus Horari', value: country.timezones?.[0] || 'Desconegut' },
+          { type: 'Conducció', value: `Es condueix per la ${country.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` },
+          { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
+          { type: 'Domini Internet', value: country.tld?.[0] || '.com' },
+          { type: 'Prefix Telefònic', value: country.idd ? `${country.idd.root}${country.idd.suffixes?.[0] || ''}` : 'Desconegut' }
         ];
-        const hintToSave = options[Math.floor(Math.random() * options.length)];
+
+        // Filtrem opcions que puguin ser nul·les o buides per seguretat
+        const validOptions = options.filter(opt => opt.value && opt.value !== 'Desconegut' && opt.value !== 'Desconeguda');
+        const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
+
         await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
       } else {
-        // FALLBACK A GOOGLE MAPS (Això arregla la foto d'Itàlia!)
-        if (countryName && !countryName.includes("perduda") && !countryName.includes("remot") && !countryName.includes("aïllat")) {
-          const hintToSave = { type: 'Localització', value: `Aquest lloc es troba a: ${countryName}`, isFree: false };
-          await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
-          setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
-          setHasUsedHint(true);
-        } else {
-          throw new Error("Lloc realment remot");
-        }
+        throw new Error("Dades de l'API no disponibles");
       }
     } catch (e) {
       console.error("Error obtenint pista:", e);
-      const fallbackHint = { type: 'Avís', value: "Et trobes en un indret molt remot. No tenim dades exactes, no se't descomptaran punts! ✨", isFree: true };
+      // Fallback intel·ligent: Hemisferi segons coordenades
+      const fallbackHint = {
+        type: 'Hemisferi',
+        value: actual.lat > 0 ? "Et trobes a l'Hemisferi Nord ⬆️" : "Et trobes a l'Hemisferi Sud ⬇️",
+        isFree: true
+      };
       await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: fallbackHint });
       setCurrentHint(`${fallbackHint.value}`);
       setHasUsedHint(true);
