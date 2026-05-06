@@ -56,6 +56,8 @@ export interface Room {
   gameType?: 'classic' | '1vs1' | 'battle_royale'; // 👈 NOU
   hintsEnabled?: boolean; // 👈 NOU
   roundEndsAt?: number;
+  lastLaughAt?: number; // 👈 NOU
+  lastCongratsAt?: number; // 👈 NOU
   lastEvent?: { // 👈 NOU
     type: 'leave';
     playerName: string;

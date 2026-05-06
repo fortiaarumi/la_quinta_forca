@@ -869,33 +869,52 @@ export default function HomeScreen() {
               <h2 className="text-3xl font-black uppercase tracking-tighter italic text-white">Música al Lobby</h2>
               <button onClick={() => setShowSunoManual(false)} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-2xl text-white border-none cursor-pointer">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-10 space-y-8 text-gray-400 text-sm leading-relaxed">
-              <p>Vols que la teva música soni al lobby? Aquest joc és open-source i qualsevol jugador pot fer de servidor!</p>
-              
+            <div className="flex-1 overflow-y-auto p-10 space-y-10 text-gray-400 text-sm leading-relaxed custom-scrollbar">
               <section className="space-y-4">
-                <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                <h3 className="text-white font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">1</span>
+                  Instal·lació Bàsica
                 </h3>
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
-                  <p>• Descarrega el codi des de <strong>GitHub</strong>.</p>
-                  <p>• Instal·la <strong>Node.js</strong> i <strong>Git</strong> al teu ordinador.</p>
-                  <p>• Executa <code>npm install</code> a la carpeta del projecte.</p>
+                  <p>• Instal·la <strong>Node.js (LTS)</strong> de nodejs.org.</p>
+                  <p>• Obre la terminal i descarrega el joc:</p>
+                  <code className="block bg-black/40 p-3 rounded-xl text-emerald-400 text-[10px]">git clone https://github.com/fortiaarumi/la_quinta_forca.git</code>
+                  <p>• Entra a la carpeta i prepara-ho: <code className="text-white">cd la_quinta_forca</code> i després <code className="text-white">npm install</code>.</p>
                 </div>
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
+                <h3 className="text-white font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">2</span>
-                  Configuració
+                  Configuració Secreta
                 </h3>
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
-                  <p>• Crea un fitxer <code>.env.local</code> amb les teves claus de Firebase.</p>
-                  <p>• Executa <code>node --env-file=.env.local suno-puppeteer.mjs</code>.</p>
-                  <p>• S&apos;obrirà Chrome: inicia sessió a <strong>Suno.com</strong> i llest!</p>
+                  <p>• Crea un fitxer anomenat <code className="text-white">.env.local</code> i enganxa-hi això:</p>
+                  <pre className="bg-black/40 p-4 rounded-xl text-emerald-400 text-[8px] overflow-x-auto">
+                    NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyAAnY3p5bGIah3-yPeT3nqFslfcvgnUS58{"\n"}
+                    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=onsom-dade5.firebaseapp.com{"\n"}
+                    NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://onsom-dade5-default-rtdb.europe-west1.firebasedatabase.app{"\n"}
+                    NEXT_PUBLIC_FIREBASE_PROJECT_ID=onsom-dade5{"\n"}
+                    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=onsom-dade5.firebasestorage.app{"\n"}
+                    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=812916118386{"\n"}
+                    NEXT_PUBLIC_FIREBASE_APP_ID=1:812916118386:web:136e4c7504a00340db43eb
+                  </pre>
                 </div>
               </section>
 
-              <p className="text-[10px] text-gray-600 italic">Un cop engegat, el sistema detectarà el teu bot automàticament i permetrà generar cançons satíriques a tothom!</p>
+              <section className="space-y-4">
+                <h3 className="text-white font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-yellow-500 text-black flex items-center justify-center text-[10px]">3</span>
+                  Engegar el Robot
+                </h3>
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/5 space-y-3">
+                  <p>• Executa aquesta ordre a la terminal:</p>
+                  <code className="block bg-black/40 p-3 rounded-xl text-emerald-400 text-[10px]">node --env-file=.env.local suno-puppeteer.mjs</code>
+                  <p>• S&apos;obrirà Chrome: inicia sessió a <strong>Suno.com</strong> i ja ho tens!</p>
+                </div>
+              </section>
+
+              <p className="text-[10px] text-gray-600 italic text-center">Un cop surti &quot;Bot Online&quot;, el joc detectarà el teu bot i podràs generar cançons!</p>
             </div>
           </div>
         </div>

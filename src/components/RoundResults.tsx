@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
-import { ref, update } from 'firebase/database';
+import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 
 interface Props {
   room: Room;
-  roomId: string; // 👈 NOU
+  roomId: string;
   round: number;
   isHost: boolean;
   playerId: string;
@@ -26,26 +26,26 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const guesses = room.rounds?.[round]?.guesses ?? {};
   const playerIds = Object.keys(room.players);
 
-  // Necessitem el playMenuMusic (o playGameMusic) per reprendre la música després
-  const { playSiu, isMuted } = useAudio();
-  const [perfectScorers, setPerfectScorers] = useState<string[]>([]); // 👈 ARA ÉS UN ARRAY
-
-  // NOU: Cadenats per evitar el bucle i controlar el botó de felicitar
+  const [perfectScorers, setPerfectScorers] = useState<string[]>([]);
   const [hasClosedPopup, setHasClosedPopup] = useState(false);
   const [hasCongratulated, setHasCongratulated] = useState(false);
-  // NOU: Guardar el nom de qui felicita
   const [congratulatedBy, setCongratulatedBy] = useState<string | null>(null);
 
-  // NOU: Reiniciem els cadenats cada cop que la ronda canvia
+  const [eliminatedPlayer, setEliminatedPlayer] = useState<string | null>(null);
+  const [hasLaughed, setHasLaughed] = useState(false);
+  const [laughedBy, setLaughedBy] = useState<string | null>(null);
+
+  const { playSiu, playRiure, isMuted } = useAudio();
   const [showPenalty, setShowPenalty] = useState(false);
 
   useEffect(() => {
     setHasClosedPopup(false);
     setPerfectScorers([]);
     setHasCongratulated(false);
+    setHasLaughed(false);
     setShowPenalty(false);
+    setEliminatedPlayer(null);
 
-    // Retard per mostrar l'animació de la penalització
     const timer = setTimeout(() => {
       setShowPenalty(true);
     }, 1500);
@@ -69,18 +69,24 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         if (pIds.length === 2) {
           const p1 = pIds[0];
           const p2 = pIds[1];
-          const s1 = guesses[p1]?.score || 0;
-          const s2 = guesses[p2]?.score || 0;
+
+          const getScoreWithHint = (pId: string) => {
+            const g = guesses[pId];
+            if (!g) return 0;
+            return g.usedHint ? Math.round(g.score / 2) : g.score;
+          };
+
+          const s1 = getScoreWithHint(p1);
+          const s2 = getScoreWithHint(p2);
 
           if (s1 !== s2) {
             const loser = s1 > s2 ? p2 : p1;
             const diff = Math.abs(s1 - s2);
-            // Dany = (Punts_guanyador - Punts_perdedor) * (1 + (Ronda * 0.5))
             const damage = Math.round(diff * (1 + (round * 0.5)));
-            
+
             const currentHealth = room.players[loser]?.health ?? 10000;
             const newHealth = Math.max(0, currentHealth - damage);
-            
+
             updates[`players/${loser}/health`] = newHealth;
             needsUpdate = true;
 
@@ -95,17 +101,19 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       if (room.gameType === 'battle_royale') {
         const activePlayers = Object.entries(room.players)
           .filter(([, p]) => !p.isEliminated)
-          .map(([id, p]) => ({ id, score: guesses[id]?.score || 0 }));
+          .map(([id, p]) => {
+            const g = guesses[id];
+            const score = g ? (g.usedHint ? Math.round(g.score / 2) : g.score) : 0;
+            return { id, score };
+          });
 
         if (activePlayers.length > 1) {
-          // Busquem el que ha fet menys punts en aquesta ronda
           const sorted = [...activePlayers].sort((a, b) => a.score - b.score);
           const worst = sorted[0];
-          
+
           updates[`players/${worst.id}/isEliminated`] = true;
           needsUpdate = true;
 
-          // Si només queda 1, s'acaba la partida
           if (activePlayers.length <= 2) {
             updates.gameState = 'finished';
           }
@@ -120,98 +128,121 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     calculateSpecialLogic();
   }, [isHost, round, guesses, room, roomId]);
 
-  // Guardarem una referència a la música de fons de la web
-  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
-
+  // ── ESCULTAR EVENTS DE RIURE I FELICITACIÓ ──
   useEffect(() => {
-    // 1. Buscar TOTS els que han fet 5000 punts
-    const foundPerfects: string[] = [];
-    for (const pid of playerIds) {
-      if (guesses[pid] && guesses[pid].score === 5000) {
-        if (room.players[pid]?.name) {
-          foundPerfects.push(room.players[pid].name);
-        }
+    const laughRef = ref(db, `rooms/${roomId}/laughEvent`);
+    const unsubLaugh = onValue(laughRef, (snap) => {
+      const data = snap.val();
+      if (data && data.timestamp > (room.lastLaughAt || 0)) {
+        triggerLaughEffect(data.from);
+      }
+    });
+
+    const congratsRef = ref(db, `rooms/${roomId}/congratsEvent`);
+    const unsubCongrats = onValue(congratsRef, (snap) => {
+      const data = snap.val();
+      if (data && data.timestamp > (room.lastCongratsAt || 0)) {
+        setCongratulatedBy(data.from);
+        setTimeout(() => setCongratulatedBy(null), 4000);
+      }
+    });
+
+    return () => {
+      unsubLaugh();
+      unsubCongrats();
+    };
+  }, [roomId, room.lastLaughAt, room.lastCongratsAt]);
+
+  const triggerLaughEffect = (from: string) => {
+    setLaughedBy(from);
+    playRiure();
+    const container = document.getElementById('emoji-container');
+    if (container) {
+      for (let i = 0; i < 20; i++) {
+        const span = document.createElement('span');
+        span.innerText = '😂';
+        span.className = 'absolute text-4xl animate-laugh-emoji pointer-events-none';
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.top = `${Math.random() * 100}%`;
+        span.style.animationDelay = `${Math.random() * 2}s`;
+        container.appendChild(span);
+        setTimeout(() => span.remove(), 3000);
       }
     }
-
-    // 2. Si hi ha 5K i encara NO hem tancat el popup manualment
-    if (foundPerfects.length > 0 && !hasClosedPopup) {
-      setPerfectScorers(foundPerfects);
-
-      // Eliminem el confeti inicial. S'activarà només amb el botó "Felicitar"
-
-      // Disparem event global per parar la música a l'AudioContext
-      window.dispatchEvent(new Event('pauseBackgroundMusic'));
-
-      // Fem que la música s'aturi enviant un missatge al document
-      document.dispatchEvent(new Event('pauseBackgroundMusic'));
-
-      // playSiu(); <- Tampoc reproduirem el SIU automàticament
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [guesses, playerIds, playSiu, hasClosedPopup]);
-  // Treiem room.players perquè no es torni a disparar quan canvia alguna cosa menor
-
-  // Funció per tancar manualment i trencar el bucle
-  const handleClosePerfectScore = () => {
-    setHasClosedPopup(true); // Marquem com a tancat
-    setPerfectScorers([]);
-    window.dispatchEvent(new Event('resumeBackgroundMusic')); // Reprenem música
+    setTimeout(() => setLaughedBy(null), 4000);
   };
 
-  // Funció pel nou botó de felicitar
-  const handleFelicitar = () => {
-    setHasCongratulated(true);
-    setCongratulatedBy(room.players[playerId]?.name || 'Algú'); // Agafa el teu propi nom
+  const handleLaugh = async () => {
+    if (hasLaughed) return;
+    setHasLaughed(true);
+    await update(ref(db, `rooms/${roomId}`), {
+      laughEvent: { from: room.players[playerId]?.name || 'Algú', timestamp: Date.now() },
+      lastLaughAt: Date.now()
+    });
+  };
 
-    // MÀGIA DEL VÍDEO: Busquem l'etiqueta de vídeo i la forcem a reproduir-se de nou amb el so actiu
+  const handleCongratulate = async () => {
+    if (hasCongratulated) return;
+    setHasCongratulated(true);
+
     const videoEl = document.getElementById('siu-video') as HTMLVideoElement;
     if (videoEl) {
       videoEl.currentTime = 0;
-      videoEl.play().catch(e => console.log("L'usuari ha de fer clic a la pantalla per reproduir àudio", e));
+      videoEl.play().catch(e => console.log(e));
     }
-
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 10000 });
 
-    // Amagar el missatge de felicitació al cap de 3 segons
-    setTimeout(() => {
-      setCongratulatedBy(null);
-    }, 3000)
+    await update(ref(db, `rooms/${roomId}`), {
+      congratsEvent: { from: room.players[playerId]?.name || 'Algú', timestamp: Date.now() },
+      lastCongratsAt: Date.now()
+    });
   };
+
+  // ── DETECTAR ELIMINATS I PERFECTES ──
+  useEffect(() => {
+    // 5K Logic
+    const foundPerfects: string[] = [];
+    for (const pid of playerIds) {
+      if (guesses[pid]?.score === 5000 && room.players[pid]?.name) {
+        foundPerfects.push(room.players[pid].name);
+      }
+    }
+    if (foundPerfects.length > 0 && !hasClosedPopup) {
+      setPerfectScorers(foundPerfects);
+      window.dispatchEvent(new Event('pauseBackgroundMusic'));
+    }
+
+    // Elimination Logic
+    if (room.gameType === 'battle_royale') {
+      const pIds = Object.keys(room.players);
+      for (const pid of pIds) {
+        if (room.players[pid]?.isEliminated) {
+          // Només ho mostrem si s'acaba d'eliminar (score pitjor de la ronda)
+          // Comprovar si era un dels actius
+          setEliminatedPlayer(room.players[pid].name);
+        }
+      }
+    }
+  }, [guesses, playerIds, room.players, hasClosedPopup]);
 
   useEffect(() => {
     if (!mapRef.current || !mapsReady || !actual) return;
-
     const actualLatLng = new google.maps.LatLng(actual.lat, actual.lng);
     const bounds = new google.maps.LatLngBounds();
     bounds.extend(actualLatLng);
 
     const map = new google.maps.Map(mapRef.current, {
-      zoom: 3,
-      center: actualLatLng,
-      disableDefaultUI: true,
-      zoomControl: true,
-      mapTypeId: google.maps.MapTypeId.TERRAIN,
+      zoom: 3, center: actualLatLng, disableDefaultUI: true, zoomControl: true, mapTypeId: google.maps.MapTypeId.TERRAIN,
     });
 
-    // Marcador de la ubicació real (estrella groga)
     new google.maps.Marker({
-      position: actualLatLng,
-      map,
-      zIndex: 10,
-      title: 'Ubicació real',
+      position: actualLatLng, map, zIndex: 10, title: 'Ubicació real',
       icon: {
         path: 'M 0,-15 L 3.5,-5 L 14,-5 L 5.5,2 L 8.5,13 L 0,7 L -8.5,13 L -5.5,2 L -14,-5 L -3.5,-5 Z',
-        fillColor: '#FBBF24',
-        fillOpacity: 1,
-        strokeColor: '#92400E',
-        strokeWeight: 1.5,
-        scale: 1.2,
-        anchor: new google.maps.Point(0, 0),
+        fillColor: '#FBBF24', fillOpacity: 1, strokeColor: '#92400E', strokeWeight: 1.5, scale: 1.2, anchor: new google.maps.Point(0, 0),
       },
     });
 
-    // Marcadors i línies de cada jugador
     playerIds.forEach((pid, i) => {
       const guess = guesses[pid];
       if (!guess) return;
@@ -220,32 +251,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       const color = COLORS[i % COLORS.length];
 
       new google.maps.Marker({
-        position: guessLatLng,
-        map,
-        zIndex: 5,
-        title: room.players[pid]?.name,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: '#fff',
-          strokeWeight: 2.5,
-        },
+        position: guessLatLng, map, zIndex: 5, title: room.players[pid]?.name,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2.5 },
       });
 
-      new google.maps.Polyline({
-        path: [guessLatLng, actualLatLng],
-        map,
-        strokeColor: color,
-        strokeOpacity: 0.85,
-        strokeWeight: 2.5,
-        geodesic: true,
-      });
+      new google.maps.Polyline({ path: [guessLatLng, actualLatLng], map, strokeColor: color, strokeOpacity: 0.85, strokeWeight: 2.5, geodesic: true });
     });
 
     map.fitBounds(bounds, 80);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsReady, actual]);
 
   if (!actual) return null;
@@ -253,73 +266,45 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
 
-      {/* ── ANIMACIÓ 5K MULTIJUGADOR MILLORADA ── */}
+      {/* OVERLAY ELIMINACIÓ */}
+      {eliminatedPlayer && (
+        <div className="fixed inset-0 z-[11000] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
+          <div className="bg-[#1a0c0c] border-2 border-red-500/50 rounded-[4rem] p-12 text-center max-w-xl shadow-[0_0_100px_rgba(239,68,68,0.3)]">
+            <div className="text-8xl mb-8 animate-bounce">💀</div>
+            <h2 className="text-5xl font-black italic uppercase tracking-tighter text-white mb-2">JUGADOR ELIMINAT</h2>
+            <p className="text-red-400 text-3xl font-black uppercase tracking-widest mb-10">{eliminatedPlayer}</p>
+            <button
+              onClick={() => { handleLaugh(); }}
+              disabled={hasLaughed}
+              className={`bg-white text-black px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-2xl flex items-center gap-3 mx-auto border-none ${hasLaughed ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95 cursor-pointer'}`}
+            >
+              😂 {hasLaughed ? 'JA T\'E N\'HAS ENRIGUT' : 'ENRIURE\'S-EN'}
+            </button>
+
+            <button
+              onClick={() => setEliminatedPlayer(null)}
+              className="mt-4 text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all cursor-pointer bg-transparent border-none"
+            >
+              Tancar avís
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY 5K */}
       {perfectScorers.length > 0 && (
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)', animation: 'fadeIn 0.3s ease-out'
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', border: '2px solid #60a5fa', borderRadius: '30px',
-            padding: '30px', textAlign: 'center', boxShadow: '0 0 150px rgba(59, 130, 246, 0.8)',
-            animation: 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxWidth: '500px', width: '90%'
-          }}>
-            <h2 style={{ color: 'white', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: '0 0 10px 0', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
-              SIUUUUU!
-            </h2>
-            <p style={{ color: '#bfdbfe', fontSize: '18px', fontWeight: 800, margin: '0 0 20px 0', lineHeight: 1.4 }}>
-              Felicitats! {perfectScorers.length > 1 ? 'Els jugadors' : 'El jugador'} <br />
-              <span style={{ color: '#fcd34d', fontSize: '28px', display: 'block', marginTop: '5px' }}>
-                {perfectScorers.join(', ').replace(/, ([^,]*)$/, ' i $1')}
-              </span>
-              {perfectScorers.length > 1 ? 'han clavat' : 'ha clavat'} els 5.000 punts!
+        <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
+          <div className="bg-gradient-to-br from-indigo-900 to-blue-600 border-2 border-blue-400 rounded-[3rem] p-10 text-center max-w-xl shadow-[0_0_150px_rgba(59,130,246,0.8)]">
+            <h2 className="text-white text-5xl font-black uppercase tracking-widest mb-2 italic shadow-text">SIUUUUU!</h2>
+            <p className="text-blue-200 font-bold mb-6">
+              {perfectScorers.join(', ')} ha{perfectScorers.length > 1 ? 'n' : ''} clavat els 5.000 punts!
             </p>
-
-            {/* ── NOU: EL VÍDEO ── */}
-            <video
-              id="siu-video"
-              src="/siu.mp4"
-              autoPlay
-              playsInline
-              style={{
-                width: '100%',
-                maxHeight: '250px',
-                objectFit: 'cover',
-                borderRadius: '16px',
-                marginBottom: '20px',
-                boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                background: '#000'
-              }}
-            />
-
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-              <button
-                onClick={handleFelicitar}
-                disabled={hasCongratulated}
-                style={{
-                  flex: 1, background: hasCongratulated ? '#4b5563' : '#10b981', color: hasCongratulated ? '#9ca3af' : '#064e3b',
-                  border: 'none', padding: '16px 10px', borderRadius: '16px', fontSize: '16px', fontWeight: 900,
-                  cursor: hasCongratulated ? 'not-allowed' : 'pointer', boxShadow: hasCongratulated ? 'none' : '0 8px 20px rgba(16, 185, 129, 0.4)',
-                  transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '1px'
-                }}
-                onMouseOver={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(1.05)')}
-                onMouseOut={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(1)')}
-                onMouseDown={(e) => !hasCongratulated && (e.currentTarget.style.transform = 'scale(0.95)')}
-              >
+            <video id="siu-video" src="/siu.mp4" autoPlay playsInline className="w-full max-h-60 object-cover rounded-2xl mb-8 shadow-2xl bg-black" />
+            <div className="flex gap-4">
+              <button onClick={handleCongratulate} disabled={hasCongratulated} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all border-none cursor-pointer ${hasCongratulated ? 'bg-gray-600 text-gray-400' : 'bg-emerald-500 text-emerald-950 shadow-lg hover:scale-105 active:scale-95'}`}>
                 {hasCongratulated ? 'Felicitat! 🎉' : 'Felicitar 👏'}
               </button>
-
-              <button
-                onClick={handleClosePerfectScore}
-                style={{
-                  flex: 1, background: '#f59e0b', color: '#78350f', border: 'none', padding: '16px 10px', borderRadius: '16px',
-                  fontSize: '16px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.4)',
-                  transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '1px'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-              >
+              <button onClick={() => { setHasClosedPopup(true); setPerfectScorers([]); window.dispatchEvent(new Event('resumeBackgroundMusic')); }} className="flex-1 bg-yellow-500 text-yellow-950 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:scale-105 active:scale-95 border-none cursor-pointer">
                 Continuar 🚀
               </button>
             </div>
@@ -327,33 +312,29 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         </div>
       )}
 
-      {/* ── NOU: AVÍS DE FELICITACIÓ A LA PANTALLA PRINCIPAL ── */}
-      {congratulatedBy && hasClosedPopup && (
-        <div style={{
-          position: 'absolute', top: '150px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 9999, background: 'rgba(16, 185, 129, 0.9)', backdropFilter: 'blur(5px)',
-          border: '2px solid #34d399', borderRadius: '20px', padding: '15px 30px', textAlign: 'center',
-          boxShadow: '0 10px 40px rgba(16, 185, 129, 0.6)', animation: 'slideInDown 0.3s ease-out'
-        }}>
-          <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 800, margin: 0, textShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
-            🎉 {congratulatedBy} t'ha felicitat!
-          </h2>
+      {laughedBy && (
+        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[12000] animate-bounce pointer-events-none">
+          <div className="bg-yellow-500 text-black px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-2xl border-4 border-black text-xl">
+            {laughedBy} S&apos;ESTÀ RIUENT! 😂
+          </div>
+        </div>
+      )}
+      {congratulatedBy && (
+        <div className="fixed top-32 left-1/2 -translate-x-1/2 z-[12000] animate-in slide-in-from-top duration-500 pointer-events-none">
+          <div className="bg-emerald-500 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest shadow-2xl border-4 border-emerald-300 text-xl">
+            🎉 {congratulatedBy} T&apos;HA FELICITAT!
+          </div>
         </div>
       )}
 
-      {/* Mapa de resultats */}
+      <div id="emoji-container" className="fixed inset-0 pointer-events-none z-[13000] overflow-hidden" />
+
       <div ref={mapRef} className="flex-1 min-h-0" />
 
-      {/* Panell de puntuacions */}
       <div className="bg-gray-900 border-t border-gray-700/50 p-5 flex-shrink-0">
-        <h2 className="text-white text-xl font-black text-center mb-1">
-          Resultats — Ronda {round + 1}
-        </h2>
-        <p className="text-gray-500 text-xs text-center mb-4 font-mono">
-          {actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}
-        </p>
+        <h2 className="text-white text-xl font-black text-center mb-1 uppercase tracking-tighter italic">Resultats — Ronda {round + 1}</h2>
+        <p className="text-gray-500 text-[10px] text-center mb-4 font-mono tracking-widest uppercase">{actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}</p>
 
-        {/* Targetes de jugadors */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           {playerIds.map((pid, i) => {
             const guess = guesses[pid];
@@ -361,81 +342,33 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             const color = COLORS[i % COLORS.length];
             const isMe = pid === playerId;
             return (
-              <div
-                key={pid}
-                className={`rounded-xl p-4 relative overflow-hidden ${isMe ? 'ring-2 ring-white/20' : ''} ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`}
-                style={{ background: `${color}18`, borderLeft: `3px solid ${color}` }}
-              >
-                {player?.isEliminated && (
-                  <div className="absolute top-2 right-2 text-2xl animate-bounce">💀</div>
-                )}
+              <div key={pid} className={`rounded-xl p-4 relative overflow-hidden transition-all duration-1000 ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`} style={{ background: `${color}10`, borderLeft: `4px solid ${color}` }}>
+                {player?.isEliminated && <div className="absolute top-2 right-2 text-2xl animate-pulse">💀</div>}
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="relative">
-                    <div
-                      className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center"
-                      style={{ borderColor: `${color}40` }}
-                    >
-                      {player?.avatarUrl ? (
-                        <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xs opacity-40">👤</span>
-                      )}
-                    </div>
-                    <div
-                      className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900"
-                      style={{ backgroundColor: color }}
-                    />
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/10 bg-black/40">
+                    {player?.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs opacity-40">👤</div>}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-white font-bold text-sm truncate flex items-center gap-1.5">
-                      {player?.name}
-                      {(player as any)?.isAdmin && <span className="text-[7px] bg-red-600 text-white px-1 py-0.5 rounded-sm font-black shadow-[0_0_8px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
-                      {isMe ? ' (Tu)' : ''}
-                    </span>
-                    {player?.badges && player.badges.length > 0 && (
-                      <div className="flex gap-1 overflow-hidden">
-                        {player.badges.slice(0, 2).map((b, bi) => (
-                          <span key={bi} className="text-[6px] text-indigo-300 font-bold uppercase truncate">🏅 {b}</span>
-                        ))}
-                      </div>
-                    )}
+                    <span className="text-white font-black text-[10px] uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
                   </div>
                 </div>
                 {guess ? (
-                  <>
-                    <div className="text-gray-400 text-xs">
-                      {Math.round(guess.distance).toLocaleString()} km
-                    </div>
-                    <div className="text-yellow-400 font-black text-xl flex items-center gap-2">
-                      <span className="transition-all duration-1000" style={{ 
-                        transform: showPenalty && guess.usedHint ? 'scale(0.9)' : 'scale(1)', 
-                        opacity: showPenalty && guess.usedHint ? 0.6 : 1 
-                      }}>
-                        +{Math.round(showPenalty || !guess.usedHint ? (guess.score / (guess.usedHint ? 2 : 1)) : guess.score).toLocaleString()}
-                      </span>
-                      {guess.usedHint && showPenalty && (
-                        <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 whitespace-nowrap">
-                          -50% PISTA
-                        </span>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-gray-500 text-xs italic">Sense endevinança</div>
-                )}
+                  <div className="text-yellow-400 font-black text-2xl flex items-center gap-2">
+                    <span className="transition-all duration-1000" style={{ transform: showPenalty && guess.usedHint ? 'scale(0.8)' : 'scale(1)', opacity: showPenalty && guess.usedHint ? 0.5 : 1 }}>
+                      +{Math.round(showPenalty || !guess.usedHint ? (guess.score / (guess.usedHint ? 2 : 1)) : guess.score).toLocaleString()}
+                    </span>
+                    {guess.usedHint && showPenalty && <span className="text-[8px] text-red-500 font-black animate-bounce bg-red-500/10 px-1.5 py-1 rounded border border-red-500/20"> -50% PISTA</span>}
+                  </div>
+                ) : <div className="text-gray-500 text-[10px] font-black uppercase italic">Sense tirada</div>}
 
-                {/* VIDA (1vs1) */}
                 {room.gameType === '1vs1' && player?.health !== undefined && (
                   <div className="mt-3">
-                    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1">
-                      <span>Vida</span>
+                    <div className="flex justify-between text-[7px] font-black uppercase tracking-widest mb-1">
+                      <span>Salut</span>
                       <span>{player.health} / 10000</span>
                     </div>
                     <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5">
-                      <div 
-                        className={`h-full transition-all duration-1000 ${player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${(player.health / 10000) * 100}%` }}
-                      />
+                      <div className={`h-full transition-all duration-1000 ${player.health > 5000 ? 'bg-emerald-500' : player.health > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${(player.health / 10000) * 100}%` }} />
                     </div>
                   </div>
                 )}
@@ -444,47 +377,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           })}
         </div>
 
-        {/* Total acumulat */}
-        <div className="bg-gray-800 rounded-xl p-3 mb-4 flex justify-around">
-          {playerIds.map((pid) => (
-            <div key={pid} className="text-center flex flex-col items-center">
-              <div className="w-6 h-6 rounded-full overflow-hidden border border-white/10 mb-1">
-                {room.players[pid]?.avatarUrl ? (
-                  <img src={room.players[pid].avatarUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gray-700 flex items-center justify-center text-[8px]">👤</div>
-                )}
-              </div>
-              <div className="text-gray-400 text-[10px] mb-0.5 flex justify-center items-center gap-1 max-w-[60px] truncate">
-                {room.players[pid]?.name}
-              </div>
-              <div className="text-yellow-400 font-black text-sm">
-                {(room.totalScores?.[pid] ?? 0).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Botó / espera */}
         <div className="flex gap-3 mt-4">
-          <button
-            onClick={onLeave}
-            className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-3.5 rounded-xl text-sm transition-all border border-red-500/20 uppercase tracking-widest active:scale-95"
-          >
-            🏃 Abandonar
-          </button>
-          
+          <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
           {isHost ? (
-            <button
-              onClick={onNext}
-              className="flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-3.5 rounded-xl text-lg transition-all shadow-lg active:scale-[0.98] uppercase tracking-tighter italic"
-            >
+            <button onClick={onNext} className="flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg active:scale-95 uppercase tracking-tighter italic border-none cursor-pointer">
               {round >= 4 ? '🏆 Resultats Finals' : 'Ronda Següent →'}
             </button>
           ) : (
-            <div className="flex-[2] text-center text-gray-500 py-3.5 text-xs font-black uppercase tracking-[0.2em] bg-white/5 rounded-xl border border-white/5 animate-pulse flex items-center justify-center">
-              ⏳ Esperant l&apos;amfitrió...
-            </div>
+            <div className="flex-[2] text-center text-gray-500 py-4 text-xs font-black uppercase tracking-widest bg-white/5 rounded-2xl border border-white/5 animate-pulse flex items-center justify-center italic">⏳ Esperant Host...</div>
           )}
         </div>
       </div>

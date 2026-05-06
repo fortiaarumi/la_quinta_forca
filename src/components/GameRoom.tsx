@@ -34,6 +34,23 @@ const getTimeSettings = (mode?: string) => {
   return { total: 60000, panic: 15000 }; // Bala (per defecte)
 };
 
+// COMPONENTS ELEGANTS
+const GoldButton = ({ onClick, children, className = "", disabled = false, pulse = false }: any) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`relative group overflow-hidden px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50
+      ${pulse ? 'animate-gold-pulse' : ''}
+      bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 
+      text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)]
+      hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)] hover:-translate-y-1
+      ${className}`}
+  >
+    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+    <span className="relative z-10 flex items-center justify-center gap-3">{children}</span>
+  </button>
+);
+
 export default function GameRoom({ roomId, playerId }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +71,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
   const [currentHint, setCurrentHint] = useState<string | null>(null); // 👈 NOU
   const [hintLoading, setHintLoading] = useState(false); // 👈 NOU
+  const [showRoundIntro, setShowRoundIntro] = useState(false);
+  const [isSpectating, setIsSpectating] = useState(false);
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic } = useAudio();
@@ -123,11 +142,26 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setHasUsedHint(false); // 👈 NOU
       setCurrentHint(null);  // 👈 NOU
       prevRoundRef.current = room.currentRound;
+
+      if (room.gameState === 'playing') {
+        setShowRoundIntro(true);
+        setTimeout(() => setShowRoundIntro(false), 3000);
+      }
     }
-  }, [room?.currentRound]);
+  }, [room?.currentRound, room?.gameState]);
 
   const isSinglePlayer = room?.isSinglePlayer ?? false;
   const isHost = room?.hostId === playerId;
+
+  // NOU: Detectar canvi d'host per mostrar missatge
+  const isHostRef = useRef(isHost);
+  useEffect(() => {
+    if (isHost && !isHostRef.current && room?.gameState !== 'lobby') {
+      setSystemMessage('👑 Ara ets el HOST de la sala!');
+      setTimeout(() => setSystemMessage(null), 5000);
+    }
+    isHostRef.current = isHost;
+  }, [isHost, room?.gameState]);
 
   // ── LÒGICA D'ABANDONAR (UNIFICADA) ──
   const handleLeave = useCallback(async () => {
@@ -392,10 +426,14 @@ export default function GameRoom({ roomId, playerId }: Props) {
           { type: 'Bandera', value: country.flag },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
           { type: 'Hemisferi', value: actual.lat > 0 ? 'Nord ⬆️' : 'Sud ⬇️' },
-          { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' }
+          { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
+          { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' }
         ];
         
-        const randomHint = options[Math.floor(Math.random() * options.length)];
+        // Barregem l'array per assegurar aleatorietat real
+        const shuffled = options.sort(() => Math.random() - 0.5);
+        const randomHint = shuffled[0];
+        
         setCurrentHint(`${randomHint.type}: ${randomHint.value}`);
         setHasUsedHint(true);
       } else {
@@ -414,7 +452,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
   const submitGuess = useCallback(
     async (guessLat: number, guessLng: number) => {
-      if (!room?.locations || hasGuessed) return;
+      if (!room?.locations || hasGuessed || (room.players[playerId]?.isEliminated && isSpectating)) return;
 
       const actual = room.locations[room.currentRound];
       const distance = haversineDistance(guessLat, guessLng, actual.lat, actual.lng);
@@ -579,8 +617,51 @@ export default function GameRoom({ roomId, playerId }: Props) {
     );
   } else {
     const allPlayerIds = Object.keys(room.players);
+    const isEliminated = !!room.players[playerId]?.isEliminated;
+
     content = (
-      <div className="relative w-full h-[100dvh] overflow-hidden bg-black">
+      <div className={`relative w-full h-[100dvh] overflow-hidden bg-black transition-all duration-700 ${isEliminated && isSpectating ? 'grayscale sepia-[0.2]' : ''}`}>
+        {/* ROUND INTRO OVERLAY */}
+        {showRoundIntro && room.gameState === 'playing' && (
+          <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
+            <div className="text-center bg-black/60 backdrop-blur-xl p-16 rounded-[4rem] border border-white/20 shadow-2xl scale-110">
+              <p className="text-yellow-500 font-black uppercase tracking-[0.5em] text-sm mb-4">Iniciant Ronda</p>
+              <h2 className="text-8xl font-black italic uppercase tracking-tighter text-white mb-6">Ronda {room.currentRound + 1}</h2>
+              {room.gameType === '1vs1' && (
+                <div className="bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-2xl animate-pulse">
+                  MAL x{(1 + (room.currentRound * 0.5)).toFixed(1)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ELIMINATION OVERLAY */}
+        {isEliminated && !isSpectating && (
+          <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-1000">
+            <div className="text-center max-w-md">
+              <div className="text-8xl mb-8 animate-bounce">💀</div>
+              <h2 className="text-6xl font-black italic uppercase tracking-tighter text-white mb-4">HAS ESTAT ELIMINAT</h2>
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mb-12">
+                {room.gameType === 'battle_royale' 
+                  ? `Has quedat a la posició ${Object.values(room.players).filter(p => !p.isEliminated).length + 1}`
+                  : "Has perdut tota la teva vida"}
+              </p>
+              
+              <div className="space-y-4">
+                <GoldButton onClick={() => setIsSpectating(true)} className="w-full py-6 rounded-2xl text-lg">
+                  QUEDAR-SE COM A ESPECTADOR
+                </GoldButton>
+                <button 
+                  onClick={handleLeave}
+                  className="w-full py-5 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-all"
+                >
+                  ABANDONAR LA PARTIDA
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {mapsReady && room.locations?.[room.currentRound] && (
           <StreetViewPane
             key={`sv-${room.currentRound}`}

@@ -13,6 +13,7 @@ interface AudioContextType {
   playCelebration: () => void;
   playDecepcion: () => void;
   playSiu: () => void;
+  playRiure: () => void;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -23,6 +24,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const celebrationRef = useRef<HTMLAudioElement | null>(null);
   const decepcionRef = useRef<HTMLAudioElement | null>(null);
   const siuRef = useRef<HTMLAudioElement | null>(null);
+  const riureRef = useRef<HTMLAudioElement | null>(null);
 
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -59,6 +61,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     siuRef.current = new Audio('/sounds/siu.mp3');
     siuRef.current.volume = 0.8;
+
+    riureRef.current = new Audio('/sounds/riure.mp3');
+    riureRef.current.volume = 0.6;
   }, []);
 
   // Actualitza el volum si mutegem
@@ -68,6 +73,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (celebrationRef.current) celebrationRef.current.muted = isMuted;
     if (decepcionRef.current) decepcionRef.current.muted = isMuted;
     if (siuRef.current) siuRef.current.muted = isMuted;
+    if (riureRef.current) riureRef.current.muted = isMuted;
   }, [isMuted]);
 
   // 👈 AFEGIT: Escoltar events globals per parar i reprendre la música quan hi ha un 5K
@@ -139,6 +145,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const playRiure = () => {
+    if (riureRef.current && hasInteracted) {
+      riureRef.current.currentTime = 0;
+      riureRef.current.play().catch(e => console.log(e));
+    }
+  };
+
   const toggleMute = () => {
     setIsMuted(!isMuted);
   };
@@ -146,7 +159,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   return (
     <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
-      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu
+      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu, playRiure
     }}>
       {children}
     </AudioContext.Provider>

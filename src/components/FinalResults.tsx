@@ -242,6 +242,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                       <div className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-2">
                         {p.name}
                         {p.isAdmin && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
+                        {room.players[p.id]?.isEliminated && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">ELIMINAT</span>}
                       </div>
                       {room.players[p.id]?.badges && room.players[p.id].badges!.length > 0 && (
                         <div className="flex gap-1 mb-1">
@@ -278,10 +279,61 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                     style={{ width: `${pct}%`, transition: 'width 2s cubic-bezier(0.16, 1, 0.3, 1)' }}
                   />
                 </div>
+
+                {/* VIDA (NOMÉS 1VS1) */}
+                {room.gameType === '1vs1' && room.players[p.id]?.health !== undefined && (
+                  <div className="mt-4 animate-in fade-in duration-1000 delay-500">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-2">
+                      <span className="text-gray-500">Vida Final</span>
+                      <span className={room.players[p.id].health! > 0 ? 'text-emerald-400' : 'text-red-500'}>{room.players[p.id].health} / 10000</span>
+                    </div>
+                    <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden border border-white/10">
+                      <div className={`h-full transition-all duration-1000 ${room.players[p.id].health! > 5000 ? 'bg-emerald-500' : room.players[p.id].health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${(room.players[p.id].health! / 10000) * 100}%` }} />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
+
+        {/* HISTORIAL DE BATALLA (1VS1) */}
+        {room.gameType === '1vs1' && (
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 shadow-2xl mb-12 animate-in slide-in-from-bottom duration-1000">
+            <h2 className="text-xl font-black uppercase tracking-widest text-red-400 mb-6 italic text-center">⚔️ Historial de Batalla</h2>
+            <div className="space-y-3">
+              {[0, 1, 2, 3, 4].map(r => {
+                const roundData = room.rounds?.[r];
+                if (!roundData) return null;
+                const pIds = Object.keys(room.players);
+                if (pIds.length < 2) return null;
+                const s1 = roundData.guesses[pIds[0]]?.score || 0;
+                const s2 = roundData.guesses[pIds[1]]?.score || 0;
+                const ps1 = roundData.guesses[pIds[0]]?.usedHint ? Math.round(s1/2) : s1;
+                const ps2 = roundData.guesses[pIds[1]]?.usedHint ? Math.round(s2/2) : s2;
+                const diff = Math.abs(ps1 - ps2);
+                const damage = Math.round(diff * (1 + (r * 0.5)));
+                const winnerId = ps1 > ps2 ? pIds[0] : pIds[1];
+                const loserId = ps1 > ps2 ? pIds[1] : pIds[0];
+
+                return (
+                  <div key={r} className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <span className="text-gray-500 w-20">Ronda {r + 1}</span>
+                    {ps1 === ps2 ? (
+                      <span className="text-gray-400">Empat (0 dany)</span>
+                    ) : (
+                      <div className="flex-1 flex justify-center items-center gap-2">
+                        <span className="text-white">{room.players[winnerId]?.name}</span>
+                        <span className="bg-red-500/20 text-red-500 px-2 py-1 rounded-lg border border-red-500/20">-{damage} HP</span>
+                        <span className="text-gray-500">a {room.players[loserId]?.name}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 mt-2 text-center shadow-2xl overflow-hidden relative">
