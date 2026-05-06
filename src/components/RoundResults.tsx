@@ -254,10 +254,17 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       }
 
       if (needsUpdate) {
-        // Esperem a què l'animació estigui en fase de drain per sincronitzar Firebase
-        setTimeout(async () => {
-          await update(ref(db, `rooms/${roomId}`), updates);
-        }, 8000);
+        if (room.gameType === '1vs1') {
+          // El 1vs1 necessita esperar 8 segons perquè la barra de vida baixi
+          setTimeout(async () => {
+            await update(ref(db, `rooms/${roomId}`), updates);
+          }, 8000);
+        } else {
+          // El Battle Royale i la Ruleta s'han d'activar a l'instant (1.5 segons)
+          setTimeout(async () => {
+            await update(ref(db, `rooms/${roomId}`), updates);
+          }, 1500);
+        }
       }
     };
 
@@ -693,7 +700,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
           {isHost ? (
             <button
-              disabled={combatStage !== 'done'}
+              disabled={combatStage !== 'done' || !!room.tieBreak || showRoulette}
               onClick={async () => {
                 let shouldFinish = false;
 
@@ -711,12 +718,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                   onNext();
                 }
               }}
-              className={`flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg uppercase tracking-tighter italic border-none cursor-pointer ${combatStage !== 'done' ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95'}`}
+              className={`flex-[2] bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black font-black py-4 rounded-2xl text-lg transition-all shadow-lg uppercase tracking-tighter italic border-none cursor-pointer ${(combatStage !== 'done' || !!room.tieBreak || showRoulette) ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95'}`}
             >
               {combatStage !== 'done' ? '⚔️ Lluitant...' : (
-                (room.gameType === 'battle_royale' && Object.values(room.players).filter(p => !p.isEliminated).length <= 1) ||
-                  (room.gameType === '1vs1' && Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0))
-                  ? '🏆 Mostrar Resultats Finals' : 'Ronda Següent →'
+                !!room.tieBreak || showRoulette ? '⏳ Resolent Empat...' :
+                  (room.gameType === 'battle_royale' && Object.values(room.players).filter(p => !p.isEliminated).length <= 1) ||
+                    (room.gameType === '1vs1' && Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0))
+                    ? '🏆 Mostrar Resultats Finals' : 'Ronda Següent →'
               )}
             </button>
           ) : (

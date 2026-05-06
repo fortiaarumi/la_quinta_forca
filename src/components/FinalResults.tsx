@@ -402,7 +402,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                   <button onClick={() => { if (songRef.current) { songRef.current.currentTime = 0; songRef.current.play(); } }} className="text-xs bg-indigo-600 px-3 py-1 rounded-full text-white font-bold">🔄</button>
                   <input type="range" min="0" max="1" step="0.01" value={songVolume} onChange={(e) => setSongVolume(parseFloat(e.target.value))} className="w-24 accent-purple-500" />
                 </div>
-                <div className="text-gray-300 text-xs italic text-center">{room.songState.lyrics}</div>
+                <div className="text-gray-300 text-sm italic text-center whitespace-pre-wrap leading-relaxed px-4">{room.songState.lyrics}</div>
               </div>
             )}
             {room.songState?.status === 'error' && <div className="text-red-400 font-bold text-sm">❌ Error al generar</div>}
