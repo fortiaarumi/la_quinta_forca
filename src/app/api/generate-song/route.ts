@@ -10,7 +10,8 @@ const groq = new Groq({
 
 const genres = [
   'Tecno', 'Dembow', 'Sardana catalana', 'Reggaeton', 'Death Metal',
-  'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre', ''
+  'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre', 'Dakar Afro-cuban Jazz', 'Lo-fi Roots Reggae',
+  'Celtic Cloud Rap', 'Samba',
 ];
 
 
@@ -26,14 +27,15 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un lletrista mordaç i un comediant espectacular. Has d'escriure la lletra d'una CANÇÓ SATÍRICA i molt divertida per riure't d'uns jugadors que han fet una partida pèssima a un joc de geografia (han de situar una foto al mapa).
+      Ets un lletrista mordaç i un comediant espectacular. Has d'escriure la lletra d'una CANÇÓ SATÍRICA i molt divertida per riure't d'uns jugadors que han fet una partida pèssima a un joc de geografia (han d'endivinar a on estan).
 
       ATENCIÓ - ESTIL MUSICAL: L'estil d'aquesta cançó serà "${genre}". 
       Has d'adaptar el vocabulari, l'actitud i el ritme de la lletra perquè encaixi PERFECTAMENT amb aquest gènere.
 
       CONTEXT DE LA BROMA (MOLT IMPORTANT):
       La gràcia de la cançó NO és inventar-se històries genèriques, sinó fer sang i riure's EXCLUSIVAMENT de la falta de punteria dels jugadors. 
-      Fes befa de com de cecs estan, de com necessiten ulleres o una brúixola, i de la brutal quantitat de quilòmetres que han errat.
+      Fes befa de com de cecs estan, de com necessiten ulleres o de lo "tontos" que són, i de la brutal quantitat de quilòmetres que han errat.
+      Cal que fassis rimes gracioses amb els seus noms. Els pots insultar ja que és una broma i ningú s'ofendrà. Passa't molt amb els teus insults.
 
       DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis ciutats noves):
       ${guesses}
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
       3. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
       4. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà".
       
-      ESTRUCTURA OBLIGATÒRIA (Més curta i directa):
+      ESTRUCTURA OBLIGATÒRIA:
       Has de fer la cançó més breu. Utilitza NOMÉS aquests tags exactes en aquest ordre:
       [Intro]
       [Verse 1]
