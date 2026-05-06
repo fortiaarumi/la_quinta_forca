@@ -9,8 +9,8 @@ const groq = new Groq({
 });
 
 const genres = [
-  'Tecno', 'Dembow', 'Sardana trap', 'Reggaeton', 'Death Metal',
-  'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre'
+  'Tecno', 'Dembow', 'Sardana catalana', 'Reggaeton', 'Death Metal',
+  'Jazz upbeat', 'Rumba Catalana', 'Punk rock', 'Ska', 'Pop alegre', ''
 ];
 
 
