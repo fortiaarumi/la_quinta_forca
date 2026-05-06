@@ -418,7 +418,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const roundData = room.rounds?.[room.currentRound];
     if (roundData?.sharedHint) {
       setCurrentHint(`${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
-      setHasUsedHint(true);
+      if (!roundData.sharedHint.isFree) {
+        setHasUsedHint(true);
+      }
       return;
     }
 
@@ -437,7 +439,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
           { type: 'Bandera', value: country.flag, imageUrl: country.flags?.png || country.flags?.svg },
           { type: 'Continent', value: country.continents?.[0] || 'Desconegut' },
           { type: 'Idioma', value: country.languages ? Object.values(country.languages)[0] : 'Desconegut' },
-          { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' }
+          { type: 'Capital', value: country.capital?.[0] || 'Desconeguda' },
+          { type: 'Població', value: `${(country.population / 1000000).toFixed(1)} Milions d'habitants` },
+          { type: 'Moneda', value: country.currencies ? Object.values(country.currencies as any).map((c: any) => `${c.name} (${c.symbol})`).join(', ') : 'Desconeguda' },
+          { type: 'Conducció', value: `Es condueix per la ${country.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` },
+          { type: 'Zona Horària', value: country.timezones?.[0] || 'Desconeguda' }
         ];
         
         const hintToSave = options[Math.floor(Math.random() * options.length)];
@@ -448,12 +454,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
       } else {
-        const fallbackHint = { type: 'País', value: countryName };
+        const fallbackHint = { type: 'Zona', value: 'Informació no disponible (Gratis ✨)', isFree: true };
         await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), {
           sharedHint: fallbackHint
         });
         setCurrentHint(`${fallbackHint.type}: ${fallbackHint.value}`);
-        setHasUsedHint(true);
+        // No cridem a setHasUsedHint(true) perquè és gratis
       }
     } catch (e) {
       console.error("Error obtenint pista:", e);
