@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room, PlayerGuess } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
-import GoldButton from './GoldButton';
+import GoldButton from '@/components/GoldButton';
 import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
@@ -468,11 +468,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                   background: 'conic-gradient(from 0deg, #4f46e5 0%, #7c3aed 25%, #4f46e5 50%, #7c3aed 75%, #4f46e5 100%)'
                 }}
               >
-                {room.tieBreak.players.map((pid, idx) => (
+                {room.tieBreak!.players.map((pid, idx) => (
                   <div 
                     key={pid}
                     className="absolute top-0 left-1/2 h-1/2 w-1 origin-bottom flex flex-col items-center"
-                    style={{ transform: `rotate(${(360 / room.tieBreak.players.length) * idx}deg)` }}
+                    style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * idx}deg)` }}
                   >
                     <div className="text-[10px] font-black text-white whitespace-nowrap bg-black/40 px-2 py-1 rounded-full mt-4 -rotate-90 origin-center">
                       {room.players[pid]?.name}
