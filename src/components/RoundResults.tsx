@@ -60,6 +60,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [combatWinner, setCombatWinner] = useState<string | null>(null);
   const [showRoulette, setShowRoulette] = useState(false);
   const [rouletteWinnerId, setRouletteWinnerId] = useState<string | null>(null);
+  const [spinFinished, setSpinFinished] = useState(false);
 
   // NOU: Vida visual per evitar salts en l'animació
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
@@ -296,11 +297,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     if (room.tieBreak && room.tieBreak.timestamp > (room.createdAt || 0)) {
       setShowRoulette(true);
       setRouletteWinnerId(null);
+      setSpinFinished(false);
       
       // Simulem el gir de la ruleta
       const spinTime = 4000;
       setTimeout(() => {
         setRouletteWinnerId(room.tieBreak!.loserId);
+        setSpinFinished(true);
         
         // El host executa l'eliminació final després de la ruleta
         if (isHost) {
@@ -474,9 +477,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               
               {/* El cercle de la ruleta */}
               <div 
-                className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1)`}
+                className={`w-full h-full rounded-full border-8 border-white/20 relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.15, 0, 0.15, 1) shadow-[0_0_80px_rgba(79,70,229,0.4)]`}
                 style={{ 
-                  transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 + (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length))}deg)` : 'rotate(0deg)',
+                  transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 - (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length)) - (360 / (room.tieBreak.players.length * 2))}deg)` : 'rotate(0deg)',
                   background: `conic-gradient(${
                     room.tieBreak!.players.map((_, i) => {
                       const color = COLORS[i % COLORS.length];
@@ -490,10 +493,10 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                 {room.tieBreak!.players.map((pid, idx) => (
                   <div 
                     key={pid}
-                    className="absolute top-0 left-1/2 h-1/2 w-1 origin-bottom flex flex-col items-center"
-                    style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * idx}deg)` }}
+                    className="absolute top-0 left-1/2 h-1/2 w-2 origin-bottom flex flex-col items-center -translate-x-1/2"
+                    style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * (idx + 0.5)}deg)` }}
                   >
-                    <div className="text-[10px] font-black text-white whitespace-nowrap bg-black/40 px-2 py-1 rounded-full mt-4 -rotate-90 origin-center">
+                    <div className="mt-8 text-[12px] font-black text-white whitespace-nowrap bg-black/60 px-4 py-1.5 rounded-full border border-white/20 shadow-xl" style={{ transform: 'rotate(0deg)', writingMode: 'vertical-lr' }}>
                       {room.players[pid]?.name}
                     </div>
                   </div>
@@ -501,14 +504,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               </div>
             </div>
 
-            {rouletteWinnerId && (
-              <div className="animate-in zoom-in duration-500">
-                <div className="text-6xl mb-4">💀</div>
-                <h3 className="text-3xl font-black uppercase text-red-500 mb-6">
+            {spinFinished && rouletteWinnerId && (
+              <div className="animate-in zoom-in duration-500 mt-8">
+                <div className="text-8xl mb-4 animate-bounce">💀</div>
+                <h3 className="text-4xl font-black uppercase text-red-500 mb-8 italic tracking-tighter shadow-text">
                   {room.players[rouletteWinnerId]?.name} ELIMINAT!
                 </h3>
-                <GoldButton onClick={() => setShowRoulette(false)} className="px-12 py-4 rounded-2xl">
-                  CONTINUAR
+                <GoldButton onClick={() => setShowRoulette(false)} className="px-16 py-5 rounded-3xl">
+                  D&apos;ACORD
                 </GoldButton>
               </div>
             )}
