@@ -414,15 +414,29 @@ export default function GameRoom({ roomId, playerId }: Props) {
     setHintLoading(true);
     const actual = room.locations[room.currentRound];
 
+    // RADIOGRAFIA 1
+    console.log("📍 1. Coordenades de la ronda:", actual.lat, actual.lng);
+
     try {
-      // 1. Obtenim el codi de país de forma nativa amb Google Maps (No falla mai per bloquejos)
       const getCountryCode = (): Promise<string | null> => {
         return new Promise((resolve) => {
           const geocoder = new (google.maps as any).Geocoder();
           geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-            if (status === 'OK' && results?.[0]) {
-              const c = results[0].address_components.find((comp: any) => comp.types.includes('country'));
-              resolve(c?.short_name || null);
+            // RADIOGRAFIA 2
+            console.log("🗺️ 2. Estat de Google Maps:", status);
+
+            if (status === 'OK' && results) {
+              // Ara busquem a TOTS els resultats, és molt més segur
+              for (const r of results) {
+                const c = r.address_components.find((comp: any) => comp.types.includes('country'));
+                if (c) {
+                  console.log("✅ 3. Codi de país detectat per Google:", c.short_name);
+                  resolve(c.short_name);
+                  return;
+                }
+              }
+              console.log("❌ 3. Google Maps no ha sabut trobar el país en aquestes coordenades.");
+              resolve(null);
             } else {
               resolve(null);
             }
@@ -433,55 +447,69 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const code = await getCountryCode();
       let countryData = null;
 
-      // 2. Busquem a la base de dades RestCountries
       if (code) {
-        const res = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
-        if (res.ok) {
-          const data = await res.json();
-          countryData = Array.isArray(data) ? data[0] : data;
+        try {
+          console.log("📂 4. Intentant llegir l'arxiu /countries.json...");
+          const res = await fetch('/countries.json');
+          if (res.ok) {
+            const allCountries = await res.json();
+            // Cerca ajustada per trobar el país només pel codi cca2
+            countryData = allCountries.find((c: any) => c.cca2 === code);
+            console.log("🎯 5. S'han trobat dades d'aquest país al teu arxiu JSON?:", countryData ? "SÍ" : "NO");
+          } else {
+            console.error("🚨 Error greu: L'arxiu /countries.json no carrega. Codi HTTP:", res.status);
+          }
+        } catch (localErr) {
+          console.error("🚨 Error greu: No es troba l'arxiu /countries.json. Està ben posat a la carpeta public?", localErr);
         }
       }
 
-      // 3. PISTES PRINCIPALS (Només si tenim país)
-      if (countryData && !countryData.status) {
+      const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
+
+      if (countryData) {
         const currencyKey = countryData.currencies ? Object.keys(countryData.currencies)[0] : null;
         const currency = currencyKey ? countryData.currencies[currencyKey] : null;
+        const giniValue = countryData.gini ? Object.values(countryData.gini)[0] : null;
+        const phonePrefix = countryData.idd?.root ? `${countryData.idd.root}${countryData.idd.suffixes?.[0] || ''}` : null;
 
-        const options = [
-          { type: 'Bandera', value: countryData.flag, imageUrl: countryData.flags?.png },
-          { type: 'Continent', value: countryData.continents?.[0] || 'Desconegut' },
+        options.push(
+          { type: 'Continent', value: countryData.region || 'Desconegut' },
           { type: 'Idioma Principal', value: countryData.languages ? Object.values(countryData.languages)[0] as string : 'Desconegut' },
-          { type: 'Població', value: `${(countryData.population / 1000000).toFixed(1)} Milions d'habitants` },
-          { type: 'Moneda Oficial', value: currency ? `${currency.name} (${currency.symbol})` : 'Desconeguda' },
-          { type: 'Fus Horari', value: countryData.timezones?.[0] || 'Desconegut' },
-          { type: 'Codi Internet', value: countryData.tld?.[0] || '.com' },
-          { type: 'Conducció', value: `Es condueix per la ${countryData.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` }
-        ];
+          { type: 'Població', value: countryData.population ? `${(countryData.population / 1000000).toFixed(1)} Milions d'habitants` : 'Desconeguda' },
+          { type: 'Moneda', value: currency ? `${currency.name} (${currency.symbol})` : 'Desconeguda' },
+          { type: 'Àrea Total', value: countryData.area ? `${countryData.area.toLocaleString('ca-ES')} km²` : 'Desconeguda' },
+          { type: 'Fronteres', value: countryData.borders ? `Fa frontera terrestre amb ${countryData.borders.length} països` : 'No té fronteres terrestres (és una illa 🏝️)' },
+          { type: 'Índex Gini', value: giniValue ? `${giniValue} (Desigualtat de riquesa)` : 'Desconegut' },
+          { type: 'Prefix Telefònic', value: phonePrefix ? `El prefix per trucar-hi és el ${phonePrefix} 📞` : 'Desconegut' }
+        );
 
-        const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut') && !o.value.includes('Desconeguda'));
-
-        if (validOptions.length > 0) {
-          const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
-          await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
-          setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
-          setHasUsedHint(true);
-          setHintLoading(false);
-          return; // Sortim perquè tot ha funcionat perfectament
+        if (countryData.flags?.png || countryData.flags?.svg) {
+          options.push({ type: 'Bandera', value: 'Bandera', imageUrl: countryData.flags.png || countryData.flags.svg });
         }
+        console.log("✨ 6. Pistes generades amb èxit des de la teva base de dades!");
       }
 
-      // Si l'ordinador arriba aquí, és perquè estàs enmig de l'oceà o l'API ha fallat, forcem el Catch
-      throw new Error("Sense dades de país");
-
-    } catch (e) {
-      console.error("Emergència de pistes activada:", e);
-      // PISTES D'EMERGÈNCIA FÍSIQUES (Si falla, escull a l'atzar una d'aquestes tres)
-      const fallbacks = [
+      options.push(
         { type: 'Hemisferi', value: actual.lat > 0 ? 'Et trobes al Nord ⬆️' : 'Et trobes al Sud ⬇️' },
         { type: 'Latitud', value: `Estàs a ${Math.abs(Math.round(actual.lat))}° de l'Equador` },
         { type: 'Zona Climàtica', value: Math.abs(actual.lat) < 23.5 ? 'Intertropical ☀️' : (Math.abs(actual.lat) < 66.5 ? 'Temperada ⛅' : 'Polar ❄️') }
-      ];
-      const finalFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+      );
+
+      const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut') && !o.value.includes('Desconeguda'));
+
+      if (validOptions.length > 0) {
+        const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
+        setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
+        setHasUsedHint(true);
+        return;
+      }
+
+      throw new Error("No s'han pogut generar pistes");
+
+    } catch (e) {
+      console.log("⚠️ 7. El codi ha saltat al Catch (Emergència) per aquest error:", e);
+      const finalFallback = { type: 'Hemisferi', value: actual.lat > 0 ? "Hemisferi Nord ⬆️" : "Hemisferi Sud ⬇️", isFree: true };
       await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: finalFallback });
       setCurrentHint(finalFallback.value);
       setHasUsedHint(true);
