@@ -415,20 +415,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
 
     try {
-      // 1. Identificar el país (Codi i Nom) a través de Google Maps
-      const getCountryInfo = (): Promise<{ code: string | null, name: string | null }> => {
-        return new Promise((resolve) => {
-          const geocoder = new (google.maps as any).Geocoder();
-          geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-            if (status === 'OK' && results?.[0]) {
-              const comps = results[0].address_components;
-              const c = comps.find((comp: any) => comp.types.includes('country'));
-              resolve({ code: c?.short_name || null, name: c?.long_name || null });
-            } else {
-              resolve({ code: null, name: null });
-            }
-          });
-        });
+      // 1. Identificar el país de forma infal·lible (Base de dades gratuïta externa)
+      const getCountryInfo = async (): Promise<{ code: string | null, name: string | null }> => {
+        try {
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${actual.lat}&longitude=${actual.lng}&localityLanguage=ca`);
+          const data = await res.json();
+          return { code: data.countryCode || null, name: data.countryName || null };
+        } catch (e) {
+          return { code: null, name: null };
+        }
       };
 
       const { code } = await getCountryInfo();
@@ -587,8 +582,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
         !!room.rounds?.[roundIdx]?.guesses?.[playerId]?.usedHint
       );
 
-      // 3. Enviem les dades al nostre perfil (afegim el timeMode, isWinner, gameType i hints)
-      updateUserStatsAfterGame(user.uid, room.gameMode || 'world', room.timeMode || 'bala', myTotalScore, myRoundScores, isWinner, room.gameType || 'classic', myRoundHints)
+      // 3. Enviem les dades al nostre perfil (afegim el nombre total de jugadors per a la insígnia Rocha)
+      updateUserStatsAfterGame(
+        user.uid,
+        room.gameMode || 'world',
+        room.timeMode || 'bala',
+        myTotalScore,
+        myRoundScores,
+        isWinner,
+        room.gameType || 'classic',
+        myRoundHints,
+        Object.keys(room.players).length
+      )
         .then((newBadges) => {
           console.log('Estadístiques guardades amb èxit!');
           if (newBadges && newBadges.length > 0) {

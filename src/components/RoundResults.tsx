@@ -59,6 +59,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [combatLoser, setCombatLoser] = useState<string | null>(null);
   const [combatWinner, setCombatWinner] = useState<string | null>(null);
   const [showRoulette, setShowRoulette] = useState(false);
+  const [localTieBreak, setLocalTieBreak] = useState<Room['tieBreak'] | null>(null);
   const [rouletteWinnerId, setRouletteWinnerId] = useState<string | null>(null);
   const [spinFinished, setSpinFinished] = useState(false);
 
@@ -298,31 +299,38 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
   // Lògica per la ruleta de desempat
   useEffect(() => {
-    if (room.tieBreak && room.tieBreak.timestamp > (room.createdAt || 0)) {
+    if (room.tieBreak && room.tieBreak.timestamp > (room.createdAt || 0) && !showRoulette) {
+      setLocalTieBreak(room.tieBreak);
       setShowRoulette(true);
       setRouletteWinnerId(null);
       setSpinFinished(false);
 
-      // Simulem el gir de la ruleta
+      // El gir dura 4 segons exactes
       const spinTime = 4000;
       setTimeout(() => {
         setRouletteWinnerId(room.tieBreak!.loserId);
         setSpinFinished(true);
 
-        // El host executa l'eliminació final després de la ruleta
         if (isHost) {
+          // Guardem els resultats a la BDD 3 segons després d'ensenyar el perdedor
           setTimeout(async () => {
             const updates: any = {};
             updates[`players/${room.tieBreak!.loserId}/isEliminated`] = true;
             updates[`players/${room.tieBreak!.loserId}/eliminatedAtRound`] = round;
             updates.tieBreak = null;
-
             await update(ref(db, `rooms/${roomId}`), updates);
-          }, 2000);
+          }, 3000);
         }
       }, spinTime);
     }
-  }, [room.tieBreak?.timestamp, isHost, roomId]);
+  }, [room.tieBreak, isHost, roomId, showRoulette]);
+
+  // Quan s'actualitza la BDD, tanquem la ruleta per donar pas al missatge d'eliminació central
+  useEffect(() => {
+    if (!room.tieBreak && showRoulette && spinFinished) {
+      setShowRoulette(false);
+    }
+  }, [room.tieBreak, showRoulette, spinFinished]);
 
   // Detectar eliminacions per a tots els jugadors (no només el host)
   const initialEliminatedRef = useRef<Set<string>>(new Set());
@@ -455,37 +463,35 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
 
       {/* MODAL RULETA DESEMPAT RE-DISSENYAT */}
-      {showRoulette && room.tieBreak && (
+      {showRoulette && localTieBreak && (
         <div className="fixed inset-0 z-[15000] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-500">
           <div className="text-center w-full max-w-xl bg-white/5 border border-white/10 p-12 rounded-[4rem] shadow-2xl">
             <h2 className="text-5xl font-black italic uppercase tracking-tighter text-yellow-500 mb-2">EMPATS AL LÍMIT</h2>
             <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-12">La sort decidirà qui abandona la competició...</p>
 
             <div className="relative w-72 h-72 mx-auto mb-12">
-              {/* La fletxa indicadora (Més maca) */}
               <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 w-8 h-10 bg-yellow-500 rounded-b-full shadow-[0_0_20px_rgba(234,179,8,0.8)] border-2 border-white flex items-end justify-center pb-1">
                 <div className="w-2 h-2 bg-black rounded-full" />
               </div>
 
-              {/* El cercle de la ruleta */}
               <div
                 className={`w-full h-full rounded-full border-[12px] border-[#0c0f1a] relative overflow-hidden transition-all duration-[4000ms] cubic-bezier(0.2, 0.8, 0.1, 1) shadow-[0_0_80px_rgba(255,255,255,0.1)]`}
                 style={{
-                  transform: rouletteWinnerId && room.tieBreak ? `rotate(${360 * 5 - (room.tieBreak.players.indexOf(rouletteWinnerId) * (360 / room.tieBreak.players.length)) - (360 / (room.tieBreak.players.length * 2))}deg)` : 'rotate(0deg)',
-                  background: `conic-gradient(${room.tieBreak!.players.map((_, i) => {
+                  transform: rouletteWinnerId && localTieBreak ? `rotate(${360 * 5 - (localTieBreak.players.indexOf(rouletteWinnerId) * (360 / localTieBreak.players.length)) - (360 / (localTieBreak.players.length * 2))}deg)` : 'rotate(0deg)',
+                  background: `conic-gradient(${localTieBreak!.players.map((_, i) => {
                     const color = COLORS[i % COLORS.length];
-                    const start = (i * (360 / room.tieBreak!.players.length)).toFixed(1);
-                    const end = ((i + 1) * (360 / room.tieBreak!.players.length)).toFixed(1);
+                    const start = (i * (360 / localTieBreak!.players.length)).toFixed(1);
+                    const end = ((i + 1) * (360 / localTieBreak!.players.length)).toFixed(1);
                     return `${color} ${start}deg ${end}deg`;
                   }).join(', ')
                     })`
                 }}
               >
-                {room.tieBreak!.players.map((pid, idx) => (
+                {localTieBreak!.players.map((pid, idx) => (
                   <div
                     key={pid}
                     className="absolute top-0 left-1/2 h-1/2 w-2 origin-bottom flex flex-col items-center -translate-x-1/2"
-                    style={{ transform: `rotate(${(360 / room.tieBreak!.players.length) * (idx + 0.5)}deg)` }}
+                    style={{ transform: `rotate(${(360 / localTieBreak!.players.length) * (idx + 0.5)}deg)` }}
                   >
                     <div className="mt-8 text-sm font-black text-white whitespace-nowrap bg-black/80 px-4 py-2 rounded-full shadow-xl" style={{ transform: 'rotate(0deg)', writingMode: 'vertical-lr' }}>
                       {room.players[pid]?.name}
@@ -495,15 +501,12 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               </div>
             </div>
 
-            {/* NOMÉS S'ENSENYA QUAN HA ACABAT DE GIRAR */}
             <div className={`transition-all duration-700 ${spinFinished && rouletteWinnerId ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
               <div className="text-6xl mb-4 animate-bounce">💀</div>
-              <h3 className="text-4xl font-black uppercase text-red-500 mb-8 italic tracking-tighter">
-                {room.players[rouletteWinnerId || room.tieBreak.players[0]]?.name} ELIMINAT!
+              <h3 className="text-4xl font-black uppercase text-red-500 mb-4 italic tracking-tighter">
+                {room.players[rouletteWinnerId || localTieBreak.players[0]]?.name} ELIMINAT!
               </h3>
-              <GoldButton onClick={() => setShowRoulette(false)} className="w-full py-5 rounded-3xl text-lg">
-                D&apos;ACORD
-              </GoldButton>
+              <p className="text-gray-500 text-xs font-black uppercase animate-pulse">S'està actualitzant el resultat...</p>
             </div>
           </div>
         </div>

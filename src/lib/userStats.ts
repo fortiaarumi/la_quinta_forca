@@ -65,9 +65,10 @@ export async function updateUserStatsAfterGame(
   timeMode: string,
   totalGameScore: number,
   roundScores: number[],
-  isWinner: boolean, // 👈 NOU: Necessitem saber si ha guanyat
-  gameType: string = 'classic', // 👈 NOU
-  roundHints: boolean[] = [] // 👈 NOU
+  isWinner: boolean,
+  gameType: string = 'classic',
+  roundHints: boolean[] = [],
+  totalPlayers: number = 1
 ): Promise<string[]> {
   const profile: Record<string, any> | null = await getUserProfile(uid);
   if (!profile) return [];
@@ -112,6 +113,15 @@ export async function updateUserStatsAfterGame(
   }
 
   // 4. LÒGICA D'INSÍGNIES (Automàtica)
+  // Actualitzacions Específiques de Perfil
+  const newHintsCount = roundHints.filter(h => h).length;
+  updates.hintsRevealed = (profile.hintsRevealed ?? 0) + newHintsCount;
+
+  if (isWinner && gameType === '1vs1') {
+    updates.totalWins1vs1 = (profile.totalWins1vs1 ?? 0) + 1;
+  }
+
+  // 4. LÒGICA D'INSÍGNIES (Automàtica)
   const currentBadges = profile.badges || [];
   const newBadges = [...currentBadges];
   const earnedNow: string[] = [];
@@ -123,24 +133,18 @@ export async function updateUserStatsAfterGame(
     }
   };
 
-  // Brúixola d'Or (10 partides)
   if (updates.totalGames >= 10) checkAndAdd("Brúixola d'Or");
-
-  // Franctirador (Un 5k perfecte i sense pista)
-  const has5kThisRound = roundScores.some((s, idx) => s >= 5000 && !roundHints[idx]);
-  if (has5kThisRound) checkAndAdd("Franctirador");
-
-  // Pubilla/Hereu de la Forca (Guanyar a Catalunya)
-  if (gameMode === 'catalunya' && isWinner) checkAndAdd("Pubilla/Hereu de la Forca");
-
-  // Llegendari (50 victòries)
+  if (roundScores.some((s, idx) => s >= 5000 && !roundHints[idx])) checkAndAdd("Franctirador");
+  if (gameMode === 'catalunya' && isWinner) checkAndAdd("Catalayudd");
   if (updates.totalWins >= 50) checkAndAdd("Llegendari");
-
-  // Lofish the goat (Guanya la teva primera partida)
   if (updates.totalWins >= 1) checkAndAdd("Lofish the goat");
-
-  // Uri Badia (Guanya a estadis)
   if (gameMode === 'estadis' && isWinner) checkAndAdd("Uri Badia");
+
+  // Les 4 Noves Insígnies
+  if (gameType === 'battle_royale' && isWinner && totalPlayers > 8) checkAndAdd("Rocha");
+  if (updates.totalWins1vs1 >= 15) checkAndAdd("Duel Joan");
+  if (gameMode === 'cultural' && isWinner) checkAndAdd("Pausu");
+  if (updates.hintsRevealed >= 500) checkAndAdd("Muniani");
 
   if (earnedNow.length > 0) {
     updates.badges = newBadges;

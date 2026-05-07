@@ -27,10 +27,40 @@ export interface RoundData {
 export interface Player {
   name: string;
   joinedAt: number;
-  avatarUrl?: string; // 👈 NOU
-  badges?: string[];  // 👈 NOU
-  health?: number;    // 👈 NOU (per a 1vs1)
-  isEliminated?: boolean; // 👈 NOU (per a Battle Royale)
+  avatarUrl?: string;
+  badges?: string[];
+  health?: number;
+  isEliminated?: boolean;
+  eliminatedAtRound?: number;
+}
+
+export interface UserProfile {
+  nickname: string;
+  email: string;
+  bestScoreWorld: number;
+  bestScoreCatalunya: number;
+  bestScoreEstadis?: number;
+  bestScoreCultural?: number;
+  total5k: number;
+  bestScoreWorld_bala?: number;
+  bestScoreWorld_normal?: number;
+  bestScoreWorld_infinit?: number;
+  bestScoreCatalunya_bala?: number;
+  bestScoreCatalunya_normal?: number;
+  bestScoreCatalunya_infinit?: number;
+  bestScoreEstadis_bala?: number;
+  bestScoreEstadis_normal?: number;
+  bestScoreEstadis_infinit?: number;
+  bestScoreCultural_bala?: number;
+  bestScoreCultural_normal?: number;
+  bestScoreCultural_infinit?: number;
+  lastVideoUploadDate?: string;
+  avatarUrl?: string;
+  badges?: string[];
+  totalGames?: number;
+  totalWins?: number;
+  totalWins1vs1?: number; // 👈 NOU: Insígnia Duel Joan
+  hintsRevealed?: number; // 👈 NOU: Insígnia Muniani
 }
 
 export type GameState =
