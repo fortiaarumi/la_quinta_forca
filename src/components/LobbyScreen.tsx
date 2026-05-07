@@ -27,6 +27,7 @@ export default function LobbyScreen({
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [showHostMessage, setShowHostMessage] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU
 
   useEffect(() => {
     if (room.hostId === playerId && !isHost) {
@@ -181,7 +182,11 @@ export default function LobbyScreen({
                       {player.badges.slice(0, 3).map((bId: string, bi: number) => {
                         const badgeDef = ALL_BADGES.find(b => b.id === bId);
                         return (
-                          <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                          <div
+                            key={bi}
+                            className="group relative flex items-center justify-center cursor-pointer"
+                            onClick={() => setSelectedBadge(bId)}
+                          >
                             <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
                             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                               {bId}
@@ -306,6 +311,26 @@ export default function LobbyScreen({
               <button onClick={declineFriend} className="flex-1 p-4 rounded-xl bg-white/5 text-gray-500 font-black">Rebutjar</button>
               <button onClick={acceptFriend} className="flex-1 p-4 rounded-xl bg-emerald-500 text-black font-black shadow-lg">Acceptar</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NOU: MODAL GLOBAL D'INSÍGNIES */}
+      {selectedBadge && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer" onClick={() => setSelectedBadge(null)}>
+          <div className="bg-[#0c0f1a] border-2 border-indigo-500/30 rounded-[3rem] p-10 max-w-sm w-full text-center shadow-[0_0_80px_rgba(99,102,241,0.3)] relative cursor-default" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSelectedBadge(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white text-2xl bg-transparent border-none cursor-pointer">✕</button>
+            {(() => {
+              const bDef = ALL_BADGES.find(b => b.id === selectedBadge);
+              return (
+                <div className="flex flex-col items-center">
+                  <div className="w-40 h-40 mb-6 relative"><div className="absolute inset-0 bg-yellow-500/20 blur-2xl rounded-full animate-pulse" /><img src={bDef?.image || '/badges/default.jpeg'} alt={selectedBadge} className="w-full h-full object-contain relative z-10 drop-shadow-2xl hover:scale-110 transition-transform duration-500" /></div>
+                  <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-2">{bDef?.label}</h2>
+                  <p className="text-indigo-300 text-sm font-bold uppercase tracking-widest mb-6">{bDef?.desc}</p>
+                  <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-full"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Insígnia de La Quinta Forca</p></div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

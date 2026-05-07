@@ -9,6 +9,7 @@ import Link from 'next/link';
 export default function BadgesPage() {
   const { badges, user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU: Controla el pop-up
 
   useEffect(() => {
     if (user) {
@@ -54,21 +55,25 @@ export default function BadgesPage() {
                     const progressPercent = hasProgress ? Math.min(100, (currentVal / b.totalGoal!) * 100) : 0;
 
                     return (
-                      <tr key={b.id} className={`border-b border-white/5 transition-all duration-500 ${isUnlocked ? 'bg-indigo-500/5' : 'opacity-60 grayscale'}`}>
+                      <tr
+                        key={b.id}
+                        className={`border-b border-white/5 transition-all duration-500 hover:bg-white/5 cursor-pointer ${isUnlocked ? 'bg-indigo-500/5' : ''}`}
+                        onClick={() => setSelectedBadge(b.id)} // 👈 Clic a tota la fila obre el pop-up
+                      >
                         <td className="p-5">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl border transition-all ${isUnlocked ? 'bg-indigo-600/30 border-indigo-500/50 scale-110' : 'bg-gray-800/50 border-white/5'}`}>
-                            <span style={{ 
-                              filter: isUnlocked ? 'drop-shadow(0 0 10px rgba(99,102,241,0.5))' : 'none',
-                              paddingTop: '4px' // 👈 Evita que quedi massa a dalt
-                            }}>
-                              {isUnlocked ? '🏅' : '🔒'}
-                            </span>
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all overflow-hidden ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
+                            {/* IMATGE DE LA INSÍGNIA */}
+                            <img
+                              src={b.image || '/badges/default.jpeg'}
+                              alt={b.id}
+                              className={`w-full h-full object-cover transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
+                            />
                           </div>
                         </td>
                         <td className="p-5">
-                          <h3 className={`font-black text-lg ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>{b.label}</h3>
+                          <h3 className={`font-black text-lg ${isUnlocked ? 'text-white drop-shadow-md' : 'text-gray-500'}`}>{b.label}</h3>
                           <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wider">{b.desc}</p>
-                          
+
                           {/* Barra de Progrés */}
                           {hasProgress && !isUnlocked && (
                             <div className="mt-3 w-full max-w-[200px]">
@@ -77,8 +82,8 @@ export default function BadgesPage() {
                                 <span>{currentVal} / {b.totalGoal}</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                <div 
-                                  className="h-full bg-indigo-500 transition-all duration-1000 ease-out" 
+                                <div
+                                  className="h-full bg-indigo-500 transition-all duration-1000 ease-out"
                                   style={{ width: `${progressPercent}%` }}
                                 />
                               </div>
@@ -86,11 +91,10 @@ export default function BadgesPage() {
                           )}
                         </td>
                         <td className="p-5 text-center">
-                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                            isUnlocked 
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                              : 'bg-white/5 text-gray-500 border-white/10'
-                          }`}>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${isUnlocked
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            : 'bg-white/5 text-gray-500 border-white/10'
+                            }`}>
                             {isUnlocked ? 'Desbloquejada' : 'Bloquejada'}
                           </span>
                         </td>
@@ -100,7 +104,7 @@ export default function BadgesPage() {
                 </tbody>
               </table>
             </div>
-            
+
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
               <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">
                 Més insígnies properament... 🎉
@@ -109,6 +113,58 @@ export default function BadgesPage() {
           </div>
         )}
       </div>
+
+      {/* 👈 NOU: POP-UP (MODAL) QUAN CLIQUES UNA INSÍGNIA */}
+      {selectedBadge && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 cursor-pointer"
+          onClick={() => setSelectedBadge(null)}
+        >
+          <div
+            className="bg-[#0c0f1a] border-2 border-indigo-500/30 rounded-[3rem] p-10 max-w-sm w-full text-center shadow-[0_0_80px_rgba(99,102,241,0.3)] relative cursor-default"
+            onClick={(e) => e.stopPropagation()} /* Evita que es tanqui si fas clic al blanc */
+          >
+            <button
+              onClick={() => setSelectedBadge(null)}
+              className="absolute top-6 right-6 text-gray-500 hover:text-white text-2xl bg-transparent border-none cursor-pointer"
+            >
+              ✕
+            </button>
+            {(() => {
+              const bDef = ALL_BADGES.find(b => b.id === selectedBadge);
+              const isUnlocked = badges.includes(selectedBadge);
+              return (
+                <div className="flex flex-col items-center">
+                  <div className={`w-40 h-40 mb-8 relative rounded-2xl overflow-hidden shadow-2xl border-4 ${isUnlocked ? 'border-yellow-500' : 'border-gray-700'}`}>
+                    {/* Brillo darrere si està desbloquejada */}
+                    {isUnlocked && <div className="absolute inset-0 bg-yellow-500/30 blur-2xl animate-pulse z-0" />}
+
+                    <img
+                      src={bDef?.image || '/badges/default.jpeg'}
+                      alt={selectedBadge}
+                      className={`w-full h-full object-cover relative z-10 hover:scale-110 transition-transform duration-500 ${!isUnlocked ? 'grayscale opacity-50' : ''}`}
+                    />
+                  </div>
+
+                  <h2 className={`text-3xl font-black uppercase italic tracking-tighter mb-3 ${isUnlocked ? 'text-white' : 'text-gray-400'}`}>
+                    {bDef?.label}
+                  </h2>
+                  <p className="text-indigo-300 text-sm font-bold uppercase tracking-widest mb-8 px-4">
+                    {bDef?.desc}
+                  </p>
+
+                  <div className={`px-8 py-3 rounded-full border mb-2 ${isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-gray-500 border-white/10'}`}>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em]">
+                      {isUnlocked ? '🌟 Desbloquejada' : '🔒 Bloquejada'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
