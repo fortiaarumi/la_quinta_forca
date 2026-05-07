@@ -68,7 +68,8 @@ export async function updateUserStatsAfterGame(
   isWinner: boolean,
   gameType: string = 'classic',
   roundHints: boolean[] = [],
-  totalPlayers: number = 1
+  totalPlayers: number = 1,
+  isLast: boolean = false
 ): Promise<string[]> {
   const profile: Record<string, any> | null = await getUserProfile(uid);
   if (!profile) return [];
@@ -140,11 +141,23 @@ export async function updateUserStatsAfterGame(
   if (updates.totalWins >= 1) checkAndAdd("Lofish the goat");
   if (gameMode === 'estadis' && isWinner) checkAndAdd("Uri Badia");
 
-  // Les 4 Noves Insígnies
+  // Insígnies Especials
   if (gameType === 'battle_royale' && isWinner && totalPlayers > 8) checkAndAdd("Rocha");
-  if (updates.totalWins1vs1 >= 15) checkAndAdd("Duel Joan");
+  if ((updates.totalWins1vs1 || profile.totalWins1vs1 || 0) >= 15) checkAndAdd("Duel Joan");
   if (gameMode === 'cultural' && isWinner) checkAndAdd("Pausu");
   if (updates.hintsRevealed >= 500) checkAndAdd("Muniani");
+
+  // Lògica David Txuc: Ha de tenir puntuació en les 12 combinacions
+  const modes = ['World', 'Catalunya', 'Estadis', 'Cultural'];
+  const times = ['bala', 'normal', 'infinit'];
+  const hasPlayedAll = modes.every(m =>
+    times.every(t => {
+      const field = `bestScore${m}_${t}`;
+      return (updates[field] !== undefined || profile[field] > 0);
+    })
+  );
+  if (hasPlayedAll) checkAndAdd("David Txuc");
+  if (gameType === 'battle_royale' && isLast && totalPlayers > 8) checkAndAdd("Humiliació");
 
   if (earnedNow.length > 0) {
     updates.badges = newBadges;

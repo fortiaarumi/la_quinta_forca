@@ -7,6 +7,7 @@ import GoldButton from '@/components/GoldButton';
 import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
+import { ALL_BADGES } from '@/lib/badges';
 
 interface Props {
   room: Room;
@@ -614,6 +615,21 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="text-white font-black text-xs uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
+                    {player?.badges && player.badges.length > 0 && (
+                      <div className="flex gap-1.5 mt-1">
+                        {player.badges.slice(0, 3).map((bId: string, bi: number) => {
+                          const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                          return (
+                            <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                              <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
+                                {bId}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
                 {guess ? (

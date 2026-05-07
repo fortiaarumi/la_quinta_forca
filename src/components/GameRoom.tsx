@@ -415,34 +415,39 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const actual = room.locations[room.currentRound];
 
     try {
-      // 1. Identificar el país de forma infal·lible (Base de dades gratuïta externa)
-      const getCountryInfo = async (): Promise<{ code: string | null, name: string | null }> => {
-        try {
-          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${actual.lat}&longitude=${actual.lng}&localityLanguage=ca`);
-          const data = await res.json();
-          return { code: data.countryCode || null, name: data.countryName || null };
-        } catch (e) {
-          return { code: null, name: null };
-        }
+      // 1. Obtenim el codi de país de forma nativa amb Google Maps (No falla mai per bloquejos)
+      const getCountryCode = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+          const geocoder = new (google.maps as any).Geocoder();
+          geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
+            if (status === 'OK' && results?.[0]) {
+              const c = results[0].address_components.find((comp: any) => comp.types.includes('country'));
+              resolve(c?.short_name || null);
+            } else {
+              resolve(null);
+            }
+          });
+        });
       };
 
-      const { code } = await getCountryInfo();
+      const code = await getCountryCode();
       let countryData = null;
 
+      // 2. Busquem a la base de dades RestCountries
       if (code) {
         const res = await fetch(`https://restcountries.com/v3.1/alpha/${code}`);
-        const data = await res.json();
-        countryData = Array.isArray(data) ? data[0] : data;
+        if (res.ok) {
+          const data = await res.json();
+          countryData = Array.isArray(data) ? data[0] : data;
+        }
       }
 
-      // 2. Generar opcions de pista (EXCLOENT el nom del país i la capital)
-      const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
-
+      // 3. PISTES PRINCIPALS (Només si tenim país)
       if (countryData && !countryData.status) {
         const currencyKey = countryData.currencies ? Object.keys(countryData.currencies)[0] : null;
         const currency = currencyKey ? countryData.currencies[currencyKey] : null;
 
-        options.push(
+        const options = [
           { type: 'Bandera', value: countryData.flag, imageUrl: countryData.flags?.png },
           { type: 'Continent', value: countryData.continents?.[0] || 'Desconegut' },
           { type: 'Idioma Principal', value: countryData.languages ? Object.values(countryData.languages)[0] as string : 'Desconegut' },
@@ -451,28 +456,32 @@ export default function GameRoom({ roomId, playerId }: Props) {
           { type: 'Fus Horari', value: countryData.timezones?.[0] || 'Desconegut' },
           { type: 'Codi Internet', value: countryData.tld?.[0] || '.com' },
           { type: 'Conducció', value: `Es condueix per la ${countryData.car?.side === 'left' ? 'esquerra ⬅️' : 'dreta ➡️'}` }
-        );
+        ];
+
+        const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut') && !o.value.includes('Desconeguda'));
+
+        if (validOptions.length > 0) {
+          const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
+          await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
+          setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
+          setHasUsedHint(true);
+          setHintLoading(false);
+          return; // Sortim perquè tot ha funcionat perfectament
+        }
       }
 
-      // 3. Pistes de seguretat basades en càlculs (sempre funcionen)
-      options.push(
+      // Si l'ordinador arriba aquí, és perquè estàs enmig de l'oceà o l'API ha fallat, forcem el Catch
+      throw new Error("Sense dades de país");
+
+    } catch (e) {
+      console.error("Emergència de pistes activada:", e);
+      // PISTES D'EMERGÈNCIA FÍSIQUES (Si falla, escull a l'atzar una d'aquestes tres)
+      const fallbacks = [
         { type: 'Hemisferi', value: actual.lat > 0 ? 'Et trobes al Nord ⬆️' : 'Et trobes al Sud ⬇️' },
         { type: 'Latitud', value: `Estàs a ${Math.abs(Math.round(actual.lat))}° de l'Equador` },
         { type: 'Zona Climàtica', value: Math.abs(actual.lat) < 23.5 ? 'Intertropical ☀️' : (Math.abs(actual.lat) < 66.5 ? 'Temperada ⛅' : 'Polar ❄️') }
-      );
-
-      // Triem una pista a l'atzar de la llista final, filtrant possibles errors
-      const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut') && o.type !== 'País');
-      const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
-
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
-      setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
-      setHasUsedHint(true);
-
-    } catch (e) {
-      console.error("Error en el sistema de pistes:", e);
-      // Fallback definitiu basat en coordenades (Zero revelació de país)
-      const finalFallback = { type: 'Dada Física', value: actual.lat > 0 ? "Hemisferi Nord ⬆️" : "Hemisferi Sud ⬇️", isFree: true };
+      ];
+      const finalFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
       await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: finalFallback });
       setCurrentHint(finalFallback.value);
       setHasUsedHint(true);
@@ -569,12 +578,29 @@ export default function GameRoom({ roomId, playerId }: Props) {
       // 1. Agafem la nostra puntuació total
       const myTotalScore = room.totalScores?.[playerId] || 0;
 
-      // 👈 NOU: Calculem si som el guanyador (tenim la puntuació més alta i > 0)
-      const allScores = Object.values(room.totalScores || {});
-      const maxScore = Math.max(...allScores);
-      const isWinner = myTotalScore === maxScore && myTotalScore > 0;
+      // Calculem guanyador i últim
+      const playerEntries = Object.entries(room.players).map(([id, p]) => ({
+        id,
+        score: room.totalScores?.[id] ?? 0,
+        isEliminated: p.isEliminated || false,
+        eliminatedAtRound: p.eliminatedAtRound ?? -1
+      }));
 
-      // 2. Recopilem quants punts hem fet a cadascuna de les 5 rondes
+      const sortedForRank = [...playerEntries].sort((a, b) => {
+        if (room.gameType === 'battle_royale') {
+          if (!a.isEliminated && b.isEliminated) return -1;
+          if (a.isEliminated && !b.isEliminated) return 1;
+          if (a.isEliminated && b.isEliminated) {
+            if (b.eliminatedAtRound !== a.eliminatedAtRound) return b.eliminatedAtRound - a.eliminatedAtRound;
+          }
+        }
+        return b.score - a.score;
+      });
+
+      const isWinner = sortedForRank[0]?.id === playerId && myTotalScore > 0;
+      const isLast = sortedForRank[sortedForRank.length - 1]?.id === playerId;
+
+      // 2. Recopilem dades de les rondes
       const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx =>
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
@@ -592,7 +618,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
         isWinner,
         room.gameType || 'classic',
         myRoundHints,
-        Object.keys(room.players).length
+        Object.keys(room.players).length,
+        isLast
       )
         .then((newBadges) => {
           console.log('Estadístiques guardades amb èxit!');

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import LobbyChat from './LobbyChat';
 import { useRouter } from 'next/navigation';
+import { ALL_BADGES } from '@/lib/badges';
 
 interface Props {
   room: Room;
@@ -26,7 +27,7 @@ export default function LobbyScreen({
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [showHostMessage, setShowHostMessage] = useState(false);
-  
+
   useEffect(() => {
     if (room.hostId === playerId && !isHost) {
       setShowHostMessage(true);
@@ -176,8 +177,18 @@ export default function LobbyScreen({
                 <div className="flex flex-col">
                   <span className="font-black text-sm uppercase tracking-tight">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
                   {player.badges && player.badges.length > 0 && (
-                    <div className="flex gap-1 mt-1">
-                      {player.badges.slice(0, 2).map((b, bi) => <span key={bi} className="text-[7px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>)}
+                    <div className="flex gap-2 mt-2">
+                      {player.badges.slice(0, 3).map((bId: string, bi: number) => {
+                        const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                        return (
+                          <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                            <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                              {bId}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -253,8 +264,8 @@ export default function LobbyScreen({
                 onClick={onStart}
                 disabled={!canStart}
                 className={`w-full py-6 rounded-[2rem] text-xl font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-20
-                  ${canStart 
-                    ? 'bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)]' 
+                  ${canStart
+                    ? 'bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)]'
                     : 'bg-white/10 text-gray-500'}`}
               >
                 {isGenerating ? '⌛ GENERANT...' : !mapsReady ? '⌛ CARREGANT...' : players.length < 2 ? '⏳ ESPERANT JUGADORS...' : '🚀 COMENÇAR PARTIDA'}

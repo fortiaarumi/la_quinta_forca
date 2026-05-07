@@ -5,6 +5,7 @@ import { ref, get, query, orderByChild, limitToLast } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { useRouter } from 'next/navigation';
+import { ALL_BADGES } from '@/lib/badges';
 
 interface UserStats {
   uid: string;
@@ -51,14 +52,14 @@ export default function StatsPage() {
               data.push({ uid: child.key, ...val });
             }
           });
-          
+
           // Ordenació manual extra per seguretat (Firebase a vegades és lent amb índexs nous)
           data.sort((a, b) => {
             const scoreA = a[field] ?? 0;
             const scoreB = b[field] ?? 0;
             return scoreB - scoreA;
           });
-          
+
           setRanking(data);
         } else {
           setRanking([]);
@@ -154,11 +155,25 @@ export default function StatsPage() {
                               {player.nickname}
                               {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
                             </div>
-                            <div className="flex flex-wrap gap-1 mt-0.5">
-                              {user?.uid === player.uid && <span className="text-[8px] bg-emerald-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">Tu</span>}
-                              {player.badges && player.badges.map((b: string, bi: number) => (
-                                <span key={bi} className="text-[8px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>
-                              ))}
+                            <div className="flex flex-wrap gap-2 mt-0.5 items-center">
+                              {user?.uid === player.uid && <span className="text-[8px] bg-emerald-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter h-fit">Tu</span>}
+                              {player.badges && player.badges.map((bId: string, bi: number) => {
+                                const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                                return (
+                                  <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                                    {/* Imatge de la insígnia */}
+                                    <img
+                                      src={badgeDef?.image || '/badges/default.png'}
+                                      alt={bId}
+                                      className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform"
+                                    />
+                                    {/* Tooltip flotant que apareix en passar el ratolí o clicar al mòbil */}
+                                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
+                                      {bId}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         </div>

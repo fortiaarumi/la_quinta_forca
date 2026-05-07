@@ -9,6 +9,7 @@ import { Room } from '@/lib/types';
 import { useAudio } from '@/lib/AudioContext';
 import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
+import { ALL_BADGES } from '@/lib/badges';
 
 interface Props {
   roomId: string;
@@ -265,10 +266,24 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                         {!p.isEliminated && room.gameType === 'battle_royale' && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.5)]">SUPERVIVENT</span>}
                       </div>
                       {room.players[p.id]?.badges && room.players[p.id].badges!.length > 0 && (
-                        <div className="flex gap-1 mb-1">
-                          {room.players[p.id].badges!.map((b, bi) => (
-                            <span key={bi} className="text-[8px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter">🏅 {b}</span>
-                          ))}
+                        <div className="flex gap-2 mb-1 mt-1">
+                          {room.players[p.id].badges!.map((bId, bi) => {
+                            const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                            return (
+                              <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                                {/* La Foto */}
+                                <img
+                                  src={badgeDef?.image || '/badges/default.png'}
+                                  alt={bId}
+                                  className="w-6 h-6 object-contain drop-shadow-lg group-hover:scale-125 transition-transform"
+                                />
+                                {/* El Tooltip Flotant */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[10px] font-black uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                  {bId}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                       {isMe && <div className="text-xs text-gray-400">Tu</div>}

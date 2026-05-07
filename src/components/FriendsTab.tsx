@@ -5,6 +5,7 @@ import { ref, onValue, push, serverTimestamp, update, get } from 'firebase/datab
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { getUserByEmail, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
+import { ALL_BADGES } from '@/lib/badges';
 
 interface FriendData {
   uid: string;
@@ -36,7 +37,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [friends, setFriends] = useState<FriendData[]>([]);
   const [requests, setRequests] = useState<RequestData[]>([]);
-  
+
   // Vídeo de la pestanya d'amics
   const [friendVideo, setFriendVideo] = useState({ url: '/Rochaesquiant.mp4', caption: 'Vídeo del dia' });
 
@@ -47,7 +48,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { 
+  useEffect(() => {
     const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
       if (snap.exists()) {
         const data = snap.val();
@@ -64,13 +65,13 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   useEffect(() => {
     if (!user || isGuest) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
-    
+
     const unsubFriends = onValue(friendsRef, (snap) => {
       if (!snap.exists()) {
         setFriends([]);
         return;
       }
-      
+
       const friendUids = Object.keys(snap.val());
       const unsubList: (() => void)[] = [];
       const friendsMap = new Map();
@@ -93,7 +94,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
 
       return () => unsubList.forEach(u => u());
     });
-    
+
     return () => unsubFriends();
   }, [user, isGuest]);
 
@@ -106,7 +107,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
         setRequests([]);
         return;
       }
-      
+
       const reqUids = Object.keys(snap.val());
       const reqData = await Promise.all(reqUids.map(async (uid) => {
         const uSnap = await get(ref(db, `users/${uid}/nickname`));
@@ -145,7 +146,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
     if (!openChatFriend || !user) return;
     const chatId = getChatId(user.uid, openChatFriend.uid);
     const msgsRef = ref(db, `chats/${chatId}/messages`);
-    
+
     const unsub = onValue(msgsRef, (snap) => {
       if (!snap.exists()) { setChatMessages([]); return; }
       const msgs: ChatMessage[] = [];
@@ -153,7 +154,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
         msgs.push({ id: child.key!, ...child.val() });
       });
       setChatMessages(msgs);
-      
+
       // Marcar com llegits els missatges rebuts
       snap.forEach(child => {
         const m = child.val();
@@ -217,17 +218,17 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
 
   return (
     <div className="animate-fade-in-up">
-      
+
       {/* Afegir Amic */}
       <div className="flex gap-2 mb-4">
-        <input 
-          type="email" 
+        <input
+          type="email"
           value={emailInput}
           onChange={(e) => setEmailInput(e.target.value)}
           placeholder="Correu electrònic de l'amic..."
           className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
         />
-        <button 
+        <button
           onClick={handleAddFriend}
           className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition-all active:scale-95 text-sm"
         >
@@ -269,18 +270,34 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
               <div key={friend.uid} className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl p-3 transition-colors hover:bg-white/5">
                 <div className="flex items-center gap-3">
                   <div className={`w-2.5 h-2.5 rounded-full shadow-lg ${friend.status === 'online' ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-pulse' : 'bg-gray-600'}`}></div>
-                  <span className="text-white font-bold">{friend.nickname}</span>
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold">{friend.nickname}</span>
+                    {(friend as any).badges && (friend as any).badges.length > 0 && (
+                      <div className="flex gap-1.5 mt-0.5">
+                        {(friend as any).badges.slice(0, 3).map((bId: string, bi: number) => {
+                          const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                          return (
+                            <div key={bi} className="group relative flex items-center justify-center cursor-pointer">
+                              <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-3.5 h-3.5 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
+                                {bId}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                   <div className="text-[10px] uppercase font-black tracking-widest text-gray-500">
                     {friend.status === 'online' ? <span className="text-emerald-400">En línia</span> : 'Desconnectat'}
                   </div>
                 </div>
                 <button
                   onClick={() => setOpenChatFriend(openChatFriend?.uid === friend.uid ? null : friend)}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                    openChatFriend?.uid === friend.uid
-                      ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]'
-                      : 'bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300'
-                  }`}
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${openChatFriend?.uid === friend.uid
+                    ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.4)]'
+                    : 'bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300'
+                    }`}
                 >
                   💬 Xat
                   {(unreadCounts[friend.uid] || 0) > 0 && (
@@ -323,11 +340,10 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
                 const isMe = m.from === user?.uid;
                 return (
                   <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm break-words ${
-                      isMe
-                        ? 'bg-indigo-600 text-white rounded-br-md'
-                        : 'bg-white/10 text-gray-200 rounded-bl-md'
-                    }`}>
+                    <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm break-words ${isMe
+                      ? 'bg-indigo-600 text-white rounded-br-md'
+                      : 'bg-white/10 text-gray-200 rounded-bl-md'
+                      }`}>
                       {!isMe && (
                         <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">{openChatFriend.nickname}</p>
                       )}
@@ -376,7 +392,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
           </div>
         </div>
       </div>
-      
+
     </div>
   );
 }

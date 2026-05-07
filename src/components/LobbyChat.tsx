@@ -102,8 +102,8 @@ export default function LobbyChat({ roomId, playerId, room }: Props) {
                                     </div>
                                     <div
                                         className={`px-3 py-2 rounded-2xl text-sm shadow-md break-words w-full ${isMe
-                                                ? 'bg-indigo-600 text-white rounded-tr-sm'
-                                                : 'bg-gray-700 text-gray-200 rounded-tl-sm'
+                                            ? 'bg-indigo-600 text-white rounded-tr-sm'
+                                            : 'bg-gray-700 text-gray-200 rounded-tl-sm'
                                             }`}
                                     >
                                         {msg.text}
