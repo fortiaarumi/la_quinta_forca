@@ -1,11 +1,12 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/authContext';
 import GameRoom from '@/components/GameRoom';
 
 export default function RoomPage() {
   const params = useParams();
+  const router = useRouter();
   const roomId = params.roomId as string;
   const { user, isGuest, loading } = useAuth();
 
@@ -22,7 +23,7 @@ export default function RoomPage() {
 
   // Si no hi ha usuari ni és convidat, alguna cosa ha anat malament, tornem a inici
   if (!user && !isGuest) {
-    window.location.href = '/';
+    router.push('/');
     return null;
   }
 

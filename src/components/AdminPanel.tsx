@@ -5,10 +5,12 @@ import { ref, get, set, update, onValue, remove } from 'firebase/database';
 import { db, auth } from '@/lib/firebase'; // 👈 AFEGIT: auth
 import { sendPasswordResetEmail } from 'firebase/auth'; // 👈 AFEGIT: Enviar correus
 import { useAuth } from '@/lib/authContext';
+import { useRouter } from 'next/navigation';
 
 type AdminTab = 'users' | 'rooms' | 'app';
 
 export default function AdminPanel() {
+  const router = useRouter();
   const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('app');
   
@@ -200,7 +202,7 @@ export default function AdminPanel() {
             <div className="text-emerald-400 text-[10px] font-black tracking-[0.3em] uppercase mb-1">Centre de Comandament</div>
             <h1 className="text-4xl font-black tracking-tight">Panell d&apos;Admin 👑</h1>
           </div>
-          <button onClick={() => window.location.href = '/'} className="bg-white/10 hover:bg-white/20 px-5 py-2 rounded-xl text-sm font-bold transition-all">
+          <button onClick={() => router.push('/')} className="bg-white/10 hover:bg-white/20 px-5 py-2 rounded-xl text-sm font-bold transition-all">
             Sortir de l&apos;Admin
           </button>
         </div>

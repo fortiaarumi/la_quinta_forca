@@ -11,7 +11,7 @@ import { getUserProfile } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
-import { useAudio } from '@/lib/AudioContext';
+import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 
 // Per a convidats: manté el localStorage ID
@@ -515,6 +515,63 @@ export default function HomeScreen() {
     </div>
   );
 
+  const TrackPlayer = ({ trackUrl, trackName }: { trackUrl: string, trackName: string }) => {
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [duration, setDuration] = useState<number | null>(null);
+    const { isMuted, stopAllMusic } = useAudio();
+
+    useEffect(() => {
+      const audio = new Audio(trackUrl);
+      audioRef.current = audio;
+      audio.onloadedmetadata = () => setDuration(audio.duration);
+      audio.onended = () => setIsPlaying(false);
+      return () => {
+        audio.pause();
+      };
+    }, [trackUrl]);
+
+    useEffect(() => {
+      if (audioRef.current) audioRef.current.muted = isMuted;
+    }, [isMuted]);
+
+    const togglePlay = () => {
+      if (!audioRef.current) return;
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        stopAllMusic();
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    };
+
+    const formatDuration = (d: number | null) => {
+      if (!d) return '--:--';
+      const m = Math.floor(d / 60);
+      const s = Math.floor(d % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    };
+
+    return (
+      <div className="flex items-center justify-between bg-white/5 border border-white/10 px-4 py-3 rounded-2xl hover:bg-white/10 transition-colors">
+        <div className="flex items-center gap-3">
+          <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center cursor-pointer border-none hover:scale-110 active:scale-95 transition-transform">
+            {isPlaying ? '⏸️' : '▶️'}
+          </button>
+          <div className="flex flex-col text-left">
+            <span className="text-sm font-bold text-white">{trackName}</span>
+            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{formatDuration(duration)}</span>
+          </div>
+        </div>
+        <a href={trackUrl} download className="bg-white/10 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider hover:bg-white/20 transition-colors border border-white/5 no-underline cursor-pointer">
+          ↓ MP3
+        </a>
+      </div>
+    );
+  };
+
   return (
     <main className="min-h-screen bg-[#06080f] text-white selection:bg-yellow-500/30 overflow-hidden relative">
       {/* Background Decor */}
@@ -536,13 +593,6 @@ export default function HomeScreen() {
           </div>
 
           <div className="flex items-center gap-6">
-            <button 
-              onClick={toggleMute}
-              className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-xl"
-            >
-              <span className="text-xl">{isMuted ? '🔇' : '🔊'}</span>
-            </button>
-
             {user && (
               <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2 pr-6 rounded-full shadow-2xl backdrop-blur-md">
                 <div className="relative">
@@ -656,6 +706,42 @@ export default function HomeScreen() {
                   {user && !isGuest && (
                     <button onClick={() => setActiveMenu('friends')} className="text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors">Veure Amics →</button>
                   )}
+                </div>
+              </div>
+
+              {/* Secció Banda Sonora (Music Player) */}
+              <div className="lg:col-span-12 mt-8 w-full animate-slide-up">
+                <div className="bg-[#0c0f1a] border border-white/10 rounded-[3rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg animate-pulse">🎵</div>
+                      <div>
+                        <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">Banda Sonora Original</h3>
+                        <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em]">Escolta i descarrega els temes de La Quinta Forca</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 mb-2 ml-2">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <h4 className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Música de Menú</h4>
+                      </div>
+                      {MENU_TRACKS.map((url, i) => (
+                        <TrackPlayer key={url} trackUrl={url} trackName={`Menú BGM ${i + 1}`} />
+                      ))}
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2 mb-2 ml-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h4 className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">Música de Joc</h4>
+                      </div>
+                      {GAME_TRACKS.map((url, i) => (
+                        <TrackPlayer key={url} trackUrl={url} trackName={`Joc BGM ${i + 1}`} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -973,10 +1059,10 @@ export default function HomeScreen() {
             <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center text-4xl shadow-2xl animate-bounce text-black">✉️</div>
             <div>
               <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.3em] mb-2">Convidat a jugar!</p>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{activeInvite.from}</h3>
+              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{activeInvite?.from}</h3>
               <div className="flex gap-3 mt-5">
                 <button onClick={acceptInvite} className="bg-white text-indigo-600 px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-xl cursor-pointer border-none">Jugar ara</button>
-                <button onClick={async () => { await remove(ref(db, `users/${user!.uid}/invites/${activeInvite.roomId}`)); setActiveInvite(null); }} className="bg-black/20 text-indigo-200 px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black/40 transition-all cursor-pointer border-none">Refusar</button>
+                <button onClick={async () => { if (activeInvite) await remove(ref(db, `users/${user!.uid}/invites/${activeInvite.roomId}`)); setActiveInvite(null); }} className="bg-black/20 text-indigo-200 px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-black/40 transition-all cursor-pointer border-none">Refusar</button>
               </div>
             </div>
           </div>
@@ -989,10 +1075,10 @@ export default function HomeScreen() {
             <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center text-4xl shadow-2xl">🤝</div>
             <div>
               <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">Petició d&apos;amistat</p>
-              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{activeFriendReq.nickname}</h3>
+              <h3 className="text-2xl font-black uppercase italic tracking-tighter text-white">{activeFriendReq?.nickname}</h3>
               <div className="flex gap-3 mt-5">
-                <button onClick={async () => { await acceptFriendRequest(user!.uid, activeFriendReq.uid); setActiveFriendReq(null); }} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-xl cursor-pointer border-none">Acceptar</button>
-                <button onClick={async () => { await rejectFriendRequest(user!.uid, activeFriendReq.uid); setActiveFriendReq(null); }} className="bg-white/5 text-gray-500 px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all cursor-pointer border-none">Ignorar</button>
+                <button onClick={async () => { if (activeFriendReq) await acceptFriendRequest(user!.uid, activeFriendReq.uid); setActiveFriendReq(null); }} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-xl cursor-pointer border-none">Acceptar</button>
+                <button onClick={async () => { if (activeFriendReq) await rejectFriendRequest(user!.uid, activeFriendReq.uid); setActiveFriendReq(null); }} className="bg-white/5 text-gray-500 px-8 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all cursor-pointer border-none">Ignorar</button>
               </div>
             </div>
           </div>
@@ -1004,8 +1090,8 @@ export default function HomeScreen() {
           <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-full px-8 py-4 shadow-2xl flex items-center gap-6">
             <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
             <p className="text-sm font-bold tracking-tight text-white">
-              <span className="text-indigo-400 uppercase font-black mr-3 italic tracking-widest">{chatToast.from}:</span>
-              {chatToast.text}
+              <span className="text-indigo-400 uppercase font-black mr-3 italic tracking-widest">{chatToast?.from}:</span>
+              {chatToast?.text}
             </p>
           </div>
         </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
@@ -38,6 +39,7 @@ const getTimeSettings = (mode?: string) => {
 
 
 export default function GameRoom({ roomId, playerId }: Props) {
+  const router = useRouter();
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +177,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     if (playerIds.length <= 1) {
       // Únic jugador: eliminem la sala
       await set(roomRef, null);
-      window.location.href = '/';
+      router.push('/');
       return;
     }
 
@@ -201,8 +203,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
     };
 
     await update(roomRef, updates);
-    window.location.href = '/';
-  }, [room, roomId, playerId, isHost]);
+    router.push('/');
+  }, [room, roomId, playerId, isHost, router]);
 
   // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
@@ -555,12 +557,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const distBcn = haversineDistance(actual.lat, actual.lng, 41.3870, 2.1700);
         options.push({ type: 'Distància a Barcelona', value: `A ${(distBcn).toFixed(2)} km de Barcelona (Pl. Catalunya)` });
 
-        const coastPoints = [
-          { lat: 42.426, lng: 3.159 }, { lat: 41.844, lng: 3.129 }, { lat: 41.378, lng: 2.192 },
-          { lat: 41.116, lng: 1.250 }, { lat: 40.618, lng: 0.593 }
-        ];
-        const minCoastDist = Math.min(...coastPoints.map(p => haversineDistance(actual.lat, actual.lng, p.lat, p.lng)));
-        options.push({ type: 'Geografia', value: minCoastDist < 15 ? 'És un municipi proper a la costa' : 'És un municipi d\'interior' });
+
 
         const distAndorra = haversineDistance(actual.lat, actual.lng, 42.506, 1.521);
         const distFranca = Math.min(
