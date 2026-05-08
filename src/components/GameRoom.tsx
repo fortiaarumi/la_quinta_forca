@@ -89,14 +89,20 @@ export default function GameRoom({ roomId, playerId }: Props) {
     alertaRef.current = new Audio('/sounds/alerta.mp3');
   }, []);
 
+  const prevGameStateRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
     if (!room) return;
-    if (room.gameState === 'playing' || room.gameState === 'roundResults') {
+    const gs = room.gameState;
+    if (gs === prevGameStateRef.current) return; // Evitem re-fires per refs estables
+    prevGameStateRef.current = gs;
+    if (gs === 'playing' || gs === 'roundResults') {
       playGameMusic();
-    } else if (room.gameState === 'finished') {
+    } else if (gs === 'finished') {
       playMenuMusic();
     }
-  }, [room?.gameState, playGameMusic, playMenuMusic]);
+  }, [room?.gameState]); // INTENCIONAL: playGameMusic/playMenuMusic exclosos per evitar bucle infinit
+
   // ───────────────────────────────────
 
   useEffect(() => {
@@ -959,7 +965,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
           <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
-            Ronda {room.currentRound + 1} / 5
+            {room.gameType === '1vs1'
+              ? `Ronda ${room.currentRound + 1}`
+              : room.gameType === 'battle_royale'
+              ? `Ronda ${room.currentRound + 1} (${Object.keys(room.players).length} jugadors)`
+              : `Ronda ${room.currentRound + 1} / 5`}
           </div>
           {room.gameMode === 'catalunya' && (
             <div className="bg-red-600/20 border border-red-500/40 text-red-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">

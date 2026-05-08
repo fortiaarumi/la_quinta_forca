@@ -747,7 +747,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               {combatStage !== 'done' ? '⚔️ Lluitant...' : (
                 !!room.tieBreak || showRoulette ? '⏳ Resolent Empat...' :
                   (room.gameType === 'battle_royale' && Object.values(room.players).filter(p => !p.isEliminated).length <= 1) ||
-                    (room.gameType === '1vs1' && Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0))
+                    (room.gameType === '1vs1' && Object.keys(room.players).some(pid => (room.players[pid]?.health ?? 10000) <= 0)) ||
+                    (!room.gameType || room.gameType === 'classic') && round >= 4
                     ? '🏆 Mostrar Resultats Finals' : 'Ronda Següent →'
               )}
             </button>
