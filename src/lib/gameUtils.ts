@@ -20,8 +20,12 @@ export function calculateScore(distanceKm: number, mode: string = 'world'): numb
 
   if (distanceKm <= 0.05) return 5000;
 
-  if (mode === 'catalunya' || mode === 'pixapins') {
-    // Escala per a Catalunya i Barcelona: La caiguda de punts és molt ràpida (divisor 30)
+  if (mode === 'pixapins') {
+    // Escala per a Barcelona: La caiguda de punts és moltíssim més ràpida (divisor 3)
+    const score = Math.round(5000 * Math.exp(-distanceKm / 3));
+    return Math.max(0, Math.min(5000, score));
+  } else if (mode === 'catalunya') {
+    // Escala per a Catalunya: La caiguda de punts és molt ràpida (divisor 30)
     const score = Math.round(5000 * Math.exp(-distanceKm / 30));
     return Math.max(0, Math.min(5000, score));
   } else {

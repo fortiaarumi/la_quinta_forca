@@ -133,7 +133,14 @@ export async function updateUserStatsAfterGame(
   }
 
   // 4. LÒGICA D'INSÍGNIES (Automàtica)
-  const currentBadges = profile.badges || [];
+  const ALL_BADGE_IDS = [
+    "Vinicius Blanc", "Franctirador", "Catalayudd", "Vinicius Butanero", 
+    "Lofish the goat", "Uri Badia", "Rocha", "Duel Joan", "Pausu", 
+    "Muniani", "David Txuc", "Humiliació"
+  ];
+  
+  // Netejem possibles insígnies antigues que l'usuari tingués guardades
+  const currentBadges = (profile.badges || []).filter((b: string) => ALL_BADGE_IDS.includes(b));
   const newBadges = [...currentBadges];
   const earnedNow: string[] = [];
 
@@ -144,10 +151,10 @@ export async function updateUserStatsAfterGame(
     }
   };
 
-  if (updates.totalGames >= 10) checkAndAdd("Brúixola d'Or");
+  if (updates.totalGames >= 10) checkAndAdd("Vinicius Blanc");
   if (roundScores.some((s, idx) => s >= 5000 && !roundHints[idx])) checkAndAdd("Franctirador");
   if (gameMode === 'catalunya' && isWinner) checkAndAdd("Catalayudd");
-  if (updates.totalWins >= 50) checkAndAdd("Llegendari");
+  if (updates.totalWins >= 50) checkAndAdd("Vinicius Butanero");
   if (updates.totalWins >= 1) checkAndAdd("Lofish the goat");
   if (gameMode === 'estadis' && isWinner) checkAndAdd("Uri Badia");
 

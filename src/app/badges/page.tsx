@@ -82,16 +82,16 @@ export default function BadgesPage() {
                         onClick={() => setSelectedBadge(b.id)} // 👈 Clic a tota la fila obre el pop-up
                       >
                         <td className="p-5">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all overflow-hidden relative ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
                             {/* IMATGE DE LA INSÍGNIA */}
                             <img
                               src={b.image || '/badges/default.jpeg'}
                               alt={b.id}
-                              className={`w-full h-full object-cover transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
+                              className={`w-full h-full object-cover rounded-2xl transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
                             />
                             {/* XINXETA (Si està fixada) */}
                             {profile?.selectedBadges?.includes(b.id) && (
-                              <div className="absolute top-1 right-1 bg-yellow-500 text-black rounded-full p-1 shadow-md z-10 w-4 h-4 flex items-center justify-center">
+                              <div className="absolute -top-2 -right-2 bg-yellow-500 text-black rounded-full p-1 shadow-md z-10 w-6 h-6 flex items-center justify-center text-xs">
                                 📌
                               </div>
                             )}

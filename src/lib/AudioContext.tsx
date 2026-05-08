@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode, useCallback } from 'react';
 
 interface AudioContextType {
   playMenuMusic: () => void;
@@ -18,9 +18,32 @@ interface AudioContextType {
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
+const MENU_TRACKS = [
+  '/sounds/menu-bgm.mp3', '/sounds/menu-bgm2.mp3', '/sounds/menu-bgm3.mp3',
+  '/sounds/menu-bgm4.mp3', '/sounds/menu-bgm5.mp3', '/sounds/menu-bgm6.mp3'
+];
+const GAME_TRACKS = [
+  '/sounds/game-bgm.mp3', '/sounds/game-bgm2.mp3', '/sounds/game-bgm3.mp3',
+  '/sounds/game-bgm4.mp3', '/sounds/game-bgm5.mp3', '/sounds/game-bgm6.mp3'
+];
+
+// Funció per barrejar aleatòriament els arrays (Fisher-Yates)
+const shuffleArray = (array: string[]) => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
+
 export function AudioProvider({ children }: { children: ReactNode }) {
-  const menuAudioRef = useRef<HTMLAudioElement | null>(null);
-  const gameAudioRef = useRef<HTMLAudioElement | null>(null);
+  // PING-PONG per crossfading (dos reproductors)
+  const bgmPlayerA = useRef<HTMLAudioElement | null>(null);
+  const bgmPlayerB = useRef<HTMLAudioElement | null>(null);
+  const activePlayer = useRef<'A' | 'B'>('A');
+
+  // Efectes de so
   const celebrationRef = useRef<HTMLAudioElement | null>(null);
   const decepcionRef = useRef<HTMLAudioElement | null>(null);
   const siuRef = useRef<HTMLAudioElement | null>(null);
@@ -28,6 +51,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+
+  // Playlists no reproduïdes (per evitar repeticions)
+  const unplayedMenu = useRef<string[]>([]);
+  const unplayedGame = useRef<string[]>([]);
+
+  // Estats interns
+  const currentCategory = useRef<'menu' | 'game' | 'none'>('none');
+  const isTransitioning = useRef(false);
+  const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Llegim de sessionStorage al carregar
   useEffect(() => {
@@ -37,52 +69,82 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Actualitzem sessionStorage quan canvia l'estat
   const handleSetInteracted = (val: boolean) => {
     setHasInteracted(val);
     sessionStorage.setItem('geoAudioInteracted', String(val));
   };
 
-  // Inicialitzem els àudios només quan carregui el navegador (client-side)
-  useEffect(() => {
-    menuAudioRef.current = new Audio('/sounds/menu-bgm.mp3');
-    menuAudioRef.current.loop = true;
-    menuAudioRef.current.volume = 0.3; // Volum suau pel menú
+  const getNextTrack = (category: 'menu' | 'game') => {
+    const listRef = category === 'menu' ? unplayedMenu : unplayedGame;
+    const baseTracks = category === 'menu' ? MENU_TRACKS : GAME_TRACKS;
 
-    gameAudioRef.current = new Audio('/sounds/game-bgm.mp3');
-    gameAudioRef.current.loop = true;
-    gameAudioRef.current.volume = 0.4; // Una mica més fort per l'acció
+    if (listRef.current.length === 0) {
+      listRef.current = shuffleArray(baseTracks);
+    }
+    return listRef.current.pop() as string;
+  };
 
-    celebrationRef.current = new Audio('/sounds/celebracio.mp3');
-    celebrationRef.current.volume = 0.6;
+  const initPlayers = useCallback(() => {
+    if (!bgmPlayerA.current) {
+      bgmPlayerA.current = new Audio();
+      bgmPlayerB.current = new Audio();
+      
+      celebrationRef.current = new Audio('/sounds/celebracio.mp3');
+      celebrationRef.current.volume = 0.6;
+      decepcionRef.current = new Audio('/sounds/decepcio.mp3');
+      decepcionRef.current.volume = 0.6;
+      siuRef.current = new Audio('/sounds/siu.mp3');
+      siuRef.current.volume = 0.8;
+      riureRef.current = new Audio('/sounds/riure.mp3');
+      riureRef.current.volume = 0.6;
 
-    decepcionRef.current = new Audio('/sounds/decepcio.mp3');
-    decepcionRef.current.volume = 0.6;
-
-    siuRef.current = new Audio('/sounds/siu.mp3');
-    siuRef.current.volume = 0.8;
-
-    riureRef.current = new Audio('/sounds/riure.mp3');
-    riureRef.current.volume = 0.6;
+      // Quan una cançó s'acaba, reproduir la següent del mateix tipus
+      const onEnded = () => {
+        if (currentCategory.current !== 'none') {
+          playCategory(currentCategory.current, true);
+        }
+      };
+      
+      bgmPlayerA.current.onended = onEnded;
+      bgmPlayerB.current.onended = onEnded;
+    }
   }, []);
+
+  useEffect(() => {
+    initPlayers();
+  }, [initPlayers]);
 
   // Actualitza el volum si mutegem
   useEffect(() => {
-    if (menuAudioRef.current) menuAudioRef.current.muted = isMuted;
-    if (gameAudioRef.current) gameAudioRef.current.muted = isMuted;
-    if (celebrationRef.current) celebrationRef.current.muted = isMuted;
-    if (decepcionRef.current) decepcionRef.current.muted = isMuted;
-    if (siuRef.current) siuRef.current.muted = isMuted;
-    if (riureRef.current) riureRef.current.muted = isMuted;
+    const applyMute = (audio: HTMLAudioElement | null) => { if (audio) audio.muted = isMuted; };
+    
+    applyMute(bgmPlayerA.current);
+    applyMute(bgmPlayerB.current);
+    applyMute(celebrationRef.current);
+    applyMute(decepcionRef.current);
+    applyMute(siuRef.current);
+    applyMute(riureRef.current);
+
+    // Si desmutegem, restaurem el volum objectiu ràpidament si estem reproduint
+    if (!isMuted && !isTransitioning.current && currentCategory.current !== 'none') {
+      const active = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+      if (active) {
+        active.volume = currentCategory.current === 'menu' ? 0.3 : 0.4;
+      }
+    }
   }, [isMuted]);
 
-  // 👈 AFEGIT: Escoltar events globals per parar i reprendre la música quan hi ha un 5K
+  // Escoltar events globals per parar i reprendre la música quan hi ha un 5K o altres coses
   useEffect(() => {
     const pauseMusic = () => {
-      if (gameAudioRef.current) gameAudioRef.current.pause();
+      const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+      if (player) player.pause();
     };
     const resumeMusic = () => {
-      if (gameAudioRef.current && !isMuted) gameAudioRef.current.play().catch(e => console.log(e));
+      if (!isMuted) {
+        const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+        player?.play().catch(e => console.log(e));
+      }
     };
 
     window.addEventListener('pauseBackgroundMusic', pauseMusic);
@@ -94,63 +156,95 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
   }, [isMuted]);
 
-  const playMenuMusic = () => {
-    if (gameAudioRef.current) {
-      gameAudioRef.current.pause();
-      gameAudioRef.current.currentTime = 0; // Tornem al principi
+  const crossfade = (newSrc: string, targetVolume: number) => {
+    if (!bgmPlayerA.current || !bgmPlayerB.current) return;
+
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
     }
-    if (menuAudioRef.current && menuAudioRef.current.paused && hasInteracted) {
-      menuAudioRef.current.play().catch(e => console.log("Esperant interacció de l'usuari...", e));
-    }
+
+    const fadeOutPlayer = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+    const fadeInPlayer = activePlayer.current === 'A' ? bgmPlayerB.current : bgmPlayerA.current;
+    
+    // Canviem l'identificador del reproductor actiu
+    activePlayer.current = activePlayer.current === 'A' ? 'B' : 'A';
+    isTransitioning.current = true;
+
+    fadeInPlayer.src = newSrc;
+    fadeInPlayer.volume = 0;
+    fadeInPlayer.muted = isMuted;
+    fadeInPlayer.play().catch(e => console.log("Play failed:", e));
+
+    const steps = 30; // 30 passos de 50ms = 1.5 segons de transició
+    let currentStep = 0;
+    const initialFadeOutVol = fadeOutPlayer.volume;
+
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      
+      // Fade out de l'antiga
+      if (!fadeOutPlayer.paused) {
+        fadeOutPlayer.volume = Math.max(0, initialFadeOutVol * (1 - currentStep / steps));
+      }
+
+      // Fade in de la nova
+      if (!isMuted) {
+        fadeInPlayer.volume = targetVolume * (currentStep / steps);
+      } else {
+        fadeInPlayer.volume = 0;
+      }
+
+      if (currentStep >= steps) {
+        if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+        fadeOutPlayer.pause();
+        fadeOutPlayer.currentTime = 0;
+        isTransitioning.current = false;
+      }
+    }, 50);
   };
 
-  const playGameMusic = () => {
-    if (menuAudioRef.current) {
-      menuAudioRef.current.pause();
+  const playCategory = (category: 'menu' | 'game', forceNext = false) => {
+    if (!hasInteracted) return;
+
+    // Si ja estem reproduint la categoria correcta i no ens han obligat a saltar, no fem res (persistència)
+    if (!forceNext && currentCategory.current === category) {
+      // Però ens assegurem que realment estigui reproduint (ex: l'usuari potser havia pausat o el navegador ha intervingut)
+      const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+      if (player && player.paused) {
+        player.play().catch(e => console.log("Restarting paused track", e));
+      }
+      return;
     }
-    if (gameAudioRef.current && gameAudioRef.current.paused && hasInteracted) {
-      gameAudioRef.current.play().catch(e => console.log("Esperant interacció...", e));
-    }
+
+    currentCategory.current = category;
+    const nextTrack = getNextTrack(category);
+    const targetVolume = category === 'menu' ? 0.3 : 0.4;
+    crossfade(nextTrack, targetVolume);
   };
+
+  const playMenuMusic = () => playCategory('menu');
+  const playGameMusic = () => playCategory('game');
 
   const stopAllMusic = () => {
-    if (menuAudioRef.current) {
-      menuAudioRef.current.pause();
-      menuAudioRef.current.currentTime = 0;
-    }
-    if (gameAudioRef.current) {
-      gameAudioRef.current.pause();
-      gameAudioRef.current.currentTime = 0;
+    currentCategory.current = 'none';
+    if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
+    isTransitioning.current = false;
+    
+    if (bgmPlayerA.current) { bgmPlayerA.current.pause(); bgmPlayerA.current.currentTime = 0; }
+    if (bgmPlayerB.current) { bgmPlayerB.current.pause(); bgmPlayerB.current.currentTime = 0; }
+  };
+
+  const playSFX = (ref: React.MutableRefObject<HTMLAudioElement | null>) => {
+    if (ref.current && hasInteracted) {
+      ref.current.currentTime = 0;
+      ref.current.play().catch(e => console.log(e));
     }
   };
 
-  const playCelebration = () => {
-    if (celebrationRef.current && hasInteracted) {
-      celebrationRef.current.currentTime = 0;
-      celebrationRef.current.play().catch(e => console.log(e));
-    }
-  };
-
-  const playDecepcion = () => {
-    if (decepcionRef.current && hasInteracted) {
-      decepcionRef.current.currentTime = 0;
-      decepcionRef.current.play().catch(e => console.log(e));
-    }
-  };
-
-  const playSiu = () => {
-    if (siuRef.current && hasInteracted) {
-      siuRef.current.currentTime = 0;
-      siuRef.current.play().catch(e => console.log(e));
-    }
-  };
-
-  const playRiure = () => {
-    if (riureRef.current && hasInteracted) {
-      riureRef.current.currentTime = 0;
-      riureRef.current.play().catch(e => console.log(e));
-    }
-  };
+  const playCelebration = () => playSFX(celebrationRef);
+  const playDecepcion = () => playSFX(decepcionRef);
+  const playSiu = () => playSFX(siuRef);
+  const playRiure = () => playSFX(riureRef);
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -159,7 +253,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   return (
     <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
-      hasInteracted, setHasInteracted: handleSetInteracted, playCelebration, playDecepcion, playSiu, playRiure
+      hasInteracted, setHasInteracted: handleSetInteracted, 
+      playCelebration, playDecepcion, playSiu, playRiure
     }}>
       {children}
     </AudioContext.Provider>

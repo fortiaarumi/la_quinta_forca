@@ -805,8 +805,8 @@ export default function HomeScreen() {
                 <StepWrapper direction={animDirection}>
                   <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Temps per Ronda</h3>
                   <div className="space-y-4">
-                    <OptionCard selected={timeMode === 'bala'} title="Mode Bala" desc="Ràpid com un llamp (30s)." icon="⚡" onClick={() => setTimeMode('bala')} />
-                    <OptionCard selected={timeMode === 'normal'} title="Mode Normal" desc="Equilibri perfecte (60s)." icon="⏱️" onClick={() => setTimeMode('normal')} />
+                    <OptionCard selected={timeMode === 'bala'} title="Mode Bala" desc="Ràpid com un llamp (1 min)." icon="⚡" onClick={() => setTimeMode('bala')} />
+                    <OptionCard selected={timeMode === 'normal'} title="Mode Normal" desc="Equilibri perfecte (5 min)." icon="⏱️" onClick={() => setTimeMode('normal')} />
                     <OptionCard selected={timeMode === 'infinit'} title="Infinit" desc="Gaudeix de les vistes (Sense límit)." icon="♾️" onClick={() => setTimeMode('infinit')} />
                   </div>
                   <GoldButton onClick={() => {

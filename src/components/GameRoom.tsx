@@ -449,18 +449,160 @@ export default function GameRoom({ roomId, playerId }: Props) {
           if (comarca) options.push({ type: 'Comarca', value: comarca });
           if (province) options.push({ type: 'Província', value: province });
           if (locality) options.push({ type: 'Poble/Ciutat', value: `Comença per la lletra ${locality.charAt(0).toUpperCase()}` });
+          
+          if (geoData.address.postcode) {
+            options.push({ type: 'Codi Postal', value: `El codi postal és ${geoData.address.postcode}` });
+          }
+
+          if (locality) {
+            const fillsIlustres: Record<string, string> = {
+              'sallent': 'Joan Garcia',
+              'santpedor': 'Pep Guardiola',
+              'figueres': 'Salvador Dalí',
+              'reus': 'Antoni Gaudí i Andreu Buenafuente',
+              'cadaqués': 'Salvador Dalí',
+              'badalona': 'Mireia Belmonte i Auronplay',
+              'mataró': 'Lamine Yamal i The Tyets',
+              'terrassa': 'Xavi Hernández i Dani Olmo',
+              'sabadell': 'Marc Gené i Sergio Dalma',
+              'granollers': 'Aleix i Pol Espargaró',
+              'sant cugat del vallès': 'Àlex Corretja',
+              'cervera': 'Marc i Àlex Márquez',
+              'puig-reig': 'Oriol Romeu',
+              'ulldecona': 'Aleix Garcia',
+              'hostalric': 'Tommy Robredo',
+              'sant joan despí': 'Elena Fort',
+              'barcelona': 'Joan Laporta i Serrat',
+              'girona': 'Carles Puigdemont i Joan Roca',
+              'amer': 'Carles Puigdemont',
+              'la pobla de segur': 'Carles Puyol',
+              'esplugues de llobregat': 'Carme Chacón i Mercedes Milá',
+              'argentona': 'Juliana Canet',
+              'vic': 'Pilarín Bayés',
+              'manlleu': 'Gerard Autet',
+              'olot': 'Pau Bosch',
+              'artés': 'Laura Escanes',
+              'bellcaire d\'empordà': 'Tito Vilanova',
+              'sitges': 'Facu Díaz',
+              'sant esteve sesrovires': 'Rosalía',
+              'vilassar de mar': 'Bad Gyal i Mushkaa',
+              'cornellà de llobregat': 'Estopa, Jordi Évole i Paula Gonu',
+              'sant climent de llobregat': 'Aitana',
+              'sant boi de llobregat': 'Pau i Marc Gasol',
+              'el masnou': 'Ricky Rubio',
+              'palafrugell': 'Josep Pla i Sílvia Pérez Cruz',
+              'verges': 'Lluís Llach',
+              'cardona': 'Berto Romero',
+              'santa coloma de gramenet': 'Gabriel Rufián i Joel Díaz',
+              'les masies de voltregà': 'Peyu',
+              'sant feliu de buixalleu': 'Quim Masferrer',
+              'tornabous': 'Lluís Companys',
+              'vilanova i la geltrú': 'Francesc Macià i Gerard Romero',
+              'roda de ter': 'Miquel Martí i Pol, i Oques Grasses',
+              'sant joan de les abadesses': 'Txarango',
+              'aiguafreda': 'Els Catarres',
+              'valls': 'Figa Flawas',
+              'sant pol de mar': 'Carme Ruscalleda',
+              'l\'hospitalet de llobregat': 'Ferran Adrià, Morad i Antonio Orozco',
+              'sant feliu de llobregat': 'Nil Moliner',
+              'olesa de montserrat': 'Chanel',
+              'lloret de mar': 'Nina',
+              'bescanó': 'Pau Cubarsí',
+              'linyola': 'Bojan Krkić',
+              'matadepera': 'Riqui Puig',
+              'badia del vallès': 'Sergio Busquets',
+              'riudarenes': 'Gerard Deulofeu',
+              'arenys de mar': 'Cesc Fàbregas',
+              'piera': 'Toni Bou',
+              'sant antoni de vilamajor': 'Àlex Palou',
+              'folgueroles': 'Jacint Verdaguer i Nani Roma',
+              'roses': 'Maverick Viñales',
+              'sant fruitós de bages': 'Carlos Checa',
+              'castellar del vallès': 'Dani Pedrosa',
+              'seva': 'Àlex Crivillé',
+              'blanes': 'Quim Torra i CdeCiencia',
+              'sant vicenç dels horts': 'Oriol Junqueras',
+              'la roca del vallès': 'Salvador Illa',
+              'pineda de mar': 'Pere Aragonès',
+              'mollet del vallès': 'Alèxia Putellas i Josep Maria Pou',
+              'esparreguera': 'Lluís Llongueras',
+              'tortosa': 'Karmele Marchante',
+              'malgrat de mar': 'David Verdaguer',
+              'manresa': 'Jordi Wild i Miki Esparbé',
+              'montcada i reixac': 'Carlos Cuevas',
+              'sant pere de vilamajor': 'Úrsula Corberó',
+              'gavà': 'Candela Peña',
+              'sant adrià de besòs': 'Isabel Coixet',
+              'banyoles': 'Albert Serra',
+              'les planes d\'hostoles': 'Carla Simón',
+              'constantí': 'Els Pets',
+              'el vendrell': 'Pau Casals i Lax\'n\'Busto',
+              'berga': 'Brams (Titot)',
+              'igualada': 'Jordi Savall',
+              'centelles': 'Ildefons Cerdà',
+              'santa coloma de farners': 'Salvador Espriu',
+              'tiana': 'Josep Cuní',
+              'montgat': 'Dulceida'
+            };
+            const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const person = fillsIlustres[locality.toLowerCase()] || fillsIlustres[normalize(locality)];
+            if (person) {
+              options.push({ type: 'Fill Il·lustre', value: `${person} és fill/a il·lustre d'aquí` });
+            }
+          }
         }
+
+        const distBcn = haversineDistance(actual.lat, actual.lng, 41.3870, 2.1700);
+        options.push({ type: 'Distància a Barcelona', value: `A ${(distBcn).toFixed(2)} km de Barcelona (Pl. Catalunya)` });
+
+        const coastPoints = [
+          { lat: 42.426, lng: 3.159 }, { lat: 41.844, lng: 3.129 }, { lat: 41.378, lng: 2.192 },
+          { lat: 41.116, lng: 1.250 }, { lat: 40.618, lng: 0.593 }
+        ];
+        const minCoastDist = Math.min(...coastPoints.map(p => haversineDistance(actual.lat, actual.lng, p.lat, p.lng)));
+        options.push({ type: 'Geografia', value: minCoastDist < 15 ? 'És un municipi proper a la costa' : 'És un municipi d\'interior' });
+
+        const distAndorra = haversineDistance(actual.lat, actual.lng, 42.506, 1.521);
+        const distFranca = Math.min(
+          haversineDistance(actual.lat, actual.lng, 42.420, 2.873), haversineDistance(actual.lat, actual.lng, 42.432, 1.926)
+        );
+        const distArago = Math.min(
+          haversineDistance(actual.lat, actual.lng, 41.521, 0.347), haversineDistance(actual.lat, actual.lng, 42.111, 0.481)
+        );
+        
+        if (distAndorra < 25) options.push({ type: 'Frontera', value: 'Molt a prop de la frontera amb Andorra' });
+        if (distFranca < 25) options.push({ type: 'Frontera', value: 'Molt a prop de la frontera amb França' });
+        if (distArago < 25) options.push({ type: 'Frontera', value: 'Molt a prop de la frontera amb l\'Aragó' });
+
       } else if (room.gameMode === 'pixapins') {
         if (geoData && geoData.address) {
           const sublocality = geoData.address.neighbourhood || geoData.address.quarter || geoData.address.suburb || '';
           const locality = geoData.address.city_district || geoData.address.city || '';
 
           if (sublocality) options.push({ type: 'Barri / Zona', value: sublocality });
-          if (locality && locality !== sublocality) options.push({ type: 'Districte / Municipi', value: locality });
+          if (locality && locality !== sublocality) options.push({ type: 'Districte', value: locality });
+          
+          if (sublocality) {
+            options.push({ type: 'Inicial del Barri', value: `Comença per la lletra ${sublocality.charAt(0).toUpperCase()}` });
+          }
+
+          if (geoData.address.postcode) {
+            options.push({ type: 'Codi Postal', value: `És el ${geoData.address.postcode}` });
+          }
         }
         
         const distCampNou = haversineDistance(actual.lat, actual.lng, CAMP_NOU_COORDS.lat, CAMP_NOU_COORDS.lng);
-        options.push({ type: 'Distància', value: `A ${(distCampNou).toFixed(2)} km del Camp Nou` });
+        options.push({ type: 'Camp Nou', value: `A ${(distCampNou).toFixed(2)} km del Camp Nou` });
+
+        const distPlacaCatalunya = haversineDistance(actual.lat, actual.lng, 41.3870, 2.1700);
+        options.push({ type: 'Plaça Catalunya', value: `A ${(distPlacaCatalunya).toFixed(2)} km de distància` });
+
+        const distMar = haversineDistance(actual.lat, actual.lng, 41.3784, 2.1925);
+        options.push({ type: 'Mar', value: `A ${(distMar).toFixed(2)} km de la platja` });
+
+        const zona = distMar > 3.5 ? 'Més aviat cap a la Zona Alta (muntanya)' : 'Més aviat cap a la Zona Baixa (mar)';
+        options.push({ type: 'Altitud', value: zona });
+
       } else {
         const code = geoData?.address?.country_code ? geoData.address.country_code.toUpperCase() : null;
       let countryData = null;
@@ -508,11 +650,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
       }
       }
 
-      options.push(
-        { type: 'Hemisferi', value: actual.lat > 0 ? 'Et trobes al Nord ⬆️' : 'Et trobes al Sud ⬇️' },
-        { type: 'Latitud', value: `Estàs a ${Math.abs(Math.round(actual.lat))}° de l'Equador` },
-        { type: 'Zona Climàtica', value: Math.abs(actual.lat) < 23.5 ? 'Intertropical ☀️' : (Math.abs(actual.lat) < 66.5 ? 'Temperada ⛅' : 'Polar ❄️') }
-      );
+      if (room.gameMode !== 'catalunya' && room.gameMode !== 'pixapins') {
+        options.push(
+          { type: 'Hemisferi', value: actual.lat > 0 ? 'Et trobes al Nord ⬆️' : 'Et trobes al Sud ⬇️' },
+          { type: 'Latitud', value: `Estàs a ${Math.abs(Math.round(actual.lat))}° de l'Equador` },
+          { type: 'Zona Climàtica', value: Math.abs(actual.lat) < 23.5 ? 'Intertropical ☀️' : (Math.abs(actual.lat) < 66.5 ? 'Temperada ⛅' : 'Polar ❄️') }
+        );
+      }
 
       const validOptions = options.filter(o => o.value && !o.value.includes('Desconegut') && !o.value.includes('Desconeguda'));
 
@@ -889,7 +1033,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
               </button>
             ) : (
-              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2">
+              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2 max-w-[90vw] md:max-w-md text-center">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">✨ Pista Revelada</span>
                 <div className="flex items-center gap-3">
                   {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
@@ -902,7 +1046,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
                       <span className="font-black uppercase text-xs">{room.rounds?.[room.currentRound]?.sharedHint?.type}</span>
                     </div>
                   ) : (
-                    <span className="font-black uppercase tracking-tight text-lg">
+                    <span className="font-black uppercase tracking-tight text-sm md:text-lg whitespace-normal break-words">
                       {currentHint || `${room.rounds?.[room.currentRound]?.sharedHint?.type || ''}: ${room.rounds?.[room.currentRound]?.sharedHint?.value || ''}`}
                     </span>
                   )}
