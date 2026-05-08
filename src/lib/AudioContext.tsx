@@ -123,10 +123,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       riureRef.current = new Audio('/sounds/riure.mp3');
       riureRef.current.volume = 0.6;
 
+      // Lock per evitar que onEnded dispari dos cops seguida (fadeOut + fadeIn)
+      let nextScheduled = false;
       const onEnded = () => {
-        if (currentCategory.current !== 'none') {
-          playCategory(currentCategory.current, true);
-        }
+        if (currentCategory.current === 'none') return;
+        if (nextScheduled) return;
+        nextScheduled = true;
+        // Petita finestra per descartar un segon fire gairebé simultani
+        setTimeout(() => { nextScheduled = false; }, 500);
+        playCategory(currentCategory.current, true);
       };
       
       bgmPlayerA.current.onended = onEnded;
@@ -287,6 +292,56 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playRiure = () => playSFX(riureRef);
   const toggleMute = () => setIsMuted(!isMuted);
 
+  // ── WIDGET ARROSSEGABLE ────────────────────────────────────────────────────
+  const WIDGET_KEY = 'audioWidgetPos';
+  const defaultPos = { x: 24, y: -1 }; // -1 → calculem al primer render (bottom)
+
+  const [widgetPos, setWidgetPos] = useState<{ x: number; y: number } | null>(null);
+  const isDragging = useRef(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const widgetRef = useRef<HTMLDivElement | null>(null);
+
+  // Inicialitzem la posició des de localStorage (o usem la default)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(WIDGET_KEY);
+      if (saved) {
+        setWidgetPos(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+    // Default: bottom-left
+    setWidgetPos({ x: 24, y: window.innerHeight - 72 });
+  }, []);
+
+  // Guardem la posició quan canvia
+  useEffect(() => {
+    if (widgetPos) {
+      try { localStorage.setItem(WIDGET_KEY, JSON.stringify(widgetPos)); } catch {}
+    }
+  }, [widgetPos]);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!widgetRef.current) return;
+    isDragging.current = true;
+    const rect = widgetRef.current.getBoundingClientRect();
+    dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    widgetRef.current.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    const newX = Math.max(0, Math.min(window.innerWidth - 140, e.clientX - dragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 52, e.clientY - dragOffset.current.y));
+    setWidgetPos({ x: newX, y: newY });
+    e.preventDefault();
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDragging.current = false;
+  };
+
   return (
     <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
@@ -296,16 +351,30 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }}>
       {children}
       
-      {/* CONTROLS GLOBALS D'ÀUDIO — bottom-left, no interfereix amb les pistes */}
-      {hasInteracted && (
-        <div className={`fixed bottom-6 left-6 z-[9998] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-opacity duration-300 ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-base">⏮</button>
-          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-base transition-transform active:scale-90 border border-white/5 cursor-pointer mx-0.5 shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
-          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-base">⏭</button>
+      {/* CONTROLS GLOBALS D'ÀUDIO — ARROSSEGABLE */}
+      {hasInteracted && widgetPos && (
+        <div
+          ref={widgetRef}
+          style={{ position: 'fixed', left: widgetPos.x, top: widgetPos.y, zIndex: 9998, touchAction: 'none' }}
+          className={`flex items-center gap-1 bg-black/80 backdrop-blur-xl border border-white/15 px-1 py-1 rounded-full shadow-[0_6px_30px_rgba(0,0,0,0.6)] transition-opacity duration-300 select-none ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+          {/* Àrea de drag — el grip */}
+          <div
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            className="w-5 h-9 flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400 text-[10px] select-none"
+            title="Arrossega per moure"
+          >
+            ⠿
+          </div>
+          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-sm transition-transform active:scale-90 border border-white/5 cursor-pointer shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏭</button>
         </div>
       )}
       
-      {/* POPUP ARA SONANT — bottom-right, sobre el player global */}
+      {/* POPUP ARA SONANT */}
       <div className={`fixed bottom-20 left-6 z-[9997] pointer-events-none transition-all duration-700 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <div className="bg-black/90 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
           <div className="relative flex h-3 w-3">

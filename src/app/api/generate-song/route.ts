@@ -67,33 +67,37 @@ export async function POST(request: Request) {
     // Generar prompt per a l'LLM
     const genre = genres[Math.floor(Math.random() * genres.length)];
     const prompt = `
-      Ets un lletrista mordaç i un comediant espectacular. Has d'escriure la lletra d'una CANÇÓ SATÍRICA i molt divertida per riure't d'uns jugadors que han fet una partida pèssima a un joc de geografia.
+      Ets el lletrista més mala bava, irreverent i mordaç de la història. Has d'escriure la lletra d'una CANÇÓ SATÍRICA brutal per riure't sense pietat d'uns amics que han jugat pèssim a un joc de geografia.
 
       MODE DE JOC: ${modeCtx.label}
       ${modeCtx.joke}
 
       ATENCIÓ - ESTIL MUSICAL: L'estil d'aquesta cançó serà "${genre}". 
-      Has d'adaptar el vocabulari, l'actitud i el ritme de la lletra perquè encaixi PERFECTAMENT amb aquest gènere.
+      Adapta el vocabulari, les rimes, l'actitud i el ritme perquè encaixi PERFECTAMENT amb aquest gènere musical.
 
-      CONTEXT DE LA BROMA (MOLT IMPORTANT):
-      La gràcia de la cançó NO és inventar-se històries genèriques, sinó fer sang i riure's EXCLUSIVAMENT dels llocs REALS que apareixen a les dades. 
-      ÉS OBLIGATORI mencionar els NOMS DELS LLOCS REALS: barris, pobles, comarques o països que surten a les dades.
-      Fes befa de com de cecs estan, de com necessiten ulleres o de lo "tontos" que són.
-      Cal que fassis rimes gracioses amb els seus noms i els noms dels llocs. Els pots insultar ja que és una broma i ningú s'ofendrà. Passa't molt amb els teus insults.
-      La lletra HA DE SER en CATALÀ.
+      CONTEXT DE LA BROMA — MOU-TE AMB TOTAL LLIBERTAT:
+      Són un grup d'AMICS que juguen junts. Ningú s'ofendrà. Podem insultar amb tota la mala llet del món.
+      La gràcia és fer una CANÇÓ CRUEL, DIVERTIDA i BRILLANT que faci morir de riure als jugadors quan la escoltin.
 
-      DADES REALS DE LA PARTIDA (Utilitza NOMÉS aquests noms i llocs, NO t'inventis llocs nous):
+      REGLES D'OR PER FER-LA DIVERTIDA:
+      1. Insults creatius i exagerats: "cec", "inútil", "gat amb ulleres rotes", "no trobes ni casa teva", "quin desastre de persona", "tens la geografia d'un pollastre", "sembla que has jugat amb els ulls tancats i amb les mans lligades"... Posa-te a fondo!
+      2. Rimes obligatòries: CADA PARELL DE VERSOS HA DE RIMAR. Busca rimes bones, no forçades. La cançó ha de sonar bé cantada.
+      3. Menciona els noms dels jugadors i els llocs REALS de les dades. Fes broma específica del lloc i de la confusió del jugador.
+      4. Afegeix hipèrboles exagerades: "has fallat tant que Google Maps s'ha avergonyit de tu", "tens la culpa que Waze hagi dimitit", "amb tu de guia, Colom hauria acabat a Sibèria".
+      5. Ritme i cadència: La cançó ha de tenir un ritme enganxós i fluir bé en el gènere "${genre}".
+
+      DADES REALS DE LA PARTIDA (Utilitza EXCLUSIVAMENT aquests noms i llocs):
       ${guesses}
 
       REGLES ESTRICTES DE FORMAT:
-      1. ÉS OBLIGATORI mencionar els noms dels jugadors i els NOMS DE LLOC reals que apareixen a les dades.
-      2. MAI, SOTA CAP CONCEPTE, facis servir números en dígits (ex: 32, 100). Escriu-los SEMPRE TOT EN LLETRES (ex: trenta-dos).
-      3. MAI escriguis l'abreviatura "km". Has d'escriure sempre la paraula sencera: "quilòmetres".
-      4. PROHIBIT utilitzar les paraules "Suno", "IA", "Bot", "Llama" o "oceà".
-      5. NO facis servir expressions genèriques com "Espanya" o "Europa" si les dades donen llocs més específics.
+      1. OBLIGATORI mencionar noms de jugadors i noms de lloc REALS de les dades.
+      2. PROHIBIT números en dígits → sempre en lletres (trenta-dos, no 32).
+      3. PROHIBIT l'abreviatura "km" → sempre "quilòmetres".
+      4. PROHIBIT paraules: "Suno", "IA", "Bot", "Llama", "oceà".
+      5. NO useu expressions genèriques com "Espanya" si les dades donen llocs més específics.
+      6. Cada parell de versos HA DE RIMAR.
       
-      ESTRUCTURA OBLIGATÒRIA:
-      Has de fer la cançó més breu. Utilitza NOMÉS aquests tags exactes en aquest ordre:
+      ESTRUCTURA OBLIGATÒRIA (usa EXACTAMENT aquests tags):
       [Intro]
       [Verse 1]
       [Chorus]
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
       [Chorus]
       [Outro]
       
-      RETORNA ÚNICAMENT LA LLETRA DE LA CANÇÓ. CAP COMENTARI PREVI NI POSTERIOR.
+      RETORNA ÚNICAMENT LA LLETRA. ZERO COMENTARIS PREVIS O POSTERIORS.
     `;
 
     console.log("=== PROMPT GEOGRÀFIC ENVIAT A L'LLM ===");

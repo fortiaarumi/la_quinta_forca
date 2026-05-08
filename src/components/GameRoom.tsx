@@ -465,7 +465,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
           if (comarca) options.push({ type: 'Comarca', value: comarca });
           if (province) options.push({ type: 'Província', value: province });
-          if (locality) options.push({ type: 'Poble/Ciutat', value: `Comença per la lletra ${locality.charAt(0).toUpperCase()}` });
+          if (locality) options.push({ type: 'Poble/Ciutat', value: locality });
           
           if (geoData.address.postcode) {
             options.push({ type: 'Codi Postal', value: `El codi postal és ${geoData.address.postcode}` });
