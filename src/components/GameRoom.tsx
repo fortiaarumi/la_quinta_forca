@@ -420,65 +420,49 @@ export default function GameRoom({ roomId, playerId }: Props) {
     console.log("📍 1. Coordenades de la ronda:", actual.lat, actual.lng);
 
     try {
-      const getGeocodingData = (): Promise<google.maps.GeocoderResult[]> => {
-        return new Promise((resolve) => {
-          const geocoder = new (google.maps as any).Geocoder();
-          geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-            if (status === 'OK' && results) {
-              resolve(results);
-            } else {
-              resolve([]);
+      const getGeocodingData = async (): Promise<any> => {
+        try {
+          // Utilitzem Nominatim (OpenStreetMap) perquè és gratis i no requereix API Key, així no falla mai
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${actual.lat}&lon=${actual.lng}&zoom=18&addressdetails=1`, {
+            headers: {
+              'User-Agent': 'LaQuintaForcaApp/1.0 (fortiaarumi@gmail.com)'
             }
           });
-        });
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          console.error("Nominatim fetch error:", e);
+        }
+        return null;
       };
 
       const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
-      const geocodingResults = await getGeocodingData();
+      const geoData = await getGeocodingData();
 
       if (room.gameMode === 'catalunya') {
-        let comarca = '';
-        let locality = '';
-        let province = '';
+        if (geoData && geoData.address) {
+          const comarca = geoData.address.county || '';
+          const province = geoData.address.province || '';
+          const locality = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || '';
 
-        for (const r of geocodingResults) {
-          if (!r.formatted_address.includes('+')) {
-            for (const comp of r.address_components) {
-              if (comp.types.includes('administrative_area_level_3') && !comarca) comarca = comp.long_name;
-              if (comp.types.includes('locality') && !locality) locality = comp.long_name;
-              if (comp.types.includes('administrative_area_level_2') && !province) province = comp.long_name;
-            }
-          }
+          if (comarca) options.push({ type: 'Comarca', value: comarca });
+          if (province) options.push({ type: 'Província', value: province });
+          if (locality) options.push({ type: 'Poble/Ciutat', value: `Comença per la lletra ${locality.charAt(0).toUpperCase()}` });
         }
-
-        if (comarca) options.push({ type: 'Comarca', value: comarca });
-        if (province) options.push({ type: 'Província', value: province });
-        if (locality) options.push({ type: 'Poble/Ciutat', value: `Comença per la lletra ${locality.charAt(0).toUpperCase()}` });
       } else if (room.gameMode === 'pixapins') {
-        let locality = '';
-        let sublocality = '';
+        if (geoData && geoData.address) {
+          const sublocality = geoData.address.neighbourhood || geoData.address.quarter || geoData.address.suburb || '';
+          const locality = geoData.address.city_district || geoData.address.city || '';
 
-        for (const r of geocodingResults) {
-          if (!r.formatted_address.includes('+')) {
-            for (const comp of r.address_components) {
-              if (comp.types.includes('locality') && !locality) locality = comp.long_name;
-              if (comp.types.includes('sublocality') && !sublocality) sublocality = comp.long_name;
-              if (comp.types.includes('neighborhood') && !sublocality) sublocality = comp.long_name;
-            }
-          }
+          if (sublocality) options.push({ type: 'Barri / Zona', value: sublocality });
+          if (locality && locality !== sublocality) options.push({ type: 'Districte / Municipi', value: locality });
         }
-
-        if (sublocality) options.push({ type: 'Barri / Zona', value: sublocality });
-        if (locality && locality !== sublocality) options.push({ type: 'Districte / Municipi', value: locality });
         
         const distCampNou = haversineDistance(actual.lat, actual.lng, CAMP_NOU_COORDS.lat, CAMP_NOU_COORDS.lng);
         options.push({ type: 'Distància', value: `A ${(distCampNou).toFixed(2)} km del Camp Nou` });
       } else {
-        const code = geocodingResults.reduce((acc: string | null, r: any) => {
-          if (acc) return acc;
-          const c = r.address_components.find((comp: any) => comp.types.includes('country'));
-          return c ? c.short_name : null;
-        }, null);
+        const code = geoData?.address?.country_code ? geoData.address.country_code.toUpperCase() : null;
       let countryData = null;
 
       if (code) {
