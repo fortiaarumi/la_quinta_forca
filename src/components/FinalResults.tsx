@@ -399,7 +399,14 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
             {room.songState?.status === 'waiting_for_bot' && <div className="text-blue-400 font-bold animate-pulse text-sm">🤖 Esperant al Bot...</div>}
             {room.songState?.status === 'generating_music' && <div className="text-purple-400 font-bold animate-pulse text-sm">🎧 Composant música...</div>}
             {room.songState?.status === 'ready' && isHost && (
-              <button onClick={handlePlaySong} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg text-sm uppercase">▶️ Reproduir</button>
+              <div className="flex flex-col gap-2 w-full">
+                <button onClick={handlePlaySong} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-lg text-sm uppercase">▶️ Reproduir</button>
+                {room.songState?.audioUrl && (
+                  <a href={room.songState.audioUrl} download="canco-satirica-la-quinta-forca.mp3" target="_blank" rel="noopener noreferrer" className="w-full text-center bg-white/10 hover:bg-white/20 border border-white/10 text-gray-300 font-bold py-2 rounded-lg text-xs uppercase tracking-widest no-underline transition-colors cursor-pointer">
+                    ⬇️ Descarregar MP3
+                  </a>
+                )}
+              </div>
             )}
             {room.songState?.status === 'playing' && (
               <div className="text-left w-full mt-2 bg-black/40 p-4 rounded-lg">
@@ -416,6 +423,11 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                 <div className="flex items-center gap-2 mb-4 justify-center">
                   <button onClick={() => { if (songRef.current) { songRef.current.currentTime = 0; songRef.current.play(); } }} className="text-xs bg-indigo-600 px-3 py-1 rounded-full text-white font-bold">🔄</button>
                   <input type="range" min="0" max="1" step="0.01" value={songVolume} onChange={(e) => setSongVolume(parseFloat(e.target.value))} className="w-24 accent-purple-500" />
+                  {room.songState?.audioUrl && (
+                    <a href={room.songState.audioUrl} download="canco-satirica-la-quinta-forca.mp3" target="_blank" rel="noopener noreferrer" className="text-xs bg-white/10 hover:bg-white/20 border border-white/10 text-gray-300 font-bold px-3 py-1 rounded-full no-underline transition-colors">
+                      ⬇️ MP3
+                    </a>
+                  )}
                 </div>
                 <div className="text-gray-300 text-sm italic text-center whitespace-pre-wrap leading-relaxed px-4">{room.songState.lyrics}</div>
               </div>

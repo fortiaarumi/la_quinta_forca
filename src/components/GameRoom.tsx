@@ -80,7 +80,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [isSpectating, setIsSpectating] = useState(false);
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
-  const { playGameMusic, playMenuMusic } = useAudio();
+  const { playGameMusic, playMenuMusic, isMuted, toggleMute, nextTrack, prevTrack } = useAudio();
   const tickTockRef = useRef<HTMLAudioElement | null>(null);
   const alertaRef = useRef<HTMLAudioElement | null>(null);
 
@@ -1067,6 +1067,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
             )}
           </div>
         )}
+
+        {/* CONTROLS D'ÀUDIO — baix-dreta del mapa, no tapa les pistes */}
+        <div className="absolute bottom-28 right-4 z-[11] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+          <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
+        </div>
 
         <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
           {!hasGuessed && !showGuessMap && (

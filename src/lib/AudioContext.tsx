@@ -87,7 +87,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
     if (listRef.current.length === 0) {
       const newShuffle = shuffleArray(baseTracks);
-      // Evitar que la mateixa cançó soni dos cops seguits
       if (newShuffle.length > 1 && newShuffle[newShuffle.length - 1] === lastPlayed) {
          const temp = newShuffle[newShuffle.length - 1];
          newShuffle[newShuffle.length - 1] = newShuffle[0];
@@ -95,7 +94,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
       listRef.current = newShuffle;
     }
-    
     const nextTrack = listRef.current.pop() as string;
     if (category === 'menu') lastMenuTrack.current = nextTrack;
     else lastGameTrack.current = nextTrack;
@@ -113,7 +111,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (!bgmPlayerA.current) {
       bgmPlayerA.current = new Audio();
       bgmPlayerB.current = new Audio();
-      
+
       celebrationRef.current = new Audio('/sounds/celebracio.mp3');
       celebrationRef.current.volume = 0.6;
       decepcionRef.current = new Audio('/sounds/decepcio.mp3');
@@ -123,17 +121,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       riureRef.current = new Audio('/sounds/riure.mp3');
       riureRef.current.volume = 0.6;
 
-      // Lock per evitar que onEnded dispari dos cops seguida (fadeOut + fadeIn)
+      // Lock per evitar doble-fire de onEnded (fadeOut + fadeIn simultanis)
       let nextScheduled = false;
       const onEnded = () => {
         if (currentCategory.current === 'none') return;
         if (nextScheduled) return;
         nextScheduled = true;
-        // Petita finestra per descartar un segon fire gairebé simultani
         setTimeout(() => { nextScheduled = false; }, 500);
         playCategory(currentCategory.current, true);
       };
-      
+
       bgmPlayerA.current.onended = onEnded;
       bgmPlayerB.current.onended = onEnded;
     }
@@ -167,7 +164,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         player?.play().catch(e => console.log(e));
       }
     };
-
     window.addEventListener('pauseBackgroundMusic', pauseMusic);
     window.addEventListener('resumeBackgroundMusic', resumeMusic);
     return () => {
@@ -178,19 +174,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const crossfade = (newSrc: string, targetVolume: number) => {
     if (!bgmPlayerA.current || !bgmPlayerB.current) return;
-
     if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
 
     const fadeOutPlayer = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
-    const fadeInPlayer = activePlayer.current === 'A' ? bgmPlayerB.current : bgmPlayerA.current;
-    
+    const fadeInPlayer  = activePlayer.current === 'A' ? bgmPlayerB.current : bgmPlayerA.current;
+
     activePlayer.current = activePlayer.current === 'A' ? 'B' : 'A';
     isTransitioning.current = true;
 
     fadeInPlayer.src = newSrc;
     fadeInPlayer.volume = 0;
     fadeInPlayer.muted = isMuted;
-    fadeInPlayer.play().catch(e => console.log("Play failed:", e));
+    fadeInPlayer.play().catch(e => console.log('Play failed:', e));
 
     // Guardar al historial
     if (currentTrackPath.current) {
@@ -200,15 +195,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
     currentTrackPath.current = newSrc;
 
-    // Mostrar el Toast Ara Sonant
-    const name = formatTrackName(newSrc);
-    setCurrentTrackName(name);
+    // Toast "Ara Sonant"
+    setCurrentTrackName(formatTrackName(newSrc));
     setShowTrackPopup(false);
     setTimeout(() => setShowTrackPopup(true), 50);
     if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
     popupTimeoutRef.current = setTimeout(() => setShowTrackPopup(false), 4000);
 
-    const steps = 30; 
+    const steps = 30;
     let currentStep = 0;
     const initialFadeOutVol = fadeOutPlayer.volume;
 
@@ -231,22 +225,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (!hasInteracted) return;
     if (!forceNext && currentCategory.current === category) {
       const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
-      if (player && player.paused) player.play().catch(e => console.log("Restarting paused track", e));
+      if (player && player.paused) player.play().catch(e => console.log('Restarting', e));
       return;
     }
     currentCategory.current = category;
     const nextTrack = getNextTrack(category);
-    const targetVolume = category === 'menu' ? 0.3 : 0.4;
-    crossfade(nextTrack, targetVolume);
+    crossfade(nextTrack, category === 'menu' ? 0.3 : 0.4);
   };
 
   const playMenuMusic = () => playCategory('menu');
   const playGameMusic = () => playCategory('game');
 
   const nextTrack = () => {
-    if (currentCategory.current !== 'none') {
-      playCategory(currentCategory.current, true);
-    }
+    if (currentCategory.current !== 'none') playCategory(currentCategory.current, true);
   };
 
   const prevTrack = () => {
@@ -254,18 +245,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (cat === 'none') return;
     const history = cat === 'menu' ? historyMenu : historyGame;
     if (history.current.length > 0) {
-      // Recuperem la pista anterior
       const prevSrc = history.current.pop() as string;
-      // Tornem-la a afegir al front de la llista sense-reproduir perquè no es perdi del shuffle
       const listRef = cat === 'menu' ? unplayedMenu : unplayedGame;
       if (currentTrackPath.current) listRef.current.push(currentTrackPath.current);
-      const targetVolume = cat === 'menu' ? 0.3 : 0.4;
-      // Actualitzem currentTrackPath manualment abans de crossfade
-      currentTrackPath.current = null; // evitem que crossfade la guardi al historial dos cops
-      crossfade(prevSrc, targetVolume);
+      currentTrackPath.current = null;
+      crossfade(prevSrc, cat === 'menu' ? 0.3 : 0.4);
       currentTrackPath.current = prevSrc;
     } else {
-      // Si no hi ha historial, anem a l'inici de la cançó actual
       const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
       if (player) player.currentTime = 0;
     }
@@ -287,97 +273,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   };
 
   const playCelebration = () => playSFX(celebrationRef);
-  const playDecepcion = () => playSFX(decepcionRef);
-  const playSiu = () => playSFX(siuRef);
-  const playRiure = () => playSFX(riureRef);
-  const toggleMute = () => setIsMuted(!isMuted);
-
-  // ── WIDGET ARROSSEGABLE ────────────────────────────────────────────────────
-  const WIDGET_KEY = 'audioWidgetPos';
-  const defaultPos = { x: 24, y: -1 }; // -1 → calculem al primer render (bottom)
-
-  const [widgetPos, setWidgetPos] = useState<{ x: number; y: number } | null>(null);
-  const isDragging = useRef(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const widgetRef = useRef<HTMLDivElement | null>(null);
-
-  // Inicialitzem la posició des de localStorage (o usem la default)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(WIDGET_KEY);
-      if (saved) {
-        setWidgetPos(JSON.parse(saved));
-        return;
-      }
-    } catch {}
-    // Default: bottom-left
-    setWidgetPos({ x: 24, y: window.innerHeight - 72 });
-  }, []);
-
-  // Guardem la posició quan canvia
-  useEffect(() => {
-    if (widgetPos) {
-      try { localStorage.setItem(WIDGET_KEY, JSON.stringify(widgetPos)); } catch {}
-    }
-  }, [widgetPos]);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!widgetRef.current) return;
-    isDragging.current = true;
-    const rect = widgetRef.current.getBoundingClientRect();
-    dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    widgetRef.current.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
-    const newX = Math.max(0, Math.min(window.innerWidth - 140, e.clientX - dragOffset.current.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 52, e.clientY - dragOffset.current.y));
-    setWidgetPos({ x: newX, y: newY });
-    e.preventDefault();
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    isDragging.current = false;
-  };
+  const playDecepcion   = () => playSFX(decepcionRef);
+  const playSiu         = () => playSFX(siuRef);
+  const playRiure       = () => playSFX(riureRef);
+  const toggleMute      = () => setIsMuted(!isMuted);
 
   return (
     <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
-      hasInteracted, setHasInteracted: handleSetInteracted, 
+      hasInteracted, setHasInteracted: handleSetInteracted,
       playCelebration, playDecepcion, playSiu, playRiure, nextTrack, prevTrack,
       currentTrackName
     }}>
       {children}
-      
-      {/* CONTROLS GLOBALS D'ÀUDIO — ARROSSEGABLE */}
-      {hasInteracted && widgetPos && (
-        <div
-          ref={widgetRef}
-          style={{ position: 'fixed', left: widgetPos.x, top: widgetPos.y, zIndex: 9998, touchAction: 'none' }}
-          className={`flex items-center gap-1 bg-black/80 backdrop-blur-xl border border-white/15 px-1 py-1 rounded-full shadow-[0_6px_30px_rgba(0,0,0,0.6)] transition-opacity duration-300 select-none ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        >
-          {/* Àrea de drag — el grip */}
-          <div
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            className="w-5 h-9 flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-400 text-[10px] select-none"
-            title="Arrossega per moure"
-          >
-            ⠿
-          </div>
+
+      {/* CONTROLS GLOBALS D'ÀUDIO — top-right fix */}
+      {hasInteracted && (
+        <div className={`fixed top-4 right-4 z-[9998] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-[0_6px_30px_rgba(0,0,0,0.5)] transition-opacity duration-300 ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏮</button>
           <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-sm transition-transform active:scale-90 border border-white/5 cursor-pointer shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
           <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏭</button>
         </div>
       )}
-      
-      {/* POPUP ARA SONANT */}
-      <div className={`fixed bottom-20 left-6 z-[9997] pointer-events-none transition-all duration-700 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <div className="bg-black/90 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
-          <div className="relative flex h-3 w-3">
+
+      {/* POPUP ARA SONANT — centrat a baix */}
+      <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9997] pointer-events-none transition-all duration-500 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+        <div className="bg-black/90 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)] whitespace-nowrap">
+          <div className="relative flex h-3 w-3 flex-shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
           </div>
