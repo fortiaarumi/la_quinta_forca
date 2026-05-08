@@ -5,6 +5,8 @@ import { ALL_BADGES } from '@/lib/badges';
 import { getUserProfile, UserProfile } from '@/lib/userStats';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ref, update } from 'firebase/database';
+import { db } from '@/lib/firebase';
 
 export default function BadgesPage() {
   const { badges, user } = useAuth();
@@ -16,6 +18,25 @@ export default function BadgesPage() {
       getUserProfile(user.uid).then(setProfile);
     }
   }, [user]);
+
+  const togglePin = async (badgeId: string) => {
+    if (!user || !profile) return;
+    const currentPins = profile.selectedBadges || [];
+    let newPins = [...currentPins];
+    
+    if (newPins.includes(badgeId)) {
+      newPins = newPins.filter(id => id !== badgeId);
+    } else {
+      if (newPins.length >= 3) {
+        alert("Només pots fixar un màxim de 3 insígnies per mostrar a la sala d'espera i partida.");
+        return;
+      }
+      newPins.push(badgeId);
+    }
+    
+    setProfile({ ...profile, selectedBadges: newPins });
+    await update(ref(db, `users/${user.uid}`), { selectedBadges: newPins });
+  };
 
   return (
     <div className="min-h-screen bg-[#06080f] text-white p-6 font-sans">
@@ -61,17 +82,26 @@ export default function BadgesPage() {
                         onClick={() => setSelectedBadge(b.id)} // 👈 Clic a tota la fila obre el pop-up
                       >
                         <td className="p-5">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all overflow-hidden ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all overflow-hidden relative ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
                             {/* IMATGE DE LA INSÍGNIA */}
                             <img
                               src={b.image || '/badges/default.jpeg'}
                               alt={b.id}
                               className={`w-full h-full object-cover transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
                             />
+                            {/* XINXETA (Si està fixada) */}
+                            {profile?.selectedBadges?.includes(b.id) && (
+                              <div className="absolute top-1 right-1 bg-yellow-500 text-black rounded-full p-1 shadow-md z-10 w-4 h-4 flex items-center justify-center">
+                                📌
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="p-5">
-                          <h3 className={`font-black text-lg ${isUnlocked ? 'text-white drop-shadow-md' : 'text-gray-500'}`}>{b.label}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className={`font-black text-lg ${isUnlocked ? 'text-white drop-shadow-md' : 'text-gray-500'}`}>{b.label}</h3>
+                            {profile?.selectedBadges?.includes(b.id) && <span className="text-yellow-500 text-sm">📌</span>}
+                          </div>
                           <p className="text-xs text-gray-500 font-bold mt-1 uppercase tracking-wider">{b.desc}</p>
 
                           {/* Barra de Progrés */}
@@ -158,6 +188,18 @@ export default function BadgesPage() {
                       {isUnlocked ? '🌟 Desbloquejada' : '🔒 Bloquejada'}
                     </p>
                   </div>
+                  
+                  {isUnlocked && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); togglePin(selectedBadge); }}
+                      className={`mt-4 w-full py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all
+                        ${profile?.selectedBadges?.includes(selectedBadge) 
+                          ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30' 
+                          : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30'}`}
+                    >
+                      {profile?.selectedBadges?.includes(selectedBadge) ? 'Treu la xinxeta' : '📌 Fixa la insígnia'}
+                    </button>
+                  )}
                 </div>
               );
             })()}

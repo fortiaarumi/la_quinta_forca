@@ -10,6 +10,7 @@ interface AuthContextType {
   nickname: string | null;
   avatarUrl: string | null; // 👈 NOU
   badges: string[];         // 👈 NOU
+  selectedBadges: string[]; // 👈 NOU
   isAdmin: boolean;
   isGuest: boolean;
   loading: boolean;
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   nickname: null,
   avatarUrl: null, // 👈 NOU
   badges: [],      // 👈 NOU
+  selectedBadges: [], // 👈 NOU
   isAdmin: false,
   isGuest: false,
   loading: true,
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [nickname, setNickname] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // 👈 NOU
   const [badges, setBadges] = useState<string[]>([]);              // 👈 NOU
+  const [selectedBadges, setSelectedBadges] = useState<string[]>([]); // 👈 NOU
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setNickname(data.nickname);
             setAvatarUrl(data.avatarUrl || null); // 👈 NOU
             setBadges(data.badges || []);        // 👈 NOU
+            setSelectedBadges(data.selectedBadges || []); // 👈 NOU
             // 👈 AFEGIT: Si tens el rol a la DB O ets el Fortià, s'activa!
             setIsAdmin(data.isAdmin === true || u.email === 'fortiaarumi@gmail.com'); 
           } else if (u.email === 'fortiaarumi@gmail.com') {
@@ -95,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNickname(null);
     setAvatarUrl(null); // 👈 NOU
     setBadges([]);      // 👈 NOU
+    setSelectedBadges([]); // 👈 NOU
   };
 
   const setGuestMode = (v: boolean) => {
@@ -112,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       nickname, 
       avatarUrl, // 👈 NOU
       badges,    // 👈 NOU
+      selectedBadges, // 👈 NOU
       isAdmin,
       isGuest, 
       loading, 

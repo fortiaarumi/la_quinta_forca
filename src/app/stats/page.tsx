@@ -21,7 +21,7 @@ export default function StatsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<any[]>([]); // Canviem a any[] pels camps dinàmics
-  const [mode, setMode] = useState<'world' | 'catalunya' | 'estadis' | 'cultural' | '5k'>('world');
+  const [mode, setMode] = useState<'world' | 'catalunya' | 'pixapins' | 'estadis' | 'cultural' | '5k'>('world');
   const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala'); // 👈 AFEGIT
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU: Controla el pop-up de la insígnia
 
@@ -37,6 +37,7 @@ export default function StatsPage() {
           // Mirem quin mode és i li concatenem el temps
           if (mode === 'world') field = `bestScoreWorld_${timeFilter}`;
           else if (mode === 'catalunya') field = `bestScoreCatalunya_${timeFilter}`;
+          else if (mode === 'pixapins') field = `bestScorePixapins_${timeFilter}`;
           else if (mode === 'estadis') field = `bestScoreEstadis_${timeFilter}`;
           else if (mode === 'cultural') field = `bestScoreCultural_${timeFilter}`;
         }
@@ -98,13 +99,16 @@ export default function StatsPage() {
           </button>
         </div>
 
-        {/* Selector de Rànquing */}
-        <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-8 gap-1 flex-wrap md:flex-nowrap">
-          <button onClick={() => setMode('world')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'world' ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>🌎 Món</button>
-          <button onClick={() => setMode('catalunya')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'catalunya' ? 'bg-yellow-400 text-black shadow-lg' : 'text-gray-500 hover:text-white'}`}>🔴 Cat.</button>
-          <button onClick={() => setMode('estadis')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'estadis' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>⚽ Estadis</button>
-          <button onClick={() => setMode('cultural')} className={`flex-1 min-w-[30%] py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'cultural' ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🏛️ Cult.</button>
-          <button onClick={() => setMode('5k')} className={`flex-1 min-w-[100%] md:min-w-[auto] mt-1 md:mt-0 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === '5k' ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🏆 5K</button>
+        {/* Selector de Rànquing (Horitzontal Scrollable per escalar millor i més elegant) */}
+        <div className="overflow-x-auto pb-4 mb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex bg-black/40 p-2 rounded-[2rem] border border-white/5 gap-2 min-w-max">
+            <button onClick={() => setMode('world')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'world' ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🌎 Món</button>
+            <button onClick={() => setMode('catalunya')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'catalunya' ? 'bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🚩 Catalunya</button>
+            <button onClick={() => setMode('pixapins')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'pixapins' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏙️ Pixapins</button>
+            <button onClick={() => setMode('estadis')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'estadis' ? 'bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>⚽ Estadis</button>
+            <button onClick={() => setMode('cultural')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'cultural' ? 'bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏛️ Cultura</button>
+            <button onClick={() => setMode('5k')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === '5k' ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏆 5K</button>
+          </div>
         </div>
 
         {/* AFEGIT: Selector de Temps (només es mostra si no estem a Mestres 5K) */}
@@ -185,8 +189,9 @@ export default function StatsPage() {
                         {mode === '5k' ? player.total5k : (
                           mode === 'world' ? player[`bestScoreWorld_${timeFilter}`] :
                             mode === 'catalunya' ? player[`bestScoreCatalunya_${timeFilter}`] :
-                              mode === 'estadis' ? player[`bestScoreEstadis_${timeFilter}`] :
-                                player[`bestScoreCultural_${timeFilter}`]
+                              mode === 'pixapins' ? player[`bestScorePixapins_${timeFilter}`] :
+                                mode === 'estadis' ? player[`bestScoreEstadis_${timeFilter}`] :
+                                  player[`bestScoreCultural_${timeFilter}`]
                         ) || 0}
                       </td>
                     </tr>

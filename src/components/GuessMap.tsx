@@ -30,10 +30,10 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
     if (!mapRef.current) return;
 
     const map = new google.maps.Map(mapRef.current, {
-      // Si és Catalunya, fem un zoom de 7; si és el món, zoom d'1
-      zoom: gameMode === 'catalunya' ? 7 : 1,
-      // Si és Catalunya, centrem a prop de Manresa; si no, a l'equador
-      center: gameMode === 'catalunya' ? { lat: 41.5912, lng: 1.5209 } : { lat: 20, lng: 0 },
+      // Si és Pixapins zoom 12, si és Catalunya zoom 7, si és món zoom 1
+      zoom: gameMode === 'pixapins' ? 12 : (gameMode === 'catalunya' ? 7 : 1),
+      // Si és Pixapins centrem a Barcelona, si és Catalunya a prop de Manresa, si no a l'equador
+      center: gameMode === 'pixapins' ? { lat: 41.3874, lng: 2.1686 } : (gameMode === 'catalunya' ? { lat: 41.5912, lng: 1.5209 } : { lat: 20, lng: 0 }),
       disableDefaultUI: true,
       zoomControl: true,
       zoomControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT },

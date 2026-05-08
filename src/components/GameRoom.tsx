@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
-import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
+import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
 import StreetViewPane from './StreetViewPane';
 import GuessMap from './GuessMap';
@@ -16,6 +16,7 @@ import GoldButton from './GoldButton';
 import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame } from '@/lib/userStats';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
+import { ALL_BADGES } from '@/lib/badges';
 
 interface Props {
   roomId: string;
@@ -299,6 +300,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       attempts++;
       let coords;
       if (room.gameMode === 'catalunya') coords = randomCatalunyaCoords();
+      else if (room.gameMode === 'pixapins') coords = randomPixapinsCoords();
       else if (room.gameMode === 'estadis') coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
       else if (room.gameMode === 'cultural') coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
       else coords = randomBiasedCoords();
@@ -307,7 +309,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         service.getPanorama(
           {
             location: coords,
-            radius: room.gameMode === 'catalunya' ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
+            radius: (room.gameMode === 'catalunya' || room.gameMode === 'pixapins') ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
             source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
             preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
           },
@@ -418,33 +420,65 @@ export default function GameRoom({ roomId, playerId }: Props) {
     console.log("📍 1. Coordenades de la ronda:", actual.lat, actual.lng);
 
     try {
-      const getCountryCode = (): Promise<string | null> => {
+      const getGeocodingData = (): Promise<google.maps.GeocoderResult[]> => {
         return new Promise((resolve) => {
           const geocoder = new (google.maps as any).Geocoder();
           geocoder.geocode({ location: { lat: actual.lat, lng: actual.lng } }, (results: any, status: any) => {
-            // RADIOGRAFIA 2
-            console.log("🗺️ 2. Estat de Google Maps:", status);
-
             if (status === 'OK' && results) {
-              // Ara busquem a TOTS els resultats, és molt més segur
-              for (const r of results) {
-                const c = r.address_components.find((comp: any) => comp.types.includes('country'));
-                if (c) {
-                  console.log("✅ 3. Codi de país detectat per Google:", c.short_name);
-                  resolve(c.short_name);
-                  return;
-                }
-              }
-              console.log("❌ 3. Google Maps no ha sabut trobar el país en aquestes coordenades.");
-              resolve(null);
+              resolve(results);
             } else {
-              resolve(null);
+              resolve([]);
             }
           });
         });
       };
 
-      const code = await getCountryCode();
+      const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
+      const geocodingResults = await getGeocodingData();
+
+      if (room.gameMode === 'catalunya') {
+        let comarca = '';
+        let locality = '';
+        let province = '';
+
+        for (const r of geocodingResults) {
+          if (!r.formatted_address.includes('+')) {
+            for (const comp of r.address_components) {
+              if (comp.types.includes('administrative_area_level_3') && !comarca) comarca = comp.long_name;
+              if (comp.types.includes('locality') && !locality) locality = comp.long_name;
+              if (comp.types.includes('administrative_area_level_2') && !province) province = comp.long_name;
+            }
+          }
+        }
+
+        if (comarca) options.push({ type: 'Comarca', value: comarca });
+        if (province) options.push({ type: 'Província', value: province });
+        if (locality) options.push({ type: 'Poble/Ciutat', value: `Comença per la lletra ${locality.charAt(0).toUpperCase()}` });
+      } else if (room.gameMode === 'pixapins') {
+        let locality = '';
+        let sublocality = '';
+
+        for (const r of geocodingResults) {
+          if (!r.formatted_address.includes('+')) {
+            for (const comp of r.address_components) {
+              if (comp.types.includes('locality') && !locality) locality = comp.long_name;
+              if (comp.types.includes('sublocality') && !sublocality) sublocality = comp.long_name;
+              if (comp.types.includes('neighborhood') && !sublocality) sublocality = comp.long_name;
+            }
+          }
+        }
+
+        if (sublocality) options.push({ type: 'Barri / Zona', value: sublocality });
+        if (locality && locality !== sublocality) options.push({ type: 'Districte / Municipi', value: locality });
+        
+        const distCampNou = haversineDistance(actual.lat, actual.lng, CAMP_NOU_COORDS.lat, CAMP_NOU_COORDS.lng);
+        options.push({ type: 'Distància', value: `A ${(distCampNou).toFixed(2)} km del Camp Nou` });
+      } else {
+        const code = geocodingResults.reduce((acc: string | null, r: any) => {
+          if (acc) return acc;
+          const c = r.address_components.find((comp: any) => comp.types.includes('country'));
+          return c ? c.short_name : null;
+        }, null);
       let countryData = null;
 
       if (code) {
@@ -464,7 +498,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         }
       }
 
-      const options: { type: string, value: string, imageUrl?: string, isFree?: boolean }[] = [];
+
 
       if (countryData) {
         const currencyKey = countryData.currencies ? Object.keys(countryData.currencies)[0] : null;
@@ -487,6 +521,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           options.push({ type: 'Bandera', value: 'Bandera', imageUrl: countryData.flags.png || countryData.flags.svg });
         }
         console.log("✨ 6. Pistes generades amb èxit des de la teva base de dades!");
+      }
       }
 
       options.push(
@@ -684,7 +719,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center gap-4">
         <div className="text-6xl animate-spin-slow">🌍</div>
         <div className="text-white text-xl animate-pulse font-bold">
-          {room.gameMode === 'catalunya' ? 'Preparant Catalunya...' : 'Buscant ubicacions...'}
+          {room.gameMode === 'catalunya' ? 'Preparant Catalunya...' : (room.gameMode === 'pixapins' ? 'Buscant per Barcelona...' : 'Buscant ubicacions...')}
         </div>
         <div className="text-gray-400 text-sm">Això pot trigar uns segons</div>
       </div>
@@ -817,9 +852,26 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 key={id}
                 className={`flex items-center justify-between gap-3 text-sm ${i > 0 ? 'mt-2 pt-2 border-t border-white/10' : ''}`}
               >
-                <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
-                  {isMe ? '★ ' : ''}{player.name}
-                </span>
+                <div className="flex flex-col">
+                  <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
+                    {isMe ? '★ ' : ''}{player.name}
+                  </span>
+                  {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
+                    <div className="flex gap-1 mt-1">
+                      {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
+                        const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                        return (
+                          <div key={bi} className="relative group cursor-pointer">
+                            <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-black/90 border border-white/20 text-white text-[8px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                              {bId}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col items-end">
                   {room.gameType === '1vs1' ? (
                     <>

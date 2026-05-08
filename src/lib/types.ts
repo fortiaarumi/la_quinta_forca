@@ -29,6 +29,7 @@ export interface Player {
   joinedAt: number;
   avatarUrl?: string;
   badges?: string[];
+  selectedBadges?: string[]; // 👈 NOU
   health?: number;
   isEliminated?: boolean;
   eliminatedAtRound?: number;
@@ -54,9 +55,14 @@ export interface UserProfile {
   bestScoreCultural_bala?: number;
   bestScoreCultural_normal?: number;
   bestScoreCultural_infinit?: number;
+  bestScorePixapins?: number;
+  bestScorePixapins_bala?: number;
+  bestScorePixapins_normal?: number;
+  bestScorePixapins_infinit?: number;
   lastVideoUploadDate?: string;
   avatarUrl?: string;
   badges?: string[];
+  selectedBadges?: string[]; // 👈 NOU: Insígnies fixades pel jugador
   totalGames?: number;
   totalWins?: number;
   totalWins1vs1?: number; // 👈 NOU: Insígnia Duel Joan
@@ -71,7 +77,7 @@ export type GameState =
   | 'finished';
 
 // Tipus de modes de joc
-export type GameMode = 'world' | 'catalunya' | 'estadis' | 'cultural';
+export type GameMode = 'world' | 'catalunya' | 'estadis' | 'cultural' | 'pixapins';
 
 // NOU: Tipus per al ritme de la partida
 export type TimeMode = 'bala' | 'normal' | 'infinit';

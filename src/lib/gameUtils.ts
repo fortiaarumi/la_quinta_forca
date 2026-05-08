@@ -18,8 +18,10 @@ export function calculateScore(distanceKm: number, mode: string = 'world'): numb
   // 👈 AFEGIT: Tolerància de 50 metres (0.05 km) per la puntuació perfecta
   if (distanceKm <= 0.05) return 5000;
 
-  if (mode === 'catalunya') {
-    // Escala per a Catalunya: La caiguda de punts és molt ràpida (divisor 30)
+  if (distanceKm <= 0.05) return 5000;
+
+  if (mode === 'catalunya' || mode === 'pixapins') {
+    // Escala per a Catalunya i Barcelona: La caiguda de punts és molt ràpida (divisor 30)
     const score = Math.round(5000 * Math.exp(-distanceKm / 30));
     return Math.max(0, Math.min(5000, score));
   } else {
@@ -83,6 +85,24 @@ export function randomCatalunyaCoords(): Coords {
 
   return { lat, lng };
 }
+
+// Genera coordenades aleatòries dins d'una caixa delimitadora per a Barcelona (Pixapins)
+export function randomPixapinsCoords(): Coords {
+  // Límits geogràfics aproximats de Barcelona ciutat i àrea molt propera
+  const minLat = 41.34;
+  const maxLat = 41.45;
+  const minLng = 2.10;
+  const maxLng = 2.22;
+
+  const lat = minLat + Math.random() * (maxLat - minLat);
+  const lng = minLng + Math.random() * (maxLng - minLng);
+
+  return { lat, lng };
+}
+
+// ── CONSTANTS CLAU ──
+export const CAMP_NOU_COORDS = { lat: 41.380896, lng: 2.1228198 };
+export const SAGRADA_FAMILIA_COORDS = { lat: 41.4036299, lng: 2.1743558 };
 
 // ── NOU: LLISTES DE COORDENADES TEMÀTIQUES ──
 export const ESTADIS_FUTBOL = [

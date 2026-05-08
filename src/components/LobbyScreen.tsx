@@ -177,9 +177,9 @@ export default function LobbyScreen({
                 </div>
                 <div className="flex flex-col">
                   <span className="font-black text-sm uppercase tracking-tight">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
-                  {player.badges && player.badges.length > 0 && (
+                  {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
                     <div className="flex gap-2 mt-2">
-                      {player.badges.slice(0, 3).map((bId: string, bi: number) => {
+                      {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
                         const badgeDef = ALL_BADGES.find(b => b.id === bId);
                         return (
                           <div

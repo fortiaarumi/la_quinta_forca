@@ -26,7 +26,7 @@ function getOrCreateGuestId(): string {
 export default function HomeScreen() {
   const router = useRouter();
   const { 
-    user, nickname, avatarUrl, badges, isAdmin, logout, isGuest 
+    user, nickname, avatarUrl, badges, selectedBadges, isAdmin, logout, isGuest 
   } = useAuth();
   
   // ── ESTATS PER A L'AVATAR ──
@@ -390,7 +390,8 @@ export default function HomeScreen() {
         joinedAt: Date.now(), 
         isAdmin: !!isAdmin,
         avatarUrl: avatarUrl || null,
-        badges: badges || []
+        badges: badges || [],
+        selectedBadges: selectedBadges || []
       };
       if (gameType === '1vs1') initialPlayer.health = 10000;
 
@@ -418,7 +419,8 @@ export default function HomeScreen() {
         joinedAt: Date.now(), 
         isAdmin: !!isAdmin,
         avatarUrl: avatarUrl || null,
-        badges: badges || []
+        badges: badges || [],
+        selectedBadges: selectedBadges || []
       };
       if (gameType === '1vs1') initialPlayer.health = 10000;
 
@@ -449,7 +451,8 @@ export default function HomeScreen() {
           joinedAt: Date.now(), 
           isAdmin: !!isAdmin,
           avatarUrl: avatarUrl || null,
-          badges: badges || []
+          badges: badges || [],
+          selectedBadges: selectedBadges || []
         });
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
@@ -790,6 +793,7 @@ export default function HomeScreen() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <OptionCard selected={gameMode === 'world'} title="Món" desc="Ubicacions de tot el planeta." icon="🌎" onClick={() => setGameMode('world')} />
                     <OptionCard selected={gameMode === 'catalunya'} title="Catalunya" desc="Pobles i ciutats de casa nostra." icon="🔴" onClick={() => setGameMode('catalunya')} />
+                    <OptionCard selected={gameMode === 'pixapins'} title="Pixapins" desc="Només indrets de Barcelona." icon="🏙️" onClick={() => setGameMode('pixapins')} />
                     <OptionCard selected={gameMode === 'estadis'} title="Estadis" desc="Camps de futbol i recintes." icon="⚽" onClick={() => setGameMode('estadis')} />
                     <OptionCard selected={gameMode === 'cultural'} title="Cultura" desc="Monuments i edificis històrics." icon="🏛️" onClick={() => setGameMode('cultural')} />
                   </div>
@@ -806,12 +810,7 @@ export default function HomeScreen() {
                     <OptionCard selected={timeMode === 'infinit'} title="Infinit" desc="Gaudeix de les vistes (Sense límit)." icon="♾️" onClick={() => setTimeMode('infinit')} />
                   </div>
                   <GoldButton onClick={() => {
-                    if (gameMode === 'catalunya') {
-                      setHintsEnabled(false);
-                      if (tab === 'create') handleCreate(); else handleSolo();
-                    } else {
-                      goToStep('hints');
-                    }
+                    goToStep('hints');
                   }} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
                 </StepWrapper>
               )}

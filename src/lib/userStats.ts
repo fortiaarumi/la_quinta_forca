@@ -23,9 +23,14 @@ export interface UserProfile {
   bestScoreCultural_bala?: number;
   bestScoreCultural_normal?: number;
   bestScoreCultural_infinit?: number;
+  bestScorePixapins?: number;
+  bestScorePixapins_bala?: number;
+  bestScorePixapins_normal?: number;
+  bestScorePixapins_infinit?: number;
   lastVideoUploadDate?: string;
   avatarUrl?: string; // 👈 NOU
   badges?: string[];  // 👈 NOU
+  selectedBadges?: string[]; // 👈 NOU
   totalGames?: number; // Per a l'insígnia de 10 partides
   totalWins?: number;  // Per a l'insígnia de 50 victòries
 }
@@ -37,6 +42,7 @@ export interface LeaderboardEntry {
   total5k?: number;
   avatarUrl?: string; // 👈 NOU
   badges?: string[];  // 👈 NOU
+  selectedBadges?: string[]; // 👈 NOU
 }
 
 // Crea el perfil d'usuari nou a la base de dades
@@ -46,6 +52,7 @@ export async function createUserProfile(uid: string, nickname: string, email: st
     email,
     bestScoreWorld: 0,
     bestScoreCatalunya: 0,
+    bestScorePixapins: 0,
     total5k: 0,
   } satisfies UserProfile);
 }
@@ -82,6 +89,8 @@ export async function updateUserStatsAfterGame(
     bestField = `bestScoreEstadis_${timeMode}`;
   } else if (gameMode === 'cultural') {
     bestField = `bestScoreCultural_${timeMode}`;
+  } else if (gameMode === 'pixapins') {
+    bestField = `bestScorePixapins_${timeMode}`;
   }
 
   const currentBest = profile[bestField] ?? 0;
@@ -100,6 +109,7 @@ export async function updateUserStatsAfterGame(
     if (gameMode === 'catalunya') globalField = 'bestScoreCatalunya';
     else if (gameMode === 'estadis') globalField = 'bestScoreEstadis';
     else if (gameMode === 'cultural') globalField = 'bestScoreCultural';
+    else if (gameMode === 'pixapins') globalField = 'bestScorePixapins';
 
     const currentGlobalBest = profile[globalField] ?? 0;
     if (totalGameScore > currentGlobalBest) {
@@ -147,8 +157,8 @@ export async function updateUserStatsAfterGame(
   if (gameMode === 'cultural' && isWinner) checkAndAdd("Pausu");
   if (updates.hintsRevealed >= 500) checkAndAdd("Muniani");
 
-  // Lògica David Txuc: Ha de tenir puntuació en les 12 combinacions
-  const modes = ['World', 'Catalunya', 'Estadis', 'Cultural'];
+  // Lògica David Txuc: Ha de tenir puntuació en les 15 combinacions (12 d'abans + 3 pixapins)
+  const modes = ['World', 'Catalunya', 'Estadis', 'Cultural', 'Pixapins'];
   const times = ['bala', 'normal', 'infinit'];
   const hasPlayedAll = modes.every(m =>
     times.every(t => {
@@ -173,6 +183,7 @@ export async function getLeaderboard(mode: GameMode | string, limit = 10): Promi
   if (mode === 'catalunya') field = 'bestScoreCatalunya';
   else if (mode === 'estadis') field = 'bestScoreEstadis';
   else if (mode === 'cultural') field = 'bestScoreCultural';
+  else if (mode === 'pixapins') field = 'bestScorePixapins';
   const q = query(ref(db, 'users'), orderByChild(field), limitToLast(limit));
   const snap = await get(q);
   if (!snap.exists()) return [];
@@ -187,7 +198,8 @@ export async function getLeaderboard(mode: GameMode | string, limit = 10): Promi
         nickname: data.nickname,
         score,
         avatarUrl: data.avatarUrl,
-        badges: data.badges
+        badges: data.badges,
+        selectedBadges: data.selectedBadges
       });
     }
   });
@@ -211,7 +223,8 @@ export async function get5kMasters(limit = 10): Promise<LeaderboardEntry[]> {
         score: 0,
         total5k: data.total5k,
         avatarUrl: data.avatarUrl,
-        badges: data.badges
+        badges: data.badges,
+        selectedBadges: data.selectedBadges
       });
     }
   });

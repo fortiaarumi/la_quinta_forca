@@ -12,17 +12,17 @@ export default function StreetViewPane({ location, gameMode }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const isCultural = gameMode === 'cultural';
+    const isRestricted = gameMode === 'cultural' || gameMode === 'pixapins';
 
     const options: google.maps.StreetViewPanoramaOptions = {
       addressControl: false,
       showRoadLabels: false,
 
       // ── RESTRICCIONS "NO MOVE" ──
-      // Si és cultural, bloquegem el zoom i apaguem les fletxes de terra
-      zoomControl: !isCultural,
-      clickToGo: !isCultural,
-      linksControl: !isCultural,
+      // Si és cultural o pixapins, bloquegem el zoom i apaguem les fletxes de terra
+      zoomControl: !isRestricted,
+      clickToGo: !isRestricted,
+      linksControl: !isRestricted,
 
       zoomControlOptions: {
         position: google.maps.ControlPosition.RIGHT_BOTTOM,
