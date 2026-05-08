@@ -380,6 +380,21 @@ export default function GameRoom({ roomId, playerId }: Props) {
             else if (comarca) resolve(`la comarca de ${comarca}`);
             else if (locality) resolve(locality);
             else resolve("un indret remot de Catalunya");
+          } else if (gameMode === 'pixapins') {
+            // Per Pixapins (Barcelona) usem Nominatim per obtenir barri + districte + CP
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+              headers: { 'User-Agent': 'LaQuintaForcaApp/1.0 (fortiaarumi@gmail.com)' }
+            }).then(r => r.json()).then(geo => {
+              const addr = geo?.address || {};
+              const neighbourhood = addr.neighbourhood || addr.quarter || addr.suburb || '';
+              const district = addr.city_district || addr.city || 'Barcelona';
+              const postcode = addr.postcode || '';
+              const parts: string[] = [];
+              if (neighbourhood) parts.push(neighbourhood);
+              if (district && district !== neighbourhood) parts.push(district);
+              if (postcode) parts.push(`CP ${postcode}`);
+              resolve(parts.length > 0 ? parts.join(', ') : 'un barri de Barcelona');
+            }).catch(() => resolve('un barri de Barcelona'));
           } else {
             // Mode Món: Busquem el país a tots els components de geolocalització
             const countryComp = components.find((c: any) => c.types.includes('country'));

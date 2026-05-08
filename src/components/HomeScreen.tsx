@@ -656,6 +656,11 @@ export default function HomeScreen() {
                       <span>Administració</span>
                     </Link>
                   )}
+                  <Link href="/soundtrack" className="group relative px-10 py-5 bg-purple-600/10 border border-purple-500/20 rounded-3xl hover:bg-purple-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-purple-300 no-underline flex items-center gap-3 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                    <span className="text-xl group-hover:animate-spin">🎵</span>
+                    <span>Banda Sonora</span>
+                  </Link>
                 </div>
               </div>
 
@@ -709,41 +714,6 @@ export default function HomeScreen() {
                 </div>
               </div>
 
-              {/* Secció Banda Sonora (Music Player) */}
-              <div className="lg:col-span-12 mt-8 w-full animate-slide-up">
-                <div className="bg-[#0c0f1a] border border-white/10 rounded-[3rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-white/5 pb-6">
-                    <div className="flex items-center gap-5">
-                      <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg animate-pulse">🎵</div>
-                      <div>
-                        <h3 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-1">Banda Sonora Original</h3>
-                        <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em]">Escolta i descarrega els temes de La Quinta Forca</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2 mb-2 ml-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                        <h4 className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Música de Menú</h4>
-                      </div>
-                      {MENU_TRACKS.map((url, i) => (
-                        <TrackPlayer key={url} trackUrl={url} trackName={`Menú BGM ${i + 1}`} />
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2 mb-2 ml-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <h4 className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">Música de Joc</h4>
-                      </div>
-                      {GAME_TRACKS.map((url, i) => (
-                        <TrackPlayer key={url} trackUrl={url} trackName={`Joc BGM ${i + 1}`} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
             </div>
           )}

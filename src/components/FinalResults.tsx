@@ -142,29 +142,29 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_lyrics', error: null });
       const roundsSnap = await get(ref(db, `rooms/${roomId}/rounds`));
       const freshRounds = roundsSnap.val() || room.rounds || [];
+      const gameMode = room.gameMode || 'world';
+      const totalRounds = Object.keys(freshRounds).length;
+
       const guesses = Object.entries(room.players).map(([id, p]) => {
-        let maxDist = 0;
-        let worstGuessCountry = '';
-        let worstActualCountry = '';
-        for (let i = 0; i < 5; i++) {
+        const roundLines: string[] = [];
+        for (let i = 0; i < totalRounds; i++) {
           const guessObj = freshRounds[i]?.guesses?.[id];
-          if (guessObj && guessObj.distance > maxDist) {
-            maxDist = guessObj.distance;
-            worstGuessCountry = guessObj.guessCountry || "un lloc completament desconegut";
-            worstActualCountry = guessObj.actualCountry || "enmig del no-res";
-          }
+          if (!guessObj) continue;
+          const distWords = numberToCatalan(Math.round(guessObj.distance));
+          const actual = guessObj.actualCountry || 'un lloc desconegut';
+          const guess = guessObj.guessCountry || 'un lloc desconegut';
+          roundLines.push(`  Ronda ${i+1}: estava a "${actual}", ha posat el pin a "${guess}" (error: ${distWords} km)`);
         }
-        if (maxDist > 0) {
-          const distWords = numberToCatalan(Math.round(maxDist));
-          return `- Jugador: ${p.name}\n  Lloc de la foto real: ${worstActualCountry}\n  On ha posat el pin el jugador: ${worstGuessCountry}\n  L'error ha estat de: ${distWords} quilòmetres\n`;
+        if (roundLines.length > 0) {
+          return `- Jugador: ${p.name}\n${roundLines.join('\n')}\n`;
         }
-        return `- Jugador: ${p.name} (ha jugat perfecte i no ha fallat gens)\n`;
-      }).join('\\n');
+        return `- Jugador: ${p.name} (ha jugat perfecte)\n`;
+      }).join('\n');
 
       const res = await fetch('/api/generate-song', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guesses })
+        body: JSON.stringify({ guesses, gameMode })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error desconegut al generar la cançó');

@@ -16,6 +16,7 @@ interface AudioContextType {
   playRiure: () => void;
   nextTrack: () => void;
   prevTrack: () => void;
+  currentTrackName: string | null;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -55,12 +56,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const unplayedGame = useRef<string[]>([]);
   const lastMenuTrack = useRef<string | null>(null);
   const lastGameTrack = useRef<string | null>(null);
+  // Historial real de pistes reproduïdes (per prevTrack)
+  const historyMenu = useRef<string[]>([]);
+  const historyGame = useRef<string[]>([]);
+  const currentTrackPath = useRef<string | null>(null);
 
   const currentCategory = useRef<'menu' | 'game' | 'none'>('none');
   const isTransitioning = useRef(false);
   const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Nou: Popup "Ara Sonant"
+  // Popup "Ara Sonant"
   const [currentTrackName, setCurrentTrackName] = useState<string | null>(null);
   const [showTrackPopup, setShowTrackPopup] = useState(false);
   const popupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -182,9 +187,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     fadeInPlayer.muted = isMuted;
     fadeInPlayer.play().catch(e => console.log("Play failed:", e));
 
+    // Guardar al historial
+    if (currentTrackPath.current) {
+      const cat = currentCategory.current;
+      if (cat === 'menu') historyMenu.current.push(currentTrackPath.current);
+      else if (cat === 'game') historyGame.current.push(currentTrackPath.current);
+    }
+    currentTrackPath.current = newSrc;
+
     // Mostrar el Toast Ara Sonant
-    setCurrentTrackName(formatTrackName(newSrc));
-    setShowTrackPopup(false); // Resetejar animació
+    const name = formatTrackName(newSrc);
+    setCurrentTrackName(name);
+    setShowTrackPopup(false);
     setTimeout(() => setShowTrackPopup(true), 50);
     if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
     popupTimeoutRef.current = setTimeout(() => setShowTrackPopup(false), 4000);
@@ -231,8 +245,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   };
 
   const prevTrack = () => {
-    if (currentCategory.current !== 'none') {
-      playCategory(currentCategory.current, true);
+    const cat = currentCategory.current;
+    if (cat === 'none') return;
+    const history = cat === 'menu' ? historyMenu : historyGame;
+    if (history.current.length > 0) {
+      // Recuperem la pista anterior
+      const prevSrc = history.current.pop() as string;
+      // Tornem-la a afegir al front de la llista sense-reproduir perquè no es perdi del shuffle
+      const listRef = cat === 'menu' ? unplayedMenu : unplayedGame;
+      if (currentTrackPath.current) listRef.current.push(currentTrackPath.current);
+      const targetVolume = cat === 'menu' ? 0.3 : 0.4;
+      // Actualitzem currentTrackPath manualment abans de crossfade
+      currentTrackPath.current = null; // evitem que crossfade la guardi al historial dos cops
+      crossfade(prevSrc, targetVolume);
+      currentTrackPath.current = prevSrc;
+    } else {
+      // Si no hi ha historial, anem a l'inici de la cançó actual
+      const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
+      if (player) player.currentTime = 0;
     }
   };
 
@@ -261,29 +291,30 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     <AudioContext.Provider value={{
       playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
       hasInteracted, setHasInteracted: handleSetInteracted, 
-      playCelebration, playDecepcion, playSiu, playRiure, nextTrack, prevTrack
+      playCelebration, playDecepcion, playSiu, playRiure, nextTrack, prevTrack,
+      currentTrackName
     }}>
       {children}
       
-      {/* NOU: CONTROLS GLOBALS D'ÀUDIO */}
-      {hasInteracted && currentCategory.current !== 'none' && (
-        <div className="fixed top-6 right-6 z-[99999] flex items-center gap-1 bg-black/60 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-          <button onClick={prevTrack} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white">⏮️</button>
-          <button onClick={toggleMute} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-lg transition-transform active:scale-90 border border-white/5 cursor-pointer mx-1 shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
-          <button onClick={nextTrack} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white">⏭️</button>
+      {/* CONTROLS GLOBALS D'ÀUDIO — bottom-left, no interfereix amb les pistes */}
+      {hasInteracted && (
+        <div className={`fixed bottom-6 left-6 z-[9998] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-opacity duration-300 ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-base">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-base transition-transform active:scale-90 border border-white/5 cursor-pointer mx-0.5 shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-base">⏭</button>
         </div>
       )}
       
-      {/* NOU: POPUP ARA SONANT */}
-      <div className={`fixed bottom-4 right-4 z-[99999] pointer-events-none transition-all duration-700 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="bg-black/90 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
-          <div className="relative flex h-4 w-4">
+      {/* POPUP ARA SONANT — bottom-right, sobre el player global */}
+      <div className={`fixed bottom-20 left-6 z-[9997] pointer-events-none transition-all duration-700 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="bg-black/90 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+          <div className="relative flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 flex items-center justify-center text-[8px]">🎵</span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
           </div>
           <div className="flex flex-col">
             <span className="text-gray-400 text-[9px] font-black uppercase tracking-widest leading-tight">Ara Sonant</span>
-            <span className="text-white text-sm font-bold leading-tight">{currentTrackName}</span>
+            <span className="text-white text-xs font-bold leading-tight">{currentTrackName}</span>
           </div>
         </div>
       </div>
