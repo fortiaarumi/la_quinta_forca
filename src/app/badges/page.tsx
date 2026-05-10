@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/lib/authContext';
 import { ALL_BADGES } from '@/lib/badges';
-import { getUserProfile, UserProfile } from '@/lib/userStats';
+import { getUserProfile } from '@/lib/userStats';
+import { UserProfile } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ref, update } from 'firebase/database';
