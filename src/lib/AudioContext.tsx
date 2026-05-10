@@ -54,6 +54,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const [isMuted, setIsMuted] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const hasInteractedRef = useRef(false);
+
+  useEffect(() => {
+    hasInteractedRef.current = hasInteracted;
+  }, [hasInteracted]);
 
   const unplayedMenu = useRef<string[]>([]);
   const unplayedGame = useRef<string[]>([]);
@@ -126,21 +131,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       siuRef.current.volume = 0.8;
       riureRef.current = new Audio('/sounds/riure.mp3');
       riureRef.current.volume = 0.6;
-
-      // Lock per evitar doble-fire de onEnded (fadeOut + fadeIn simultanis)
-      let nextScheduled = false;
-      const onEnded = () => {
-        if (currentCategory.current === 'none') return;
-        if (nextScheduled) return;
-        nextScheduled = true;
-        setTimeout(() => { nextScheduled = false; }, 500);
-        playCategory(currentCategory.current, true);
-      };
-
-      bgmPlayerA.current.onended = onEnded;
-      bgmPlayerB.current.onended = onEnded;
     }
   }, []);
+
+  const nextScheduledRef = useRef(false);
 
   useEffect(() => { initPlayers(); }, [initPlayers]);
 
@@ -178,7 +172,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
   }, [isMuted]);
 
-  const crossfade = (newSrc: string, targetVolume: number) => {
+  const crossfade = useCallback((newSrc: string, targetVolume: number) => {
     if (!bgmPlayerA.current || !bgmPlayerB.current) return;
     if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
 
@@ -225,10 +219,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         isTransitioning.current = false;
       }
     }, 50);
-  };
+  }, [isMuted]);
 
-  const playCategory = (category: 'menu' | 'game', forceNext = false) => {
-    if (!hasInteracted) return;
+  const playCategory = useCallback((category: 'menu' | 'game', forceNext = false) => {
+    if (!hasInteractedRef.current) return;
     if (!forceNext && currentCategory.current === category) {
       const player = activePlayer.current === 'A' ? bgmPlayerA.current : bgmPlayerB.current;
       if (player && player.paused) player.play().catch(e => console.log('Restarting', e));
@@ -237,10 +231,26 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     currentCategory.current = category;
     const nextTrack = getNextTrack(category);
     crossfade(nextTrack, category === 'menu' ? 0.3 : 0.4);
-  };
+  }, [crossfade]);
 
-  const playMenuMusic = () => playCategory('menu');
-  const playGameMusic = () => playCategory('game');
+  const playMenuMusic = useCallback(() => playCategory('menu'), [playCategory]);
+  const playGameMusic = useCallback(() => playCategory('game'), [playCategory]);
+
+  // ── GESTIÓ DEL FINAL DE PISTA (PROGRÉSSIO AUTOMÀTICA) ──
+  useEffect(() => {
+    if (!bgmPlayerA.current || !bgmPlayerB.current) return;
+
+    const onEnded = () => {
+      if (currentCategory.current === 'none') return;
+      if (nextScheduledRef.current) return;
+      nextScheduledRef.current = true;
+      setTimeout(() => { nextScheduledRef.current = false; }, 1000);
+      playCategory(currentCategory.current, true);
+    };
+
+    bgmPlayerA.current.onended = onEnded;
+    bgmPlayerB.current.onended = onEnded;
+  }, [playCategory]);
 
   const nextTrack = () => {
     if (currentCategory.current !== 'none') playCategory(currentCategory.current, true);
