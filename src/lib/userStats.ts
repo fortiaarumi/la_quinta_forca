@@ -11,7 +11,8 @@ export const QUEST_POOL = [
   { id: 'play_bala', description: 'Jugar en mode Bala', target: 1, xpReward: 300 },
   { id: 'win_3_pixapins', description: 'Guanyar 3 partides a Pixapins', target: 3, xpReward: 600 },
   { id: 'win_1_world', description: 'Guanyar una partida a Món', target: 1, xpReward: 400 },
-  { id: 'duel_6_rounds', description: 'Fer un duel de més de 6 rondes', target: 1, xpReward: 500 }
+  { id: 'duel_6_rounds', description: 'Fer un duel de més de 6 rondes', target: 1, xpReward: 500 },
+  { id: 'generate_song', description: 'Generar una cançó satírica al final d\'una partida', target: 1, xpReward: 400 }
 ];
 
 export function generateDailyQuests(): DailyQuest[] {
@@ -60,6 +61,34 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
   await update(ref(db, `users/${uid}`), updates);
   
   return { ...profile, ...updates };
+}
+
+// Completa la quest de generar cançó satírica si està activa
+export async function completeSongQuest(uid: string): Promise<void> {
+  const profile = await getUserProfile(uid);
+  if (!profile || !profile.dailyQuests) return;
+
+  const quests = profile.dailyQuests;
+  const questIdx = quests.findIndex(q => q.id === 'generate_song' && !q.completed);
+  if (questIdx === -1) return; // No té aquesta quest avui o ja la va completar
+
+  const updatedQuests = [...quests];
+  updatedQuests[questIdx] = { ...updatedQuests[questIdx], progress: 1, completed: true };
+
+  const xpReward = updatedQuests[questIdx].xpReward;
+  let currentLevel = profile.level || 1;
+  let currentXP = (profile.xp || 0) + xpReward;
+
+  while (currentXP >= currentLevel * 1000) {
+    currentXP -= currentLevel * 1000;
+    currentLevel++;
+  }
+
+  await update(ref(db, `users/${uid}`), {
+    dailyQuests: updatedQuests,
+    level: currentLevel,
+    xp: currentXP
+  });
 }
 
 export interface LeaderboardEntry {

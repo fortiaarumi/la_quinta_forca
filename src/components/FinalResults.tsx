@@ -10,6 +10,7 @@ import { useAudio } from '@/lib/AudioContext';
 import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
 import { ALL_BADGES } from '@/lib/badges';
+import { completeSongQuest } from '@/lib/userStats';
 
 interface Props {
   roomId: string;
@@ -174,6 +175,11 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
         genre: data.genre,
         prompt: guesses
       });
+
+      // Completar quest diarià si el jugador la té activa
+      if (user?.uid) {
+        completeSongQuest(user.uid).catch(() => {});
+      }
     } catch (err: any) {
       await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: err.message });
     }
