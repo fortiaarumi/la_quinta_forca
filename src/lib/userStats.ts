@@ -1,38 +1,65 @@
 import { ref, set, get, update, query, orderByChild, limitToLast } from 'firebase/database';
 import { db } from './firebase';
-import { GameMode } from './types';
+import { GameMode, DailyQuest, UserProfile } from './types';
 
-export interface UserProfile {
-  nickname: string;
-  email: string;
-  bestScoreWorld: number;
-  bestScoreCatalunya: number;
-  bestScoreEstadis?: number;
-  bestScoreCultural?: number;
-  total5k: number;
-  // 👈 AFEGIT: Les modalitats noves i el control de vídeos
-  bestScoreWorld_bala?: number;
-  bestScoreWorld_normal?: number;
-  bestScoreWorld_infinit?: number;
-  bestScoreCatalunya_bala?: number;
-  bestScoreCatalunya_normal?: number;
-  bestScoreCatalunya_infinit?: number;
-  bestScoreEstadis_bala?: number;
-  bestScoreEstadis_normal?: number;
-  bestScoreEstadis_infinit?: number;
-  bestScoreCultural_bala?: number;
-  bestScoreCultural_normal?: number;
-  bestScoreCultural_infinit?: number;
-  bestScorePixapins?: number;
-  bestScorePixapins_bala?: number;
-  bestScorePixapins_normal?: number;
-  bestScorePixapins_infinit?: number;
-  lastVideoUploadDate?: string;
-  avatarUrl?: string; // 👈 NOU
-  badges?: string[];  // 👈 NOU
-  selectedBadges?: string[]; // 👈 NOU
-  totalGames?: number; // Per a l'insígnia de 10 partides
-  totalWins?: number;  // Per a l'insígnia de 50 victòries
+export const QUEST_POOL = [
+  { id: 'play_3_games', description: 'Jugar 3 partides', target: 3, xpReward: 300 },
+  { id: 'get_1_5k', description: 'Aconseguir un 5K', target: 1, xpReward: 500 },
+  { id: 'play_catalunya', description: 'Jugar a Catalunya', target: 1, xpReward: 200 },
+  { id: 'score_15k', description: 'Superar 15.000 punts', target: 1, xpReward: 500 },
+  { id: 'win_1_game', description: 'Guanyar una partida', target: 1, xpReward: 400 },
+  { id: 'play_bala', description: 'Jugar en mode Bala', target: 1, xpReward: 300 },
+  { id: 'win_3_pixapins', description: 'Guanyar 3 partides a Pixapins', target: 3, xpReward: 600 },
+  { id: 'win_1_world', description: 'Guanyar una partida a Món', target: 1, xpReward: 400 },
+  { id: 'duel_6_rounds', description: 'Fer un duel de més de 6 rondes', target: 1, xpReward: 500 }
+];
+
+export function generateDailyQuests(): DailyQuest[] {
+  const shuffled = [...QUEST_POOL].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 3).map(q => ({
+    id: q.id,
+    description: q.description,
+    target: q.target,
+    xpReward: q.xpReward,
+    progress: 0,
+    completed: false
+  }));
+}
+
+export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile | null> {
+  const profile = await getUserProfile(uid);
+  if (!profile) return null;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const lastLogin = profile.lastLoginDate;
+  
+  if (lastLogin === todayStr) {
+    return profile; // Ja ha entrat avui
+  }
+
+  const updates: Partial<UserProfile> = {
+    lastLoginDate: todayStr
+  };
+
+  if (lastLogin) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    if (lastLogin === yesterdayStr) {
+      updates.currentStreak = (profile.currentStreak || 0) + 1;
+    } else {
+      updates.currentStreak = 1;
+    }
+  } else {
+    updates.currentStreak = 1;
+  }
+
+  updates.dailyQuests = generateDailyQuests();
+
+  await update(ref(db, `users/${uid}`), updates);
+  
+  return { ...profile, ...updates };
 }
 
 export interface LeaderboardEntry {
@@ -179,6 +206,76 @@ export async function updateUserStatsAfterGame(
   if (earnedNow.length > 0) {
     updates.badges = newBadges;
   }
+
+  // 5. LÒGICA D'XP I OBJECTIUS DIARIS
+  const xpBase = Math.floor(totalGameScore / 10);
+  const streak = profile.currentStreak || 1;
+  const xpMultiplier = 1 + (streak * 0.1);
+  let xpEarned = Math.floor(xpBase * xpMultiplier);
+
+  let quests = profile.dailyQuests ? [...profile.dailyQuests] : [];
+  let questsUpdated = false;
+
+  quests = quests.map(q => {
+    if (q.completed) return q;
+    let increment = 0;
+    
+    switch (q.id) {
+      case 'play_3_games':
+        increment = 1;
+        break;
+      case 'get_1_5k':
+        increment = new5k;
+        break;
+      case 'play_catalunya':
+        if (gameMode === 'catalunya') increment = 1;
+        break;
+      case 'score_15k':
+        if (totalGameScore >= 15000) increment = 1;
+        break;
+      case 'win_1_game':
+        if (isWinner) increment = 1;
+        break;
+      case 'play_bala':
+        if (timeMode === 'bala') increment = 1;
+        break;
+      case 'win_3_pixapins':
+        if (isWinner && gameMode === 'pixapins') increment = 1;
+        break;
+      case 'win_1_world':
+        if (isWinner && gameMode === 'world') increment = 1;
+        break;
+      case 'duel_6_rounds':
+        if (gameType === '1vs1' && roundScores.length > 6) increment = 1;
+        break;
+    }
+
+    if (increment > 0) {
+      questsUpdated = true;
+      q.progress += increment;
+      if (q.progress >= q.target) {
+        q.progress = q.target;
+        q.completed = true;
+        xpEarned += q.xpReward;
+      }
+    }
+    return q;
+  });
+
+  if (questsUpdated) {
+    updates.dailyQuests = quests;
+  }
+
+  let currentLevel = profile.level || 1;
+  let currentXP = (profile.xp || 0) + xpEarned;
+  
+  while (currentXP >= currentLevel * 1000) {
+    currentXP -= currentLevel * 1000;
+    currentLevel++;
+  }
+
+  updates.level = currentLevel;
+  updates.xp = currentXP;
 
   await update(ref(db, `users/${uid}`), updates);
   return earnedNow;

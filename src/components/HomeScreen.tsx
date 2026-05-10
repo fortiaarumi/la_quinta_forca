@@ -5,9 +5,9 @@ import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransact
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
-import { GameMode, Room } from '@/lib/types';
+import { GameMode, Room, DailyQuest } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
-import { getUserProfile } from '@/lib/userStats';
+import { getUserProfile, checkAndUpdateDailyLogin } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
@@ -34,7 +34,7 @@ export default function HomeScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Agafem la funció per reproduir la música del menú i gestionar l'estat d'interacció
-  const { playMenuMusic, isMuted, toggleMute, hasInteracted, setHasInteracted } = useAudio();
+  const { playMenuMusic, isMuted, toggleMute, setMuted, hasInteracted, setHasInteracted } = useAudio();
 
   useEffect(() => {
     if (hasInteracted) {
@@ -352,16 +352,25 @@ export default function HomeScreen() {
   const [myBestEstadis, setMyBestEstadis] = useState<number | null>(null);
   const [myBestCultural, setMyBestCultural] = useState<number | null>(null);
   const [my5k, setMy5k] = useState<number | null>(null);
+  
+  const [myLevel, setMyLevel] = useState<number>(1);
+  const [myXP, setMyXP] = useState<number>(0);
+  const [myStreak, setMyStreak] = useState<number>(1);
+  const [myQuests, setMyQuests] = useState<DailyQuest[]>([]);
 
   useEffect(() => {
     if (!user) return;
-    getUserProfile(user.uid).then((profile) => {
+    checkAndUpdateDailyLogin(user.uid).then((profile) => {
       if (profile) {
         setMyBestWorld(Math.max(profile.bestScoreWorld_bala || 0, profile.bestScoreWorld_normal || 0, profile.bestScoreWorld_infinit || 0));
         setMyBestCat(Math.max(profile.bestScoreCatalunya_bala || 0, profile.bestScoreCatalunya_normal || 0, profile.bestScoreCatalunya_infinit || 0));
         setMyBestEstadis(Math.max(profile.bestScoreEstadis_bala || 0, profile.bestScoreEstadis_normal || 0, profile.bestScoreEstadis_infinit || 0));
         setMyBestCultural(Math.max(profile.bestScoreCultural_bala || 0, profile.bestScoreCultural_normal || 0, profile.bestScoreCultural_infinit || 0));
         setMy5k(profile.total5k);
+        setMyLevel(profile.level || 1);
+        setMyXP(profile.xp || 0);
+        setMyStreak(profile.currentStreak || 1);
+        setMyQuests(profile.dailyQuests || []);
       }
     });
   }, [user]);
@@ -700,6 +709,60 @@ export default function HomeScreen() {
                   </div>
                 )}
 
+                {/* Sistema de Progressió */}
+                {user && (
+                  <div className="bg-black/20 p-6 rounded-3xl border border-white/5 flex flex-col gap-4 shadow-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Nivell Actual</p>
+                        <p className="text-3xl font-black italic text-yellow-500">{myLevel}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Ratxa Diària</p>
+                        <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+                          <span className="text-xl animate-pulse">🔥</span>
+                          <span className="text-sm font-black text-orange-400">{myStreak} {myStreak === 1 ? 'dia' : 'dies'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Barra d'XP */}
+                    <div className="w-full bg-black/40 rounded-full h-3 border border-white/10 overflow-hidden relative">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 h-full rounded-full transition-all duration-1000 relative"
+                        style={{ width: `${Math.min(100, (myXP / (myLevel * 1000)) * 100)}%` }}
+                      >
+                        <div className="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    <p className="text-right text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-[-8px]">
+                      {myXP} / {myLevel * 1000} XP
+                    </p>
+
+                    {/* Objectius Diaris */}
+                    {myQuests && myQuests.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 border-b border-white/5 pb-2">Objectius Diaris</p>
+                        {myQuests.map(q => (
+                          <div key={q.id} className={`flex items-center justify-between p-3 rounded-2xl border ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5'}`}>
+                            <div className="flex flex-col">
+                              <span className={`text-xs font-bold ${q.completed ? 'text-emerald-400 line-through opacity-70' : 'text-white'}`}>{q.description}</span>
+                              <span className="text-[9px] font-black uppercase text-yellow-500 tracking-widest">+{q.xpReward} XP</span>
+                            </div>
+                            <div className="text-right">
+                              {q.completed ? (
+                                <span className="text-emerald-400 text-lg">✓</span>
+                              ) : (
+                                <span className="text-[10px] font-black text-gray-400">{q.progress} / {q.target}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Usuaris Online */}
                 <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-8 py-4 rounded-3xl backdrop-blur-md">
                   <div className="flex items-center gap-4">
@@ -924,7 +987,11 @@ export default function HomeScreen() {
                 SÍ, ACTIVAR ARA
               </GoldButton>
               <button 
-                onClick={() => setShowMusicModal(false)}
+                onClick={() => {
+                  setHasInteracted(true);
+                  setMuted(true);
+                  setShowMusicModal(false);
+                }}
                 className="py-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors"
               >
                 No, prefereixo el silenci

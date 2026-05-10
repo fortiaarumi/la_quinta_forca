@@ -35,6 +35,15 @@ export interface Player {
   eliminatedAtRound?: number;
 }
 
+export interface DailyQuest {
+  id: string;
+  description: string;
+  progress: number;
+  target: number;
+  xpReward: number;
+  completed: boolean;
+}
+
 export interface UserProfile {
   nickname: string;
   email: string;
@@ -67,6 +76,11 @@ export interface UserProfile {
   totalWins?: number;
   totalWins1vs1?: number; // 👈 NOU: Insígnia Duel Joan
   hintsRevealed?: number; // 👈 NOU: Insígnia Muniani
+  lastLoginDate?: string;
+  currentStreak?: number;
+  level?: number;
+  xp?: number;
+  dailyQuests?: DailyQuest[];
 }
 
 export type GameState =

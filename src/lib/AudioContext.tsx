@@ -7,6 +7,7 @@ interface AudioContextType {
   playGameMusic: () => void;
   stopAllMusic: () => void;
   toggleMute: () => void;
+  setMuted: (val: boolean) => void;
   isMuted: boolean;
   hasInteracted: boolean;
   setHasInteracted: (val: boolean) => void;
@@ -73,6 +74,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const interacted = sessionStorage.getItem('geoAudioInteracted');
     if (interacted === 'true') setHasInteracted(true);
+    
+    const muted = sessionStorage.getItem('geoAudioMuted');
+    if (muted === 'true') setIsMuted(true);
   }, []);
 
   const handleSetInteracted = (val: boolean) => {
@@ -276,11 +280,17 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const playDecepcion   = () => playSFX(decepcionRef);
   const playSiu         = () => playSFX(siuRef);
   const playRiure       = () => playSFX(riureRef);
-  const toggleMute      = () => setIsMuted(!isMuted);
+  
+  const handleSetMuted = (val: boolean) => {
+    setIsMuted(val);
+    sessionStorage.setItem('geoAudioMuted', String(val));
+  };
+  
+  const toggleMute      = () => handleSetMuted(!isMuted);
 
   return (
     <AudioContext.Provider value={{
-      playMenuMusic, playGameMusic, stopAllMusic, toggleMute, isMuted,
+      playMenuMusic, playGameMusic, stopAllMusic, toggleMute, setMuted: handleSetMuted, isMuted,
       hasInteracted, setHasInteracted: handleSetInteracted,
       playCelebration, playDecepcion, playSiu, playRiure, nextTrack, prevTrack,
       currentTrackName
