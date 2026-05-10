@@ -309,14 +309,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }}>
       {children}
 
-      {/* CONTROLS GLOBALS D'ÀUDIO — top-right fix */}
-      {hasInteracted && (
-        <div className={`fixed top-4 right-4 z-[9998] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-[0_6px_30px_rgba(0,0,0,0.5)] transition-opacity duration-300 ${currentCategory.current !== 'none' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏮</button>
-          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-sm transition-transform active:scale-90 border border-white/5 cursor-pointer shadow-inner">{isMuted ? '🔇' : '🔊'}</button>
-          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-transform active:scale-90 border-none cursor-pointer text-white text-sm">⏭</button>
-        </div>
-      )}
 
       {/* POPUP ARA SONANT — centrat a baix */}
       <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9997] pointer-events-none transition-all duration-500 ${showTrackPopup ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>

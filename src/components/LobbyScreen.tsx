@@ -9,6 +9,7 @@ import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/l
 import LobbyChat from './LobbyChat';
 import { useRouter } from 'next/navigation';
 import { ALL_BADGES } from '@/lib/badges';
+import { useAudio } from '@/lib/AudioContext';
 
 interface Props {
   room: Room;
@@ -28,6 +29,7 @@ export default function LobbyScreen({
   const [copied, setCopied] = useState(false);
   const [showHostMessage, setShowHostMessage] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU
+  const { isMuted, toggleMute, nextTrack, prevTrack, hasInteracted } = useAudio();
 
   useEffect(() => {
     if (room.hostId === playerId && !isHost) {
@@ -332,6 +334,14 @@ export default function LobbyScreen({
               );
             })()}
           </div>
+        </div>
+      )}
+      {/* ── CONTROLS D'ÀUDIO ── */}
+      {hasInteracted && (
+        <div className="fixed top-4 right-4 z-[5000] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
         </div>
       )}
     </div>

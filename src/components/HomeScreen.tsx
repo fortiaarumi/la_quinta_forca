@@ -35,7 +35,10 @@ export default function HomeScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Agafem la funció per reproduir la música del menú i gestionar l'estat d'interacció
-  const { playMenuMusic, isMuted, toggleMute, setMuted, hasInteracted, setHasInteracted } = useAudio();
+  const { 
+    playMenuMusic, isMuted, toggleMute, setMuted, 
+    hasInteracted, setHasInteracted, nextTrack, prevTrack 
+  } = useAudio();
 
   useEffect(() => {
     if (hasInteracted) {
@@ -1178,6 +1181,15 @@ export default function HomeScreen() {
         </div>
       )}
       <PWAInstallPrompt />
+
+      {/* ── CONTROLS D'ÀUDIO ── */}
+      {hasInteracted && (
+        <div className="fixed top-4 right-4 z-[5000] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-sm">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-sm border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-sm">⏭</button>
+        </div>
+      )}
 
       {/* ── TOAST LEVEL UP (PERSISTENT) ── */}
       {levelUpToast !== null && (

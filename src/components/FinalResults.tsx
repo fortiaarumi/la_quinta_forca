@@ -29,7 +29,10 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
   const [myFriends, setMyFriends] = useState<string[]>([]);
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
   const [songVolume, setSongVolume] = useState(1);
-  const { playCelebration, playDecepcion, stopAllMusic } = useAudio();
+  const { 
+    playCelebration, playDecepcion, stopAllMusic,
+    isMuted, toggleMute, nextTrack, prevTrack, hasInteracted 
+  } = useAudio();
   const [grayscale, setGrayscale] = useState(false);
   const songRef = useRef<HTMLAudioElement | null>(null);
   const [songCurrentTime, setSongCurrentTime] = useState(0);
@@ -621,6 +624,14 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
               <p className="text-emerald-300/60 text-[9px] font-bold mt-1 uppercase tracking-widest">XP guanyada!</p>
             </div>
           </div>
+        </div>
+      )}
+      {/* ── CONTROLS D'ÀUDIO ── */}
+      {hasInteracted && (
+        <div className="fixed top-4 right-4 z-[5000] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+          <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
+          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+          <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
         </div>
       )}
     </div>
