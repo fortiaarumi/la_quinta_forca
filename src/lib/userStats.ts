@@ -64,13 +64,13 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
 }
 
 // Completa la quest de generar cançó satírica si està activa
-export async function completeSongQuest(uid: string): Promise<void> {
+export async function completeSongQuest(uid: string): Promise<{ leveledUp: boolean, newLevel: number, description: string } | null> {
   const profile = await getUserProfile(uid);
-  if (!profile || !profile.dailyQuests) return;
+  if (!profile || !profile.dailyQuests) return null;
 
   const quests = profile.dailyQuests;
   const questIdx = quests.findIndex(q => q.id === 'generate_song' && !q.completed);
-  if (questIdx === -1) return; // No té aquesta quest avui o ja la va completar
+  if (questIdx === -1) return null; // No té aquesta quest avui o ja la va completar
 
   const updatedQuests = [...quests];
   updatedQuests[questIdx] = { ...updatedQuests[questIdx], progress: 1, completed: true };
@@ -78,6 +78,7 @@ export async function completeSongQuest(uid: string): Promise<void> {
   const xpReward = updatedQuests[questIdx].xpReward;
   let currentLevel = profile.level || 1;
   let currentXP = (profile.xp || 0) + xpReward;
+  const prevLevel = currentLevel;
 
   while (currentXP >= currentLevel * 1000) {
     currentXP -= currentLevel * 1000;
@@ -89,6 +90,8 @@ export async function completeSongQuest(uid: string): Promise<void> {
     level: currentLevel,
     xp: currentXP
   });
+
+  return { leveledUp: currentLevel > prevLevel, newLevel: currentLevel, description: updatedQuests[questIdx].description };
 }
 
 export interface LeaderboardEntry {
@@ -122,6 +125,13 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 // Actualitza el bestScore i el total5k al final d'una partida
 // totalGameScore: puntuació total de la partida (suma de 5 rondes)
 // roundScores: array de puntuacions de cada ronda (per comptar els 5k)
+export interface GameResult {
+  badges: string[];
+  leveledUp: boolean;
+  newLevel: number;
+  completedQuests: string[];
+}
+
 export async function updateUserStatsAfterGame(
   uid: string,
   gameMode: GameMode | string,
@@ -133,9 +143,9 @@ export async function updateUserStatsAfterGame(
   roundHints: boolean[] = [],
   totalPlayers: number = 1,
   isLast: boolean = false
-): Promise<string[]> {
+): Promise<GameResult> {
   const profile: Record<string, any> | null = await getUserProfile(uid);
-  if (!profile) return [];
+  if (!profile) return { badges: [], leveledUp: false, newLevel: 1, completedQuests: [] };
 
   // Construïm el nom de la caixa exacta depenent del mode i el temps
   let bestField = `bestScoreWorld_${timeMode}`;
@@ -297,17 +307,24 @@ export async function updateUserStatsAfterGame(
 
   let currentLevel = profile.level || 1;
   let currentXP = (profile.xp || 0) + xpEarned;
+  const prevLevel = currentLevel;
   
   while (currentXP >= currentLevel * 1000) {
     currentXP -= currentLevel * 1000;
     currentLevel++;
   }
 
+  const leveledUp = currentLevel > prevLevel;
   updates.level = currentLevel;
   updates.xp = currentXP;
 
+  // Quests que s'acaben de completar en aquesta partida
+  const justCompletedQuests = quests
+    .filter(q => q.completed && !profile.dailyQuests?.find((orig: any) => orig.id === q.id && orig.completed))
+    .map(q => q.description);
+
   await update(ref(db, `users/${uid}`), updates);
-  return earnedNow;
+  return { badges: earnedNow, leveledUp, newLevel: currentLevel, completedQuests: justCompletedQuests };
 }
 
 // Top 10 per mode

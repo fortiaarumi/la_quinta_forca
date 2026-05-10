@@ -13,6 +13,7 @@ import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
+import { GameResult } from '@/lib/userStats';
 
 // Per a convidats: manté el localStorage ID
 import { ALL_BADGES } from '@/lib/badges';
@@ -57,6 +58,8 @@ export default function HomeScreen() {
   const [hintsEnabled, setHintsEnabled] = useState(false); // 👈 NOU
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
+  const [questToast, setQuestToast] = useState<string | null>(null);
 
   // Per canviar entre menú de joc i menú d'amics
   const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
@@ -69,6 +72,33 @@ export default function HomeScreen() {
       setShowMusicModal(true);
     }
   }, [hasInteracted]);
+
+  // ── NOU: CHECK ANIMACIONS PENDENTS (LEVEL UP / QUESTS) ──
+  useEffect(() => {
+    const pendingRaw = sessionStorage.getItem('pendingAnimations');
+    if (pendingRaw) {
+      const pending = JSON.parse(pendingRaw);
+      sessionStorage.removeItem('pendingAnimations');
+
+      // Disparar Level Up si n'hi ha
+      if (pending.levelUp) {
+        setTimeout(() => {
+          setLevelUpToast(pending.levelUp);
+          setTimeout(() => setLevelUpToast(null), 6000);
+        }, 1500);
+      }
+
+      // Disparar Quests si n'hi ha
+      if (pending.completedQuests && pending.completedQuests.length > 0) {
+        pending.completedQuests.forEach((qDesc: string, i: number) => {
+          setTimeout(() => {
+            setQuestToast(qDesc);
+            setTimeout(() => setQuestToast(null), 5000);
+          }, (pending.levelUp ? 8000 : 1500) + i * 6000);
+        });
+      }
+    }
+  }, []);
 
   // ── NOU: ESTATS PER AL FLUX DE CONFIGURACIÓ ELEGANT ──
   const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'>('idle');
@@ -1148,6 +1178,37 @@ export default function HomeScreen() {
         </div>
       )}
       <PWAInstallPrompt />
+
+      {/* ── TOAST LEVEL UP (PERSISTENT) ── */}
+      {levelUpToast !== null && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-4 animate-in zoom-in duration-500">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-400/30 blur-3xl rounded-full scale-150 animate-pulse" />
+              <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-[3rem] px-12 py-8 shadow-[0_0_80px_rgba(234,179,8,0.8)] border-4 border-yellow-300/50 flex flex-col items-center gap-3">
+                <p className="text-black/60 text-[11px] font-black uppercase tracking-[0.4em]">Felicitats!</p>
+                <div className="text-7xl animate-bounce">⬆️</div>
+                <p className="text-black text-4xl font-black italic uppercase tracking-tighter">Nivell {levelUpToast}!</p>
+                <p className="text-black/70 text-[11px] font-black uppercase tracking-widest">Has pujat de nivell</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST QUEST COMPLETADA (PERSISTENT) ── */}
+      {questToast !== null && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] w-full max-w-[360px] animate-in slide-in-from-bottom duration-500">
+          <div className="bg-gradient-to-r from-emerald-900 to-emerald-800 border-2 border-emerald-400/50 rounded-2xl p-5 shadow-[0_20px_50px_rgba(16,185,129,0.5)] flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-400/20 border-2 border-emerald-400/50 flex items-center justify-center text-3xl shadow-lg flex-shrink-0">✅</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Objectiu Completat!</p>
+              <p className="text-white text-sm font-black leading-tight">{questToast}</p>
+              <p className="text-emerald-300/60 text-[9px] font-bold mt-1 uppercase tracking-widest">XP guanyada!</p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

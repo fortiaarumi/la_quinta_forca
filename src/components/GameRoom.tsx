@@ -15,7 +15,7 @@ import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
 import GoldButton from './GoldButton';
 import { useAuth } from '@/lib/authContext';
-import { updateUserStatsAfterGame } from '@/lib/userStats';
+import { updateUserStatsAfterGame, GameResult } from '@/lib/userStats';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
 import { ALL_BADGES } from '@/lib/badges';
 
@@ -71,6 +71,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
   const [showAlert, setShowAlert] = useState(false);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
+  const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
+  const [questToast, setQuestToast] = useState<string | null>(null);
   const [systemMessage, setSystemMessage] = useState<string | null>(null); // 👈 NOU
   const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
   const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
@@ -94,14 +96,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
   useEffect(() => {
     if (!room) return;
     const gs = room.gameState;
-    if (gs === prevGameStateRef.current) return; // Evitem re-fires per refs estables
+    if (gs === prevGameStateRef.current) return;
     prevGameStateRef.current = gs;
     if (gs === 'playing' || gs === 'roundResults') {
       playGameMusic();
     } else if (gs === 'finished') {
-      playMenuMusic();
+      // Esperar que els efectes de so (celebració/decepció) acabin abans de la música de menú
+      setTimeout(() => playMenuMusic(), 4000);
     }
-  }, [room?.gameState]); // INTENCIONAL: playGameMusic/playMenuMusic exclosos per evitar bucle infinit
+  }, [room?.gameState]);
 
   // ───────────────────────────────────
 
@@ -830,14 +833,44 @@ export default function GameRoom({ roomId, playerId }: Props) {
         Object.keys(room.players).length,
         isLast
       )
-        .then((newBadges) => {
+        .then((result: GameResult) => {
           console.log('Estadístiques guardades amb èxit!');
-          if (newBadges && newBadges.length > 0) {
-            newBadges.forEach((b, i) => {
+          
+          // Toasts de Insígnies
+          if (result.badges && result.badges.length > 0) {
+            result.badges.forEach((b, i) => {
               setTimeout(() => {
                 setBadgeToast(b);
                 setTimeout(() => setBadgeToast(null), 5000);
               }, i * 6000);
+            });
+          }
+
+          // Guardar animacions pendents al sessionStorage per a quan tornem al menú
+          const pending: any = {};
+          if (result.leveledUp) {
+            pending.levelUp = result.newLevel;
+          }
+          if (result.completedQuests && result.completedQuests.length > 0) {
+            pending.completedQuests = result.completedQuests;
+          }
+          if (Object.keys(pending).length > 0) {
+            sessionStorage.setItem('pendingAnimations', JSON.stringify(pending));
+          }
+
+          // Mostrar level-up i quests immediatament també dins la partida
+          if (result.leveledUp) {
+            setTimeout(() => {
+              setLevelUpToast(result.newLevel);
+              setTimeout(() => setLevelUpToast(null), 6000);
+            }, 1000);
+          }
+          if (result.completedQuests && result.completedQuests.length > 0) {
+            result.completedQuests.forEach((qDesc, i) => {
+              setTimeout(() => {
+                setQuestToast(qDesc);
+                setTimeout(() => setQuestToast(null), 5000);
+              }, (result.leveledUp ? 7000 : 1000) + i * 6000);
             });
           }
         })
@@ -1075,15 +1108,23 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 </div>
               </div>
             )}
+            {/* CONTROLS D'ÀUDIO — just a sota de la pista revelada */}
+            <div className="flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+              <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
+              <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+              <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
+            </div>
           </div>
         )}
 
-        {/* CONTROLS D'ÀUDIO — baix-dreta del mapa, no tapa les pistes */}
-        <div className="absolute bottom-28 right-4 z-[11] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
-          <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
-          <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
-          <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
-        </div>
+        {/* CONTROLS D'ÀUDIO — quan les pistes estan desactivades */}
+        {(!room.hintsEnabled || hasGuessed) && (
+          <div className="absolute top-4 right-4 z-[11] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
+            <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
+            <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
+            <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
+          </div>
+        )}
 
         <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
           {!hasGuessed && !showGuessMap && (
@@ -1150,6 +1191,37 @@ export default function GameRoom({ roomId, playerId }: Props) {
               {badgeToast}
             </p>
             <p className="text-indigo-200 text-[9px] font-bold mt-1">Enhorabona, explorador!</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST LEVEL UP ── */}
+      {levelUpToast !== null && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-4 animate-in zoom-in duration-500">
+            <div className="relative">
+              <div className="absolute inset-0 bg-yellow-400/30 blur-3xl rounded-full scale-150 animate-pulse" />
+              <div className="relative bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-[3rem] px-12 py-8 shadow-[0_0_80px_rgba(234,179,8,0.8)] border-4 border-yellow-300/50 flex flex-col items-center gap-3">
+                <p className="text-black/60 text-[11px] font-black uppercase tracking-[0.4em]">Felicitats!</p>
+                <div className="text-7xl animate-bounce">⬆️</div>
+                <p className="text-black text-4xl font-black italic uppercase tracking-tighter">Nivell {levelUpToast}!</p>
+                <p className="text-black/70 text-[11px] font-black uppercase tracking-widest">Has pujat de nivell</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST QUEST COMPLETADA ── */}
+      {questToast !== null && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] w-full max-w-[360px] animate-in slide-in-from-bottom duration-500">
+          <div className="bg-gradient-to-r from-emerald-900 to-emerald-800 border-2 border-emerald-400/50 rounded-2xl p-5 shadow-[0_20px_50px_rgba(16,185,129,0.5)] flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-400/20 border-2 border-emerald-400/50 flex items-center justify-center text-3xl shadow-lg flex-shrink-0">✅</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-1">Objectiu Completat!</p>
+              <p className="text-white text-sm font-black leading-tight">{questToast}</p>
+              <p className="text-emerald-300/60 text-[9px] font-bold mt-1 uppercase tracking-widest">XP guanyada!</p>
+            </div>
           </div>
         </div>
       )}
