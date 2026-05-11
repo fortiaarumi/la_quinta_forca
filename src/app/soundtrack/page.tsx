@@ -142,7 +142,7 @@ export default function SoundtrackPage() {
   const remaining = duration > 0 ? duration - currentTime : 0;
 
   return (
-    <main className="min-h-screen bg-[#06080f] text-white pb-40">
+    <main className="min-h-screen bg-[#06080f] text-white pb-72">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-[#06080f]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
