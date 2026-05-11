@@ -113,13 +113,16 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         {/* ── BOTÓ EXPLÍCIT PER A TOTHOM (A SOBRE DEL MAPA) ── */}
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className={`mb-2 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-xl transition-all
+          className={`mb-3 px-6 py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-2xl transition-all border backdrop-blur-xl group
             ${expanded
-              ? 'bg-red-500 text-white hover:bg-red-400'
-              : 'bg-blue-600 text-white animate-bounce hover:bg-blue-500'
+              ? 'bg-black/80 text-red-400 border-red-500/30 hover:bg-red-500/10'
+              : 'bg-black/80 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10'
             }`}
         >
-          {expanded ? '↙️ Fer mapa petit' : '↗️ Fer mapa gran'}
+          <span className="group-hover:scale-110 transition-transform inline-block mr-2">
+            {expanded ? '↙️' : '↗️'}
+          </span>
+          {expanded ? 'Fer mapa petit' : 'Fer mapa gran'}
         </button>
 
         {/* ── EL MAPA I LA UI ── */}
@@ -145,7 +148,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
               {!isMobile && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
-                  className="bg-gray-700/80 hover:bg-gray-600 text-white text-sm font-bold px-4 py-3 rounded-xl flex-none transition-colors border border-white/10"
+                  className="bg-[#0c101d] hover:bg-white/5 text-white text-lg font-black px-6 py-6 rounded-2xl flex-none transition-all border border-white/10 shadow-xl"
                 >
                   ✕
                 </button>
@@ -153,17 +156,20 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
               <button
                 onClick={(e) => { e.stopPropagation(); handleSubmit(); }}
                 disabled={!pinPos || submitting}
-                className={`flex-1 text-white text-sm md:text-base font-black py-3 rounded-xl transition-all shadow-lg uppercase tracking-wider
+                className={`flex-1 text-sm md:text-base font-black py-6 rounded-2xl transition-all shadow-2xl uppercase tracking-[0.2em] border-2
                   ${!pinPos || submitting
-                    ? 'bg-gray-700/50 cursor-not-allowed text-gray-400'
-                    : 'bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-[0_4px_20px_rgba(16,185,129,0.4)]'
+                    ? 'bg-gray-900/50 cursor-not-allowed text-gray-600 border-white/5'
+                    : 'bg-[#06080f] text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/10 hover:border-emerald-400 active:scale-95 shadow-[0_0_40px_rgba(16,185,129,0.15)]'
                   }`}
               >
-                {submitting
-                  ? '⌛ Enviant...'
-                  : pinPos
-                    ? '✓ Confirmar Posició'
-                    : '📍 Toca per posar el pin'}
+                <span className="flex items-center justify-center gap-3">
+                  {submitting ? '⌛' : (pinPos ? '✓' : '📍')}
+                  {submitting
+                    ? 'Enviant...'
+                    : pinPos
+                      ? 'Confirmar Posició'
+                      : 'Toca el mapa'}
+                </span>
               </button>
             </div>
           )}

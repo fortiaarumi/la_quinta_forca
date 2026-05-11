@@ -25,12 +25,12 @@ const AudioContext = createContext<AudioContextType | null>(null);
 export const MENU_TRACKS = [
   '/sounds/menu-bgm.mp3', '/sounds/menu-bgm2.mp3', '/sounds/menu-bgm3.mp3',
   '/sounds/menu-bgm4.mp3', '/sounds/menu-bgm5.mp3', '/sounds/menu-bgm6.mp3',
-  '/sounds/menu-bgm7.mp3', '/sounds/menu-bgm8.mp3'
+  '/sounds/menu-bgm7.mp3', '/sounds/menu-bgm8.mp3', '/sounds/menu-bgm9.mp3', '/sounds/menu-bgm10.mp3'
 ];
 export const GAME_TRACKS = [
   '/sounds/game-bgm.mp3', '/sounds/game-bgm2.mp3', '/sounds/game-bgm3.mp3',
   '/sounds/game-bgm4.mp3', '/sounds/game-bgm5.mp3', '/sounds/game-bgm6.mp3',
-  '/sounds/game-bgm7.mp3', '/sounds/game-bgm8.mp3'
+  '/sounds/game-bgm7.mp3', '/sounds/game-bgm8.mp3', '/sounds/game-bgm9.mp3', '/sounds/game-bgm10.mp3'
 ];
 
 const shuffleArray = (array: string[]) => {
@@ -88,6 +88,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const handleSetInteracted = (val: boolean) => {
     setHasInteracted(val);
+    hasInteractedRef.current = val; // 👈 AFEGIT: Actualitzem el ref immediatament per evitar race conditions
     sessionStorage.setItem('geoAudioInteracted', String(val));
   };
 
