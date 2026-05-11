@@ -142,7 +142,7 @@ export default function SoundtrackPage() {
   const remaining = duration > 0 ? duration - currentTime : 0;
 
   return (
-    <main className="min-h-screen bg-[#06080f] text-white pb-72">
+    <main className="min-h-screen bg-[#06080f] text-white pb-96 md:pb-72">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-[#06080f]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
@@ -202,6 +202,9 @@ export default function SoundtrackPage() {
           </div>
         </div>
       </div>
+
+      {/* Spacer per a mòbils per evitar que el reproductor tapi els últims temes */}
+      <div className="h-40 md:hidden" />
 
       {/* Bottom Player */}
       <div className={`fixed bottom-0 left-0 right-0 z-[9999] transition-all duration-500 ${nowPlaying ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
