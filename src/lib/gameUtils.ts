@@ -48,6 +48,186 @@ interface Coords {
   lng: number;
 }
 
+// ==========================================
+// SEEDS PER A GENERACIÓ BALANÇADA (NOU)
+// ==========================================
+
+export const CATALUNYA_URBAN_SEEDS: Coords[] = [
+  { lat: 41.3851, lng: 2.1734 }, // Barcelona
+  { lat: 41.3597, lng: 2.1003 }, // L'Hospitalet de Llobregat
+  { lat: 41.4469, lng: 2.2450 }, // Badalona
+  { lat: 41.5611, lng: 2.0081 }, // Terrassa
+  { lat: 41.5463, lng: 2.1070 }, // Sabadell
+  { lat: 41.6176, lng: 0.6200 }, // Lleida
+  { lat: 41.1189, lng: 1.2445 }, // Tarragona
+  { lat: 41.5381, lng: 2.4447 }, // Mataró
+  { lat: 41.4511, lng: 2.2106 }, // Santa Coloma de Gramenet
+  { lat: 41.1561, lng: 1.1069 }, // Reus
+  { lat: 41.9794, lng: 2.8214 }, // Girona
+  { lat: 41.4722, lng: 2.0850 }, // Sant Cugat del Vallès
+  { lat: 41.3575, lng: 2.0731 }, // Cornellà de Llobregat
+  { lat: 41.3411, lng: 2.0403 }, // Sant Boi de Llobregat
+  { lat: 41.4933, lng: 2.0331 }, // Rubí
+  { lat: 41.7289, lng: 1.8264 }, // Manresa
+  { lat: 41.2239, lng: 1.7250 }, // Vilanova i la Geltrú
+  { lat: 41.2800, lng: 1.9764 }, // Castelldefels
+  { lat: 41.3150, lng: 2.0183 }, // Viladecans
+  { lat: 41.3283, lng: 2.0911 }, // Prat de Llobregat
+  { lat: 41.6078, lng: 2.2881 }, // Granollers
+  { lat: 41.4914, lng: 2.1389 }, // Cerdanyola del Vallès
+  { lat: 41.5392, lng: 2.2125 }, // Mollet del Vallès
+  { lat: 41.3764, lng: 2.0853 }, // Esplugues de Llobregat
+  { lat: 41.3061, lng: 2.0031 }, // Gavà
+  { lat: 41.3833, lng: 2.0500 }, // Sant Feliu de Llobregat
+  { lat: 41.9301, lng: 2.2547 }, // Vic
+  { lat: 42.2664, lng: 2.9614 }, // Figueres
+  { lat: 41.3461, lng: 1.7011 }, // Vilafranca del Penedès
+  { lat: 41.6747, lng: 2.7911 }, // Blanes
+  { lat: 41.4969, lng: 2.1558 }, // Ripollet
+  { lat: 41.2208, lng: 1.5333 }, // El Vendrell
+  { lat: 41.6997, lng: 2.8456 }, // Lloret de Mar
+  { lat: 42.1811, lng: 2.4881 }, // Olot
+  { lat: 41.0675, lng: 1.0614 }, // Cambrils
+  { lat: 40.8122, lng: 0.5214 }, // Tortosa
+  { lat: 41.9761, lng: 2.7911 }, // Salt
+  { lat: 41.3683, lng: 2.0564 }, // Sant Joan Despí
+  { lat: 41.5178, lng: 2.1247 }, // Barberà del Vallès
+  { lat: 41.6283, lng: 2.6881 }, // Pineda de Mar
+  { lat: 41.4111, lng: 2.0183 }, // Molins de Rei
+  { lat: 41.1917, lng: 1.5667 }, // Calafell
+  { lat: 41.0772, lng: 1.1286 }, // Salou
+  { lat: 41.4914, lng: 2.3558 }, // Premià de Mar
+  { lat: 41.4747, lng: 1.9281 }, // Martorell
+  { lat: 41.2861, lng: 1.2500 }, // Valls
+  { lat: 41.2333, lng: 1.8111 }, // Sitges
+  { lat: 42.2011, lng: 2.1911 }, // Ripoll
+  { lat: 41.6469, lng: 1.1389 }, // Tàrrega
+  { lat: 42.1189, lng: 2.7667 }, // Banyoles
+  { lat: 41.7911, lng: 0.8069 }, // Balaguer
+  { lat: 40.7111, lng: 0.5833 }, // Amposta
+  { lat: 41.6311, lng: 0.8931 }, // Mollerussa
+  { lat: 41.9947, lng: 1.5167 }, // Solsona
+  { lat: 42.1033, lng: 1.8464 }, // Berga
+  { lat: 42.4111, lng: 1.1286 }, // Sort
+  { lat: 42.1664, lng: 0.8950 }, // Tremp
+  { lat: 41.1469, lng: 0.8214 }, // Falset
+  { lat: 41.0533, lng: 0.4381 }, // Gandesa
+  { lat: 41.3761, lng: 1.1614 }, // Montblanc
+  { lat: 41.0911, lng: 0.6400 }, // Móra d'Ebre
+  { lat: 41.6711, lng: 1.2722 }, // Cervera
+];
+
+export const WORLD_URBAN_SEEDS: Coords[] = [
+  { lat: 51.5074, lng: -0.1278 }, // London
+  { lat: 48.8566, lng: 2.3522 }, // Paris
+  { lat: 52.5200, lng: 13.4050 }, // Berlin
+  { lat: 40.4168, lng: -3.7038 }, // Madrid
+  { lat: 41.9028, lng: 12.4964 }, // Rome
+  { lat: 52.3676, lng: 4.9041 }, // Amsterdam
+  { lat: 48.2082, lng: 16.3738 }, // Vienna
+  { lat: 50.0755, lng: 14.4378 }, // Prague
+  { lat: 52.2297, lng: 21.0122 }, // Warsaw
+  { lat: 47.4979, lng: 19.0402 }, // Budapest
+  { lat: 37.9838, lng: 23.7275 }, // Athens
+  { lat: 38.7223, lng: -9.1393 }, // Lisbon
+  { lat: 53.3498, lng: -6.2603 }, // Dublin
+  { lat: 59.9139, lng: 10.7522 }, // Oslo
+  { lat: 59.3293, lng: 18.0686 }, // Stockholm
+  { lat: 60.1699, lng: 24.9384 }, // Helsinki
+  { lat: 55.6761, lng: 12.5683 }, // Copenhagen
+  { lat: 50.8503, lng: 4.3517 }, // Brussels
+  { lat: 47.3769, lng: 8.5417 }, // Zurich
+  { lat: 55.7558, lng: 37.6173 }, // Moscow
+  { lat: 41.0082, lng: 28.9784 }, // Istanbul
+  { lat: 30.0444, lng: 31.2357 }, // Cairo
+  { lat: -26.2041, lng: 28.0473 }, // Johannesburg
+  { lat: -1.2921, lng: 36.8219 }, // Nairobi
+  { lat: 6.5244, lng: 3.3792 }, // Lagos
+  { lat: 33.5731, lng: -7.5898 }, // Casablanca
+  { lat: 25.2048, lng: 55.2708 }, // Dubai
+  { lat: 24.7136, lng: 46.6753 }, // Riyadh
+  { lat: 19.0760, lng: 72.8777 }, // Mumbai
+  { lat: 28.6139, lng: 77.2090 }, // Delhi
+  { lat: 13.7563, lng: 100.5018 }, // Bangkok
+  { lat: 1.3521, lng: 103.8198 }, // Singapore
+  { lat: -6.2088, lng: 106.8456 }, // Jakarta
+  { lat: 14.5995, lng: 120.9842 }, // Manila
+  { lat: 35.6762, lng: 139.6503 }, // Tokyo
+  { lat: 37.5665, lng: 126.9780 }, // Seoul
+  { lat: 39.9042, lng: 116.4074 }, // Beijing
+  { lat: 31.2304, lng: 121.4737 }, // Shanghai
+  { lat: 22.3193, lng: 114.1694 }, // Hong Kong
+  { lat: -33.8688, lng: 151.2093 }, // Sydney
+  { lat: -37.8136, lng: 144.9631 }, // Melbourne
+  { lat: -36.8485, lng: 174.7633 }, // Auckland
+  { lat: 40.7128, lng: -74.0060 }, // New York
+  { lat: 34.0522, lng: -118.2437 }, // Los Angeles
+  { lat: 41.8781, lng: -87.6298 }, // Chicago
+  { lat: 43.6532, lng: -79.3832 }, // Toronto
+  { lat: 49.2827, lng: -123.1207 }, // Vancouver
+  { lat: 19.4326, lng: -99.1332 }, // Mexico City
+  { lat: 8.9833, lng: -79.5167 }, // Panama City
+  { lat: 4.7110, lng: -74.0721 }, // Bogota
+  { lat: -12.0464, lng: -77.0428 }, // Lima
+  { lat: -33.4489, lng: -70.6693 }, // Santiago
+  { lat: -34.6037, lng: -58.3816 }, // Buenos Aires
+  { lat: -22.9068, lng: -43.1729 }, // Rio de Janeiro
+  { lat: -23.5505, lng: -46.6333 }, // Sao Paulo
+  { lat: 10.4806, lng: -66.9036 }, // Caracas
+  { lat: -0.1807, lng: -78.4678 }, // Quito
+  { lat: -34.9011, lng: -56.1645 }, // Montevideo
+  { lat: -25.2637, lng: -57.5759 }, // Asuncion
+  { lat: 14.6349, lng: -90.5069 }, // Guatemala City
+  { lat: 9.9281, lng: -84.0907 }, // San Jose
+  { lat: 13.6929, lng: -89.2182 }, // San Salvador
+  { lat: 14.0723, lng: -87.1921 }, // Tegucigalpa
+  { lat: 12.1150, lng: -86.2362 }, // Managua
+];
+
+/**
+ * Aplica un desplaçament aleatori a unes coordenades dins d'un radi en km.
+ * Això permet que a partir d'un "seed" de ciutat, puguem caure en qualsevol carrer
+ * sense repetir exactament el mateix punt.
+ */
+export function applyRandomOffset(coords: Coords, radiusKm: number): Coords {
+  // Conversió aproximada: 1 grau latitud ~= 111 km
+  // 1 grau longitud ~= 111 * cos(lat) km
+  const latOffset = (Math.random() * 2 - 1) * (radiusKm / 111);
+  const lngOffset = (Math.random() * 2 - 1) * (radiusKm / (111 * Math.cos((coords.lat * Math.PI) / 180)));
+
+  return {
+    lat: coords.lat + latOffset,
+    lng: coords.lng + lngOffset
+  };
+}
+
+/**
+ * Retorna una ubicació equilibrada:
+ * - 25% dels cops (Math.random() < 0.25) força una ciutat del pool URBÀ (Seeds + Radius).
+ * - 75% dels cops (resta) fa un RNG pur (Bounding Box) per mantenir el feeling salvatge del joc.
+ */
+export function getBalancedLocation(mode: string): Coords {
+  const forceUrban = Math.random() < 0.25;
+
+  if (forceUrban) {
+    let seeds: Coords[];
+    if (mode === 'catalunya') {
+      seeds = CATALUNYA_URBAN_SEEDS;
+    } else {
+      seeds = WORLD_URBAN_SEEDS;
+    }
+    const baseCoords = seeds[Math.floor(Math.random() * seeds.length)];
+    return applyRandomOffset(baseCoords, 4); // Radi de 4km per ciutats
+  } else {
+    // 75% - RNG PUR (THE BOX)
+    if (mode === 'catalunya') {
+      return randomCatalunyaCoords();
+    } else {
+      return randomBiasedCoords();
+    }
+  }
+}
+
 // Genera coordenades aleatòries biaixades cap a masses de terra habitades
 export function randomBiasedCoords(): Coords {
   const regions = [

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
-import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
+import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, getBalancedLocation, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
 import StreetViewPane from './StreetViewPane';
 import GuessMap from './GuessMap';
@@ -310,11 +310,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
     while (newLocations.length < count && attempts < 150) {
       attempts++;
       let coords;
-      if (room.gameMode === 'catalunya') coords = randomCatalunyaCoords();
+      if (room.gameMode === 'catalunya') coords = getBalancedLocation('catalunya');
       else if (room.gameMode === 'pixapins') coords = randomPixapinsCoords();
       else if (room.gameMode === 'estadis') coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
       else if (room.gameMode === 'cultural') coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
-      else coords = randomBiasedCoords();
+      else coords = getBalancedLocation('world');
 
       await new Promise<void>((resolve) => {
         service.getPanorama(
