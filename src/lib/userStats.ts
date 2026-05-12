@@ -65,9 +65,11 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
   const day = now.getDay(); // 0 diumenge, 1 dilluns...
   const lastWeekly = profile.lastWeeklyReset ? new Date(profile.lastWeeklyReset) : null;
   
-  // ── RESET SETMANAL (Cada dilluns o si falten) ──
+  // ── RESET SETMANAL (Cada dilluns o si falten/sobren) ──
   let shouldResetWeekly = false;
-  if (!lastWeekly || !profile.weeklyQuests) {
+  const currentWeeklyCount = profile.weeklyQuests ? profile.weeklyQuests.length : 0;
+
+  if (!lastWeekly || !profile.weeklyQuests || currentWeeklyCount > 3) {
     shouldResetWeekly = true;
   } else {
     // Si avui és dilluns i l'últim reset no va ser avui
