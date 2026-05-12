@@ -65,6 +65,10 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [rouletteWinnerId, setRouletteWinnerId] = useState<string | null>(null);
   const [spinFinished, setSpinFinished] = useState(false);
 
+  // NOU: Seqüència d'events unificada
+  const [currentStage, setCurrentStage] = useState<'scores' | 'perfects' | 'roulette' | 'elimination' | 'done'>('scores');
+  const [pendingEliminatedPlayer, setPendingEliminatedPlayer] = useState<string | null>(null);
+
   // NOU: Vida visual per evitar salts en l'animació
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
 
@@ -251,7 +255,8 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             updates[`players/${worst.id}/isEliminated`] = true;
             updates[`players/${worst.id}/eliminatedAtRound`] = round;
             needsUpdate = true;
-            setEliminatedPlayer(room.players[worst.id]?.name || 'Algú');
+            // No el mostrem encara, esperem a la seqüència
+            setPendingEliminatedPlayer(room.players[worst.id]?.name || 'Algú');
           }
         }
       }
@@ -314,14 +319,14 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         setSpinFinished(true);
 
         if (isHost) {
-          // Guardem els resultats a la BDD 3 segons després d'ensenyar el perdedor
+          // Guardem els resultats a la BDD 1 segon després d'ensenyar el perdedor (més ràpid per la seqüència)
           setTimeout(async () => {
             const updates: any = {};
             updates[`players/${room.tieBreak!.loserId}/isEliminated`] = true;
             updates[`players/${room.tieBreak!.loserId}/eliminatedAtRound`] = round;
             updates.tieBreak = null;
             await update(ref(db, `rooms/${roomId}`), updates);
-          }, 3000);
+          }, 1000);
         }
       }, spinTime);
     }
@@ -351,9 +356,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     if (!room?.players) return;
     playerIds.forEach(pid => {
       const isEliminated = !!room.players[pid]?.isEliminated;
-      // Només mostrem l'avís si s'acaba d'eliminar ARA (no estava a la llista inicial ni a la prèvia)
+      // Només el posem a pendents si s'acaba d'eliminar ARA
       if (isEliminated && !initialEliminatedRef.current.has(pid) && !prevEliminatedRef.current[pid]) {
-        setEliminatedPlayer(room.players[pid].name);
+        setPendingEliminatedPlayer(room.players[pid].name);
       }
       prevEliminatedRef.current[pid] = isEliminated;
     });
@@ -404,22 +409,45 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     });
   };
 
-  // ── DETECTAR ELIMINATS I PERFECTES ──
-  useEffect(() => {
-    // 5K Logic
-    const foundPerfects: string[] = [];
-    for (const pid of playerIds) {
-      if (guesses[pid]?.score === 5000 && room.players[pid]?.name) {
-        foundPerfects.push(room.players[pid].name);
-      }
-    }
-    if (foundPerfects.length > 0 && !hasClosedPopup) {
-      setPerfectScorers(foundPerfects);
-      window.dispatchEvent(new Event('pauseBackgroundMusic'));
-    }
 
-    // (Lògica d'eliminació esborrada per evitar que el pop-up reaparegui)
-  }, [guesses, playerIds, room.players, hasClosedPopup]);
+  // ── GESTOR DE LA SEQÜÈNCIA D'EVENTS (Lògica Central) ──
+  useEffect(() => {
+    const runSequence = async () => {
+      if (currentStage === 'scores') {
+        // Temps per veure puntuacions i combat 1vs1
+        const waitTime = room.gameType === '1vs1' ? 12000 : 3000;
+        setTimeout(() => setCurrentStage('perfects'), waitTime);
+      } 
+      else if (currentStage === 'perfects') {
+        const foundPerfects = playerIds.filter(pid => guesses[pid]?.score === 5000);
+        if (foundPerfects.length > 0 && !hasClosedPopup) {
+          setPerfectScorers(foundPerfects.map(pid => room.players[pid]?.name || 'Algú'));
+          window.dispatchEvent(new Event('pauseBackgroundMusic'));
+        } else {
+          setCurrentStage('roulette');
+        }
+      } 
+      else if (currentStage === 'roulette') {
+        if (room.tieBreak) {
+          // La lògica de la ruleta ja s'activa pel seu propi useEffect (showRoulette)
+          // Esperem que acabi
+          if (spinFinished && !room.tieBreak) {
+            setCurrentStage('elimination');
+          }
+        } else {
+          setCurrentStage('elimination');
+        }
+      } 
+      else if (currentStage === 'elimination') {
+        if (pendingEliminatedPlayer) {
+          setEliminatedPlayer(pendingEliminatedPlayer);
+        } else {
+          setCurrentStage('done');
+        }
+      }
+    };
+    runSequence();
+  }, [currentStage, playerIds, guesses, hasClosedPopup, room.tieBreak, spinFinished, pendingEliminatedPlayer, room.gameType]);
 
   useEffect(() => {
     if (!mapRef.current || !mapsReady || !actual) return;
@@ -531,7 +559,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
               </button>
 
               <button
-                onClick={() => setEliminatedPlayer(null)}
+                onClick={() => { setEliminatedPlayer(null); setCurrentStage('done'); }}
                 className="w-full py-4 text-white/40 text-[10px] font-black uppercase tracking-[0.3em] hover:text-white hover:bg-white/5 rounded-xl transition-all cursor-pointer bg-transparent border border-white/10"
               >
                 Tancar avís

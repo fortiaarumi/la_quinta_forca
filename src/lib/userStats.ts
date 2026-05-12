@@ -1,6 +1,6 @@
 import { ref, set, get, update, query, orderByChild, limitToLast } from 'firebase/database';
 import { db } from './firebase';
-import { GameMode, DailyQuest, UserProfile } from './types';
+import { GameMode, DailyQuest, WeeklyQuest, UserProfile } from './types';
 
 export const QUEST_POOL = [
   { id: 'play_3_games', description: 'Jugar 3 partides', target: 3, xpReward: 300 },
@@ -12,7 +12,16 @@ export const QUEST_POOL = [
   { id: 'win_3_pixapins', description: 'Guanyar 3 partides a Pixapins', target: 3, xpReward: 600 },
   { id: 'win_1_world', description: 'Guanyar una partida a Món', target: 1, xpReward: 400 },
   { id: 'duel_6_rounds', description: 'Fer un duel de més de 6 rondes', target: 1, xpReward: 500 },
-  { id: 'generate_song', description: 'Generar una cançó satírica al final d\'una partida', target: 1, xpReward: 400 }
+  { id: 'generate_song', description: 'Generar una cançó satírica al final d\'una partida', target: 1, xpReward: 400 },
+  { id: 'suggest_video', description: 'Sugerir 1 vídeo del dia', target: 1, xpReward: 300 } // 👈 NOU
+];
+
+export const WEEKLY_QUEST_POOL = [
+  { id: 'complete_15_daily', description: 'Completar 15 objectius diaris', target: 15, xpReward: 2000 },
+  { id: 'win_20_matches', description: 'Guanyar 20 partides totals', target: 20, xpReward: 3000 },
+  { id: 'play_5_br', description: 'Jugar 5 Battle Royale', target: 5, xpReward: 1500 },
+  { id: 'score_20k_single', description: 'Superar 20.000 punts en una partida', target: 1, xpReward: 2000 },
+  { id: 'suggest_3_videos', description: 'Sugerir 3 vídeos del dia', target: 3, xpReward: 1500 }
 ];
 
 export function generateDailyQuests(): DailyQuest[] {
@@ -22,6 +31,15 @@ export function generateDailyQuests(): DailyQuest[] {
     description: q.description,
     target: q.target,
     xpReward: q.xpReward,
+    progress: 0,
+    completed: false
+  }));
+}
+
+export function generateWeeklyQuests(): WeeklyQuest[] {
+  // En setmanals, les posem totes 5 per ara, o podríem fer random
+  return WEEKLY_QUEST_POOL.map(q => ({
+    ...q,
     progress: 0,
     completed: false
   }));
@@ -57,6 +75,31 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
   }
 
   updates.dailyQuests = generateDailyQuests();
+
+  // ── RESET SETMANAL (Cada dilluns) ──
+  const now = new Date();
+  const day = now.getDay(); // 0 diumenge, 1 dilluns...
+  const lastWeekly = profile.lastWeeklyReset ? new Date(profile.lastWeeklyReset) : null;
+  
+  let shouldResetWeekly = false;
+  if (!lastWeekly) {
+    shouldResetWeekly = true;
+  } else {
+    // Si avui és dilluns i l'últim reset no va ser avui
+    const today = now.toISOString().split('T')[0];
+    const lastStr = lastWeekly.toISOString().split('T')[0];
+    if (day === 1 && today !== lastStr) {
+      shouldResetWeekly = true;
+    }
+  }
+
+  if (shouldResetWeekly) {
+    updates.weeklyQuests = generateWeeklyQuests();
+    updates.lastWeeklyReset = now.toISOString();
+    updates.dailyQuestsCompleted = 0;
+    updates.brMatchesPlayed = 0;
+    updates.videoSuggestions = 0;
+  }
 
   await update(ref(db, `users/${uid}`), updates);
   
@@ -303,6 +346,57 @@ export async function updateUserStatsAfterGame(
 
   if (questsUpdated) {
     updates.dailyQuests = quests;
+    // Comptem quantes s'han completat ara per la setmanal
+    const justFinishedCount = quests.filter(q => q.completed && !profile.dailyQuests?.find((orig: any) => orig.id === q.id && orig.completed)).length;
+    if (justFinishedCount > 0) {
+      updates.dailyQuestsCompleted = (profile.dailyQuestsCompleted || 0) + justFinishedCount;
+    }
+  }
+
+  // 6. LÒGICA D'OBJECTIUS SETMANALS
+  let weeklyQuests = profile.weeklyQuests ? [...profile.weeklyQuests] : [];
+  let weeklyUpdated = false;
+
+  weeklyQuests = weeklyQuests.map(wq => {
+    if (wq.completed) return wq;
+    let progress = wq.progress;
+
+    switch (wq.id) {
+      case 'complete_15_daily':
+        progress = (updates.dailyQuestsCompleted ?? profile.dailyQuestsCompleted ?? 0);
+        break;
+      case 'win_20_matches':
+        progress = (updates.totalWins ?? profile.totalWins ?? 0);
+        break;
+      case 'play_5_br':
+        if (gameType === 'battle_royale') {
+          updates.brMatchesPlayed = (profile.brMatchesPlayed || 0) + 1;
+          progress = updates.brMatchesPlayed;
+        } else {
+          progress = (profile.brMatchesPlayed || 0);
+        }
+        break;
+      case 'score_20k_single':
+        if (totalGameScore >= 20000) progress = 1;
+        break;
+      case 'suggest_3_videos':
+        progress = (profile.videoSuggestions || 0);
+        break;
+    }
+
+    if (progress !== wq.progress) {
+      weeklyUpdated = true;
+      wq.progress = Math.min(progress, wq.target);
+      if (wq.progress >= wq.target) {
+        wq.completed = true;
+        xpEarned += wq.xpReward;
+      }
+    }
+    return wq;
+  });
+
+  if (weeklyUpdated) {
+    updates.weeklyQuests = weeklyQuests;
   }
 
   let currentLevel = profile.level || 1;

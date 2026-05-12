@@ -44,6 +44,15 @@ export interface DailyQuest {
   completed: boolean;
 }
 
+export interface WeeklyQuest {
+  id: string;
+  description: string;
+  progress: number;
+  target: number;
+  xpReward: number;
+  completed: boolean;
+}
+
 export interface UserProfile {
   nickname: string;
   email: string;
@@ -81,6 +90,11 @@ export interface UserProfile {
   level?: number;
   xp?: number;
   dailyQuests?: DailyQuest[];
+  weeklyQuests?: WeeklyQuest[]; // 👈 NOU
+  dailyQuestsCompleted?: number; // 👈 Per a la quest setmanal
+  brMatchesPlayed?: number;      // 👈 Per a la quest setmanal
+  videoSuggestions?: number;    // 👈 Per a la quest setmanal
+  lastWeeklyReset?: string;     // 👈 Per saber quan resetejar setmanals
 }
 
 export type GameState =

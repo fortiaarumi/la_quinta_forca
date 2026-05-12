@@ -4,9 +4,10 @@ import { Location } from '@/lib/types';
 interface Props {
   location: Location;
   gameMode?: string;
+  onReady?: () => void;
 }
 
-export default function StreetViewPane({ location, gameMode }: Props) {
+export default function StreetViewPane({ location, gameMode, onReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function StreetViewPane({ location, gameMode }: Props) {
     }
 
     new google.maps.StreetViewPanorama(containerRef.current, options);
+    if (onReady) onReady();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Munta 1 sola vegada; la key del parent força remuntada entre rondes
 

@@ -14,6 +14,7 @@ import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
 import GoldButton from './GoldButton';
+import Head from 'next/head'; // 👈 AFEGIT
 import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame, GameResult } from '@/lib/userStats';
 import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
@@ -43,6 +44,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncReady, setSyncReady] = useState(false); // 👈 NOU: Per garantir que tots tenen les coordenades
   const [hasGuessed, setHasGuessed] = useState(false);
   const [showGuessMap, setShowGuessMap] = useState(false);
   const [mapsReady, setMapsReady] = useState(false);
@@ -133,6 +135,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
             setSystemMessage(`${data.lastEvent.playerName} ha abandonat la partida!!.`);
             setTimeout(() => setSystemMessage(null), 4000);
           }
+        }
+
+        // ── NOU: Verificar si les coordenades de la ronda actual estan syncades ──
+        if (data.gameState === 'playing' && data.locations && data.locations[data.currentRound]) {
+          setSyncReady(true);
+        } else {
+          setSyncReady(false);
         }
 
         setRoom(data);
@@ -346,12 +355,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const tSettings = getTimeSettings(room.timeMode);
       await update(ref(db, `rooms/${roomId}`), {
         locations: updatedLocations,
-        gameState: 'playing',
         currentRound: 0,
+        gameState: 'playing',
         totalScores: initialScores,
         rounds: null,
         songState: null,
         roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
+        syncKey: Date.now() // 👈 NOU: Clau de sincronització
       });
     } else {
       await update(ref(db, `rooms/${roomId}`), { locations: updatedLocations });
@@ -778,6 +788,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       currentRound: next,
       gameState: 'playing',
       roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
+      syncKey: Date.now() // 👈 NOU
     });
   }, [room, isHost, roomId, addMoreLocations]);
 
@@ -841,8 +852,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
             result.badges.forEach((b, i) => {
               setTimeout(() => {
                 setBadgeToast(b);
-                setTimeout(() => setBadgeToast(null), 5000);
-              }, i * 6000);
+                setTimeout(() => setBadgeToast(null), 3000); // 👈 3s
+              }, i * 4000);
             });
           }
 
@@ -854,6 +865,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
           if (result.completedQuests && result.completedQuests.length > 0) {
             pending.completedQuests = result.completedQuests;
           }
+          if (result.badges && result.badges.length > 0) {
+            pending.badges = result.badges; // 👈 NOU
+          }
           if (Object.keys(pending).length > 0) {
             sessionStorage.setItem('pendingAnimations', JSON.stringify(pending));
           }
@@ -862,15 +876,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
           if (result.leveledUp) {
             setTimeout(() => {
               setLevelUpToast(result.newLevel);
-              setTimeout(() => setLevelUpToast(null), 6000);
+              setTimeout(() => setLevelUpToast(null), 3000); // 👈 3s
             }, 1000);
           }
           if (result.completedQuests && result.completedQuests.length > 0) {
             result.completedQuests.forEach((qDesc, i) => {
               setTimeout(() => {
                 setQuestToast(qDesc);
-                setTimeout(() => setQuestToast(null), 5000);
-              }, (result.leveledUp ? 7000 : 1000) + i * 6000);
+                setTimeout(() => setQuestToast(null), 4000); // 👈 4s
+              }, (result.leveledUp || (result.badges?.length) ? 8000 : 1000) + i * 5000);
             });
           }
         })
@@ -946,6 +960,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const isEliminated = !!room.players[playerId]?.isEliminated;
 
     content = (
+      <div className="min-h-screen bg-[#06080f] relative">
+      {/* NOU: Preload de l'asset 5k per evitar retards o fallades */}
+      <link rel="preload" href="/siu.mp4" as="video" />
       <div className={`relative w-full h-[100dvh] overflow-hidden bg-black transition-all duration-700 ${isEliminated && isSpectating ? 'grayscale sepia-[0.2]' : ''}`}>
         {/* ROUND INTRO OVERLAY */}
         {showRoundIntro && room.gameState === 'playing' && (
@@ -988,12 +1005,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
             </div>
           </div>
         )}
-        {mapsReady && room.locations?.[room.currentRound] && (
-          <StreetViewPane
-            key={`sv-${room.currentRound}`}
-            location={room.locations[room.currentRound]}
-            gameMode={room.gameMode}
-          />
+        {room.gameState === 'playing' && (
+        <div className="h-screen flex flex-col relative">
+          {!syncReady ? (
+            <div className="absolute inset-0 z-[10000] bg-[#06080f] flex items-center justify-center">
+              <div className="text-center animate-pulse">
+                <div className="text-5xl mb-4">📡</div>
+                <p className="text-indigo-400 font-black uppercase tracking-[0.3em] italic">Sincronitzant coordenades...</p>
+                <p className="text-[10px] text-gray-600 mt-2 font-bold uppercase">Esperant autoritat del servidor</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <StreetViewPane
+                location={room.locations![room.currentRound]}
+                onReady={() => setMapsReady(true)}
+              />
+            </>
+          )}
+        </div>
         )}
 
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
@@ -1155,6 +1185,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             gameMode={room.gameMode}
           />
         )}
+      </div>
       </div>
     );
   }

@@ -5,7 +5,7 @@ import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransact
 import { db } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
-import { GameMode, Room, DailyQuest } from '@/lib/types';
+import { GameMode, Room, DailyQuest, WeeklyQuest } from '@/lib/types';
 import { useAuth } from '@/lib/authContext';
 import { getUserProfile, checkAndUpdateDailyLogin } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
@@ -62,6 +62,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
+  const [badgeToast, setBadgeToast] = useState<{ id: string, label: string, image: string } | null>(null); // 👈 NOU
   const [questToast, setQuestToast] = useState<string | null>(null);
 
   // Per canviar entre menú de joc i menú d'amics
@@ -87,8 +88,19 @@ export default function HomeScreen() {
       if (pending.levelUp) {
         setTimeout(() => {
           setLevelUpToast(pending.levelUp);
-          setTimeout(() => setLevelUpToast(null), 6000);
+          setTimeout(() => setLevelUpToast(null), 3000); // 👈 3s ara
         }, 1500);
+      }
+
+      // Disparar Insígnies si n'hi ha (NOU)
+      if (pending.badges && pending.badges.length > 0) {
+        pending.badges.forEach((bId: string, i: number) => {
+          setTimeout(() => {
+            const bDef = ALL_BADGES.find(b => b.id === bId);
+            setBadgeToast({ id: bId, label: bDef?.label || bId, image: bDef?.image || '' });
+            setTimeout(() => setBadgeToast(null), 3000); // 👈 3s també
+          }, (pending.levelUp ? 5000 : 1500) + i * 4000);
+        });
       }
 
       // Disparar Quests si n'hi ha
@@ -96,8 +108,8 @@ export default function HomeScreen() {
         pending.completedQuests.forEach((qDesc: string, i: number) => {
           setTimeout(() => {
             setQuestToast(qDesc);
-            setTimeout(() => setQuestToast(null), 5000);
-          }, (pending.levelUp ? 8000 : 1500) + i * 6000);
+            setTimeout(() => setQuestToast(null), 4000);
+          }, (pending.levelUp || pending.badges ? 9000 : 1500) + i * 5000);
         });
       }
     }
@@ -242,7 +254,7 @@ export default function HomeScreen() {
       const cloudinaryData = await res.json();
       if (!cloudinaryData.secure_url) throw new Error('Error en la pujada');
       const newVideoRef = ref(db, `videoQueue/${crypto.randomUUID()}`);
-      await set(newVideoRef, {
+      await update(newVideoRef, {
         url: cloudinaryData.secure_url,
         title: suggestTitle.trim(),
         suggestedBy: nickname || 'Un amic',
@@ -250,7 +262,12 @@ export default function HomeScreen() {
         userId: user.uid,
         timestamp: Date.now()
       });
-      await update(userRef, { lastVideoUploadDate: today });
+      // ── NOU: Progressar Quests de Vídeos ──
+      const newSuggestions = (userData?.videoSuggestions || 0) + 1;
+      await update(userRef, { 
+        lastVideoUploadDate: today,
+        videoSuggestions: newSuggestions
+      });
       setSuggestMsg({ text: '✅ Vídeo enviat! Si és triat, rebràs un correu.', type: 'success' });
       setVideoFile(null);
       setSuggestTitle('');
@@ -391,6 +408,7 @@ export default function HomeScreen() {
   const [myXP, setMyXP] = useState<number>(0);
   const [myStreak, setMyStreak] = useState<number>(1);
   const [myQuests, setMyQuests] = useState<DailyQuest[]>([]);
+  const [myWeeklyQuests, setMyWeeklyQuests] = useState<WeeklyQuest[]>([]); // 👈 NOU
 
   useEffect(() => {
     if (!user) return;
@@ -405,6 +423,7 @@ export default function HomeScreen() {
         setMyXP(profile.xp || 0);
         setMyStreak(profile.currentStreak || 1);
         setMyQuests(profile.dailyQuests || []);
+        setMyWeeklyQuests(profile.weeklyQuests || []); // 👈 NOU
       }
     });
   }, [user]);
@@ -774,26 +793,43 @@ export default function HomeScreen() {
                     </p>
 
                     {/* Objectius Diaris */}
-                    {myQuests && myQuests.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 border-b border-white/5 pb-2">Objectius Diaris</p>
-                        {myQuests.map(q => (
-                          <div key={q.id} className={`flex items-center justify-between p-3 rounded-2xl border ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5'}`}>
-                            <div className="flex flex-col">
-                              <span className={`text-xs font-bold ${q.completed ? 'text-emerald-400 line-through opacity-70' : 'text-white'}`}>{q.description}</span>
-                              <span className="text-[9px] font-black uppercase text-yellow-500 tracking-widest">+{q.xpReward} XP</span>
-                            </div>
-                            <div className="text-right">
-                              {q.completed ? (
-                                <span className="text-emerald-400 text-lg">✓</span>
-                              ) : (
-                                <span className="text-[10px] font-black text-gray-400">{q.progress} / {q.target}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 italic">Objectius Diaris</h3>
+                        <div className="h-px flex-1 bg-white/10 ml-4" />
                       </div>
-                    )}
+                      {myQuests.map((q: any) => (
+                        <div key={q.id} className={`p-4 rounded-2xl border transition-all ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-black/40 border-white/5'}`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className={`text-xs font-black uppercase tracking-tight ${q.completed ? 'text-emerald-400' : 'text-white'}`}>{q.description}</p>
+                            {q.completed ? <span className="text-emerald-400 text-xs">✅</span> : <span className="text-indigo-400 text-[10px] font-bold">+{q.xpReward} XP</span>}
+                          </div>
+                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Objectius Setmanals */}
+                    <div className="space-y-4 mt-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 italic">Objectius Setmanals</h3>
+                        <div className="h-px flex-1 bg-white/10 ml-4" />
+                      </div>
+                      {myWeeklyQuests.map((q: any) => (
+                        <div key={q.id} className={`p-4 rounded-2xl border transition-all ${q.completed ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-black/40 border-white/5'}`}>
+                          <div className="flex justify-between items-start mb-2">
+                            <p className={`text-xs font-black uppercase tracking-tight ${q.completed ? 'text-yellow-400' : 'text-white'}`}>{q.description}</p>
+                            {q.completed ? <span className="text-yellow-400 text-xs">⭐</span> : <span className="text-yellow-500 text-[10px] font-bold">+{q.xpReward} XP</span>}
+                          </div>
+                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className={`h-full transition-all duration-1000 ${q.completed ? 'bg-yellow-500' : 'bg-yellow-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
+                          </div>
+                          <p className="text-[8px] text-gray-500 font-bold mt-2 uppercase tracking-widest">{q.progress} / {q.target}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -1268,7 +1304,25 @@ export default function HomeScreen() {
         </div>
       )}
 
-      {/* ── TOAST QUEST COMPLETADA (PERSISTENT) ── */}
+      {/* ── TOAST BADGE (NOU) ── */}
+      {badgeToast !== null && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-4 animate-in zoom-in duration-500">
+            <div className="relative">
+              <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full scale-150 animate-pulse" />
+              <div className="relative bg-[#0c0f1a] border-4 border-indigo-500/50 rounded-[3rem] px-12 py-10 shadow-[0_0_100px_rgba(99,102,241,0.6)] flex flex-col items-center gap-5">
+                <p className="text-indigo-400 text-[11px] font-black uppercase tracking-[0.4em]">Nova Insígnia!</p>
+                <div className="w-32 h-32 relative">
+                   <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full animate-pulse" />
+                   <img src={badgeToast.image || '/badges/default.jpeg'} alt="" className="w-full h-full object-contain relative z-10 drop-shadow-2xl" />
+                </div>
+                <p className="text-white text-3xl font-black italic uppercase tracking-tighter">{badgeToast.label}</p>
+                <p className="text-indigo-300/70 text-[10px] font-black uppercase tracking-widest">Col·lecció de La Quinta Forca</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {questToast !== null && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] w-full max-w-[360px] animate-in slide-in-from-bottom duration-500">
           <div className="bg-gradient-to-r from-emerald-900 to-emerald-800 border-2 border-emerald-400/50 rounded-2xl p-5 shadow-[0_20px_50px_rgba(16,185,129,0.5)] flex items-center gap-4">
