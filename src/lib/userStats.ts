@@ -51,38 +51,13 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
 
   const todayStr = new Date().toISOString().split('T')[0];
   const lastLogin = profile.lastLoginDate;
-  
-  if (lastLogin === todayStr) {
-    return profile; // Ja ha entrat avui
-  }
-
-  const updates: Partial<UserProfile> = {
-    lastLoginDate: todayStr
-  };
-
-  if (lastLogin) {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    if (lastLogin === yesterdayStr) {
-      updates.currentStreak = (profile.currentStreak || 0) + 1;
-    } else {
-      updates.currentStreak = 1;
-    }
-  } else {
-    updates.currentStreak = 1;
-  }
-
-  updates.dailyQuests = generateDailyQuests();
-
-  // ── RESET SETMANAL (Cada dilluns) ──
   const now = new Date();
   const day = now.getDay(); // 0 diumenge, 1 dilluns...
   const lastWeekly = profile.lastWeeklyReset ? new Date(profile.lastWeeklyReset) : null;
   
+  // ── RESET SETMANAL (Cada dilluns o si falten) ──
   let shouldResetWeekly = false;
-  if (!lastWeekly) {
+  if (!lastWeekly || !profile.weeklyQuests) {
     shouldResetWeekly = true;
   } else {
     // Si avui és dilluns i l'últim reset no va ser avui
@@ -93,6 +68,31 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
     }
   }
 
+  // Si ja ha entrat avui i ja té objectius setmanals, podem sortir
+  if (lastLogin === todayStr && !shouldResetWeekly) {
+    return profile;
+  }
+
+  const updates: Partial<UserProfile> = {};
+
+  // Actualitzar data de login i ratxa si cal
+  if (lastLogin !== todayStr) {
+    updates.lastLoginDate = todayStr;
+    if (lastLogin) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      if (lastLogin === yesterdayStr) {
+        updates.currentStreak = (profile.currentStreak || 0) + 1;
+      } else {
+        updates.currentStreak = 1;
+      }
+    } else {
+      updates.currentStreak = 1;
+    }
+    updates.dailyQuests = generateDailyQuests();
+  }
+
   if (shouldResetWeekly) {
     updates.weeklyQuests = generateWeeklyQuests();
     updates.lastWeeklyReset = now.toISOString();
@@ -101,7 +101,9 @@ export async function checkAndUpdateDailyLogin(uid: string): Promise<UserProfile
     updates.videoSuggestions = 0;
   }
 
-  await update(ref(db, `users/${uid}`), updates);
+  if (Object.keys(updates).length > 0) {
+    await update(ref(db, `users/${uid}`), updates);
+  }
   
   return { ...profile, ...updates };
 }
