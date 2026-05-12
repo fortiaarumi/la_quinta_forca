@@ -21,7 +21,17 @@ export const WEEKLY_QUEST_POOL = [
   { id: 'win_20_matches', description: 'Guanyar 20 partides totals', target: 20, xpReward: 3000 },
   { id: 'play_5_br', description: 'Jugar 5 Battle Royale', target: 5, xpReward: 1500 },
   { id: 'score_20k_single', description: 'Superar 20.000 punts en una partida', target: 1, xpReward: 2000 },
-  { id: 'suggest_3_videos', description: 'Sugerir 3 vídeos del dia', target: 3, xpReward: 1500 }
+  { id: 'suggest_3_videos', description: 'Sugerir 3 vídeos del dia', target: 3, xpReward: 1500 },
+  { id: 'win_5_1vs1', description: 'Guanyar 5 duels 1vs1', target: 5, xpReward: 1800 },
+  { id: 'get_5_5k', description: 'Aconseguir 5 rondes de 5K', target: 5, xpReward: 2200 },
+  { id: 'reveal_100_hints', description: 'Revelar 100 pistes', target: 100, xpReward: 1500 },
+  { id: 'play_10_games', description: 'Jugar 10 partides totals', target: 10, xpReward: 1200 },
+  { id: 'win_10_games', description: 'Guanyar 10 partides totals', target: 10, xpReward: 2500 },
+  { id: 'play_world_5', description: 'Jugar 5 partides al Món', target: 5, xpReward: 1000 },
+  { id: 'play_cat_5', description: 'Jugar 5 partides a Catalunya', target: 5, xpReward: 1000 },
+  { id: 'win_3_estadis', description: 'Guanyar 3 partides a Estadis', target: 3, xpReward: 1500 },
+  { id: 'win_3_cultural', description: 'Guanyar 3 partides a Cultura', target: 3, xpReward: 1500 },
+  { id: 'win_3_pixapins', description: 'Guanyar 3 partides a Pixapins', target: 3, xpReward: 1500 }
 ];
 
 export function generateDailyQuests(): DailyQuest[] {
@@ -37,8 +47,8 @@ export function generateDailyQuests(): DailyQuest[] {
 }
 
 export function generateWeeklyQuests(): WeeklyQuest[] {
-  // En setmanals, les posem totes 5 per ara, o podríem fer random
-  return WEEKLY_QUEST_POOL.map(q => ({
+  const shuffled = [...WEEKLY_QUEST_POOL].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 3).map(q => ({
     ...q,
     progress: 0,
     completed: false
@@ -383,6 +393,51 @@ export async function updateUserStatsAfterGame(
         break;
       case 'suggest_3_videos':
         progress = (profile.videoSuggestions || 0);
+        break;
+      case 'win_5_1vs1':
+        progress = (updates.totalWins1vs1 ?? profile.totalWins1vs1 ?? 0);
+        break;
+      case 'get_5_5k':
+        progress = (updates.total5k ?? profile.total5k ?? 0);
+        break;
+      case 'reveal_100_hints':
+        progress = (updates.hintsRevealed ?? profile.hintsRevealed ?? 0);
+        break;
+      case 'play_10_games':
+        progress = (updates.totalGames ?? profile.totalGames ?? 0);
+        break;
+      case 'win_10_games':
+        progress = (updates.totalWins ?? profile.totalWins ?? 0);
+        break;
+      case 'play_world_5':
+        if (gameMode === 'world') {
+          updates.worldGamesPlayed = (profile.worldGamesPlayed || 0) + 1;
+          progress = updates.worldGamesPlayed;
+        } else progress = (profile.worldGamesPlayed || 0);
+        break;
+      case 'play_cat_5':
+        if (gameMode === 'catalunya') {
+          updates.catGamesPlayed = (profile.catGamesPlayed || 0) + 1;
+          progress = updates.catGamesPlayed;
+        } else progress = (profile.catGamesPlayed || 0);
+        break;
+      case 'win_3_estadis':
+        if (isWinner && gameMode === 'estadis') {
+          updates.estadisWins = (profile.estadisWins || 0) + 1;
+          progress = updates.estadisWins;
+        } else progress = (profile.estadisWins || 0);
+        break;
+      case 'win_3_cultural':
+        if (isWinner && gameMode === 'cultural') {
+          updates.culturalWins = (profile.culturalWins || 0) + 1;
+          progress = updates.culturalWins;
+        } else progress = (profile.culturalWins || 0);
+        break;
+      case 'win_3_pixapins':
+        if (isWinner && gameMode === 'pixapins') {
+          updates.pixapinsWins = (profile.pixapinsWins || 0) + 1;
+          progress = updates.pixapinsWins;
+        } else progress = (profile.pixapinsWins || 0);
         break;
     }
 

@@ -65,8 +65,9 @@ export default function HomeScreen() {
   const [badgeToast, setBadgeToast] = useState<{ id: string, label: string, image: string } | null>(null); // 👈 NOU
   const [questToast, setQuestToast] = useState<string | null>(null);
 
-  // Per canviar entre menú de joc i menú d'amics
-  const [activeMenu, setActiveMenu] = useState<'play' | 'friends'>('play');
+  const [questTab, setQuestTab] = useState<'daily' | 'weekly'>('daily');
+
+  // ... (rest of states)
 
   // ── NOU: ESTAT PEL MODAL DE MÚSICA ──
   const [showMusicModal, setShowMusicModal] = useState(false);
@@ -792,43 +793,87 @@ export default function HomeScreen() {
                       {myXP} / {myLevel * 1000} XP
                     </p>
 
-                    {/* Objectius Diaris */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 italic">Objectius Diaris</h3>
-                        <div className="h-px flex-1 bg-white/10 ml-4" />
+                    {/* SISTEMA D'OBJECTIUS RE-DISSENYAT */}
+                    <div className="mt-2">
+                      <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 mb-6">
+                        <button 
+                          onClick={() => setQuestTab('daily')}
+                          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer border-none ${questTab === 'daily' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                          Diaris
+                        </button>
+                        <button 
+                          onClick={() => setQuestTab('weekly')}
+                          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer border-none ${questTab === 'weekly' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-500/20' : 'text-gray-500 hover:text-gray-300'}`}
+                        >
+                          Setmanals
+                        </button>
                       </div>
-                      {myQuests.map((q: any) => (
-                        <div key={q.id} className={`p-4 rounded-2xl border transition-all ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-black/40 border-white/5'}`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className={`text-xs font-black uppercase tracking-tight ${q.completed ? 'text-emerald-400' : 'text-white'}`}>{q.description}</p>
-                            {q.completed ? <span className="text-emerald-400 text-xs">✅</span> : <span className="text-indigo-400 text-[10px] font-bold">+{q.xpReward} XP</span>}
-                          </div>
-                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div className={`h-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
 
-                    {/* Objectius Setmanals */}
-                    <div className="space-y-4 mt-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 italic">Objectius Setmanals</h3>
-                        <div className="h-px flex-1 bg-white/10 ml-4" />
+                      <div className="space-y-3 min-h-[280px]">
+                        {questTab === 'daily' ? (
+                          <>
+                            {myQuests.length > 0 ? myQuests.map((q: any) => (
+                              <div key={q.id} className={`group relative p-4 rounded-2xl border transition-all duration-500 ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5 hover:border-indigo-500/30 hover:bg-white/8'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex flex-col">
+                                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${q.completed ? 'text-emerald-500' : 'text-indigo-400'}`}>Objectiu Diari</span>
+                                    <p className={`text-xs font-black uppercase tracking-tighter italic ${q.completed ? 'text-emerald-400' : 'text-white'}`}>{q.description}</p>
+                                  </div>
+                                  {q.completed ? (
+                                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px]">✅</div>
+                                  ) : (
+                                    <span className="text-[10px] font-black text-indigo-400 tabular-nums">+{q.xpReward} XP</span>
+                                  )}
+                                </div>
+                                <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`absolute left-0 top-0 h-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-indigo-600'}`} 
+                                    style={{ width: `${(q.progress / q.target) * 100}%` }} 
+                                  />
+                                </div>
+                              </div>
+                            )) : (
+                              <div className="flex flex-col items-center justify-center py-12 text-center opacity-40">
+                                <span className="text-3xl mb-2">📅</span>
+                                <p className="text-[10px] font-black uppercase tracking-widest">No hi ha objectius avui</p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
+                              <div key={q.id} className={`group relative p-4 rounded-2xl border transition-all duration-500 ${q.completed ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5 hover:border-yellow-500/30 hover:bg-white/8'}`}>
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex flex-col">
+                                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${q.completed ? 'text-yellow-500' : 'text-yellow-600'}`}>Objectiu Setmanal</span>
+                                    <p className={`text-xs font-black uppercase tracking-tighter italic ${q.completed ? 'text-yellow-400' : 'text-white'}`}>{q.description}</p>
+                                  </div>
+                                  {q.completed ? (
+                                    <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center text-[10px]">⭐</div>
+                                  ) : (
+                                    <span className="text-[10px] font-black text-yellow-500 tabular-nums">+{q.xpReward} XP</span>
+                                  )}
+                                </div>
+                                <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`absolute left-0 top-0 h-full transition-all duration-1000 ${q.completed ? 'bg-yellow-500' : 'bg-yellow-600'}`} 
+                                    style={{ width: `${(q.progress / q.target) * 100}%` }} 
+                                  />
+                                </div>
+                                <div className="flex justify-between items-center mt-2">
+                                  <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest">{q.progress} / {q.target} Completat</span>
+                                </div>
+                              </div>
+                            )) : (
+                              <div className="flex flex-col items-center justify-center py-12 text-center opacity-40">
+                                <span className="text-3xl mb-2">⏳</span>
+                                <p className="text-[10px] font-black uppercase tracking-widest">Esperant nous objectius...</p>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
-                      {myWeeklyQuests.map((q: any) => (
-                        <div key={q.id} className={`p-4 rounded-2xl border transition-all ${q.completed ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-black/40 border-white/5'}`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className={`text-xs font-black uppercase tracking-tight ${q.completed ? 'text-yellow-400' : 'text-white'}`}>{q.description}</p>
-                            {q.completed ? <span className="text-yellow-400 text-xs">⭐</span> : <span className="text-yellow-500 text-[10px] font-bold">+{q.xpReward} XP</span>}
-                          </div>
-                          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div className={`h-full transition-all duration-1000 ${q.completed ? 'bg-yellow-500' : 'bg-yellow-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
-                          </div>
-                          <p className="text-[8px] text-gray-500 font-bold mt-2 uppercase tracking-widest">{q.progress} / {q.target}</p>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 )}
