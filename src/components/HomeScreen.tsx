@@ -59,7 +59,9 @@ export default function HomeScreen() {
   const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
   const [gameMode, setGameMode] = useState<GameMode>('world');
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
-  const [gameType, setGameType] = useState<'classic' | '1vs1' | 'battle_royale'>('classic'); // 👈 NOU
+  const [gameType, setGameType] = useState<'classic' | '1vs1' | 'battle_royale' | 'teams'>('classic'); // 👈 ACTUALITZAT
+  const [teamSize, setTeamSize] = useState<number>(2); // 👈 NOU
+  const [teamCount, setTeamCount] = useState<number>(2); // 👈 NOU
   const [hintsEnabled, setHintsEnabled] = useState(false); // 👈 NOU
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -120,11 +122,12 @@ export default function HomeScreen() {
   }, []);
 
   // ── NOU: ESTATS PER AL FLUX DE CONFIGURACIÓ ELEGANT ──
-  const [setupStep, setSetupStep] = useState<'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'>('idle');
+  type SetupStep = 'idle' | 'type' | 'gameType' | 'teamSize' | 'teamCount' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice';
+  const [setupStep, setSetupStep] = useState<SetupStep>('idle');
   const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
   const [publicRooms, setPublicRooms] = useState<{id: string, room: Room}[]>([]); // 👈 NOU
 
-  const goToStep = (step: typeof setupStep, direction: 'forward' | 'backward' = 'forward') => {
+  const goToStep = (step: SetupStep, direction: 'forward' | 'backward' = 'forward') => {
     if (step === setupStep) return; // No fem transició si és el mateix pas (toggling options)
     setAnimDirection(direction);
     setSetupStep(step);
@@ -470,13 +473,15 @@ export default function HomeScreen() {
         selectedBadges: selectedBadges || []
       };
       if (gameType === '1vs1') initialPlayer.health = 10000;
+      if (gameType === 'teams') initialPlayer.teamId = 'Equip 1';
 
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
         players: { [playerId]: initialPlayer },
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: true, gameMode, timeMode,
-        gameType, hintsEnabled
+        gameType, hintsEnabled,
+        teamSettings: gameType === 'teams' ? { size: teamSize, count: teamCount } : null
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       router.push(`/room/${roomCode}`);
@@ -509,6 +514,7 @@ export default function HomeScreen() {
         selectedBadges: selectedBadges || []
       };
       if (gameType === '1vs1') initialPlayer.health = 10000;
+      if (gameType === 'teams') initialPlayer.teamId = 'Equip 1';
 
       await set(ref(db, `rooms/${roomCode}`), {
         hostId: playerId,
@@ -516,7 +522,8 @@ export default function HomeScreen() {
         currentRound: 0, gameState: 'lobby', createdAt: Date.now(),
         isSinglePlayer: false, gameMode, timeMode,
         isPublic: isPublicRoom,
-        gameType, hintsEnabled
+        gameType, hintsEnabled,
+        teamSettings: gameType === 'teams' ? { size: teamSize, count: teamCount } : null
       });
       await set(ref(db, `rooms/${roomCode}/totalScores/${playerId}`), 0);
       router.push(`/room/${roomCode}`);
@@ -532,14 +539,34 @@ export default function HomeScreen() {
       const room = snap.val();
       const existing = Object.keys(room.players || {});
       if (!existing.includes(playerId)) {
-        await set(ref(db, `rooms/${code}/players/${playerId}`), { 
+        const playerData: any = { 
           name: (playerName.trim() || nickname || 'Explorador'), 
           joinedAt: Date.now(), 
           isAdmin: !!isAdmin,
           avatarUrl: avatarUrl || null,
           badges: badges || [],
           selectedBadges: selectedBadges || []
-        });
+        };
+
+        // AUTO-ASSIGN TEAM
+        if (room.gameType === 'teams' && room.teamSettings) {
+          const playersArray = Object.values(room.players || {}) as any[];
+          const teamSize = room.teamSettings.size;
+          const teamCount = room.teamSettings.count;
+          
+          let assignedTeam = '';
+          for (let i = 1; i <= teamCount; i++) {
+            const teamName = `Equip ${i}`;
+            const members = playersArray.filter(p => p.teamId === teamName).length;
+            if (members < teamSize) {
+              assignedTeam = teamName;
+              break;
+            }
+          }
+          playerData.teamId = assignedTeam || `Equip ${teamCount}`; // Fallback al últim
+        }
+
+        await set(ref(db, `rooms/${code}/players/${playerId}`), playerData);
         await set(ref(db, `rooms/${code}/totalScores/${playerId}`), 0);
       }
       router.push(`/room/${code}`);
@@ -936,12 +963,14 @@ export default function HomeScreen() {
             <div className="w-full max-w-xl mx-auto py-12">
               <button 
                 onClick={() => {
-                  const getPrevStep = (): 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice' => {
+                  const getPrevStep = (): SetupStep => {
                     if (setupStep === 'mode' && tab === 'solo') return 'type';
-                    const prevMap: Record<string, 'idle' | 'type' | 'gameType' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice'> = { 
+                    const prevMap: Record<string, SetupStep> = { 
                       'type': 'idle', 
                       'gameType': 'type',
-                      'mode': 'gameType', 
+                      'teamSize': 'gameType',
+                      'teamCount': 'teamSize',
+                      'mode': gameType === 'teams' ? 'teamCount' : 'gameType', 
                       'time': 'mode', 
                       'hints': 'time',
                       'join': 'joinChoice',
@@ -1051,6 +1080,30 @@ export default function HomeScreen() {
                     <OptionCard selected={gameType === 'classic'} title="Clàssic" desc="Puntuació estàndard de 5 rondes." icon="⭐" onClick={() => setGameType('classic')} />
                     <OptionCard selected={gameType === '1vs1'} title="1vs1 (Duel)" desc="10.000 de vida. Si perds punts, reps dany." icon="⚔️" onClick={() => setGameType('1vs1')} />
                     <OptionCard selected={gameType === 'battle_royale'} title="Battle Royale" desc="L'últim en fer punts queda eliminat." icon="👑" onClick={() => setGameType('battle_royale')} />
+                    <OptionCard selected={gameType === 'teams'} title="Batalla per Equips" desc="Jugueu en grups i sumeu punts junts." icon="🤝" onClick={() => setGameType('teams')} />
+                  </div>
+                  <GoldButton onClick={() => goToStep(gameType === 'teams' ? 'teamSize' : 'mode')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
+                </StepWrapper>
+              )}
+
+              {setupStep === 'teamSize' && (
+                <StepWrapper direction={animDirection}>
+                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Mida de l&apos;Equip</h3>
+                  <div className="space-y-4">
+                    <OptionCard selected={teamSize === 2} title="2 Jugadors" desc="Equips de parelles." icon="👥" onClick={() => setTeamSize(2)} />
+                    <OptionCard selected={teamSize === 3} title="3 Jugadors" desc="Equips de tres persones." icon="👨‍👩‍👧" onClick={() => setTeamSize(3)} />
+                  </div>
+                  <GoldButton onClick={() => goToStep('teamCount')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
+                </StepWrapper>
+              )}
+
+              {setupStep === 'teamCount' && (
+                <StepWrapper direction={animDirection}>
+                  <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Quants Equips?</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <OptionCard selected={teamCount === 2} title="2 Equips" desc="Duel de dos bàndols." icon="2️⃣" onClick={() => setTeamCount(2)} />
+                    <OptionCard selected={teamCount === 3} title="3 Equips" desc="Triangular d&apos;equips." icon="3️⃣" onClick={() => setTeamCount(3)} />
+                    <OptionCard selected={teamCount === 4} title="4 Equips" desc="Guerra total de 4 grups." icon="4️⃣" onClick={() => setTeamCount(4)} />
                   </div>
                   <GoldButton onClick={() => goToStep('mode')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
                 </StepWrapper>

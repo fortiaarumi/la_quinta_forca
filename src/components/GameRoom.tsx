@@ -48,6 +48,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [syncReady, setSyncReady] = useState(false); // 👈 NOU: Per garantir que tots tenen les coordenades
   const [hasGuessed, setHasGuessed] = useState(false);
   const [showGuessMap, setShowGuessMap] = useState(false);
+  const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
+  const [currentHint, setCurrentHint] = useState<string | null>(null); // 👈 NOU
+  const [hintLoading, setHintLoading] = useState(false); // 👈 NOU
   const [mapsReady, setMapsReady] = useState(false);
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
@@ -58,6 +61,22 @@ export default function GameRoom({ roomId, playerId }: Props) {
     setHasUsedHint(false);
     setCurrentHint(null);
   }, [room?.currentRound, room?.gameState]);
+
+  // REVELAR PISTA SI L'EQUIP LA COMPRA (BATALLA PER EQUIPS)
+  useEffect(() => {
+    if (!room || room.gameState !== 'playing' || !room.rounds) return;
+    const currentRoundData = room.rounds[room.currentRound];
+    if (!currentRoundData) return;
+
+    const teamHints = currentRoundData.teamHints;
+    const myTeamId = room.players?.[playerId]?.teamId;
+    const sharedHint = currentRoundData.sharedHint;
+    
+    if (myTeamId && teamHints?.[myTeamId] && sharedHint && !hasUsedHint) {
+      setCurrentHint(sharedHint.isFree ? sharedHint.value : `${sharedHint.type}: ${sharedHint.value}`);
+      setHasUsedHint(true);
+    }
+  }, [room?.rounds, room?.currentRound, room?.gameState, playerId, hasUsedHint, room?.players]);
   const [prevHealth, setPrevHealth] = useState<Record<string, number>>({});
   const statsSavedRef = useRef(false);
 
@@ -78,9 +97,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [questToast, setQuestToast] = useState<string | null>(null);
   const [systemMessage, setSystemMessage] = useState<string | null>(null); // 👈 NOU
   const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
-  const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
-  const [currentHint, setCurrentHint] = useState<string | null>(null); // 👈 NOU
-  const [hintLoading, setHintLoading] = useState(false); // 👈 NOU
   const [showRoundIntro, setShowRoundIntro] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
 
@@ -442,9 +458,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
     if (!room?.locations || hasUsedHint || hintLoading) return;
 
     const roundData = room.rounds?.[room.currentRound];
+    const myTeamId = room.players?.[playerId]?.teamId;
+
     if (roundData?.sharedHint) {
       setCurrentHint(roundData.sharedHint.isFree ? roundData.sharedHint.value : `${roundData.sharedHint.type}: ${roundData.sharedHint.value}`);
       setHasUsedHint(true);
+      // Actualitzem l'estat de l'equip també
+      if (myTeamId) {
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}/teamHints`), { [myTeamId]: true });
+      }
       return;
     }
 
@@ -692,7 +714,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       if (validOptions.length > 0) {
         const hintToSave = validOptions[Math.floor(Math.random() * validOptions.length)];
-        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: hintToSave });
+        const updates: any = { sharedHint: hintToSave };
+        if (myTeamId) updates[`teamHints/${myTeamId}`] = true;
+        
+        await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), updates);
         setCurrentHint(`${hintToSave.type}: ${hintToSave.value}`);
         setHasUsedHint(true);
         return;
@@ -703,7 +728,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
     } catch (e) {
       console.log("⚠️ 7. El codi ha saltat al Catch (Emergència) per aquest error:", e);
       const finalFallback = { type: 'Hemisferi', value: actual.lat > 0 ? "Hemisferi Nord ⬆️" : "Hemisferi Sud ⬇️", isFree: true };
-      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), { sharedHint: finalFallback });
+      const updates: any = { sharedHint: finalFallback };
+      if (myTeamId) updates[`teamHints/${myTeamId}`] = true;
+
+      await update(ref(db, `rooms/${roomId}/rounds/${room.currentRound}`), updates);
       setCurrentHint(finalFallback.value);
       setHasUsedHint(true);
     } finally {
@@ -717,8 +745,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       const actual = room.locations[room.currentRound];
       const distance = haversineDistance(guessLat, guessLng, actual.lat, actual.lng);
+      
+      const myTeamId = room.players[playerId]?.teamId;
+      const teamHints = room.rounds?.[room.currentRound]?.teamHints || {};
+      const teamUsedHint = myTeamId && teamHints[myTeamId];
+
       // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
-      const score = calculateScore(distance, room.gameMode);
+      let score = calculateScore(distance, room.gameMode);
+      
+      // SI L'EQUIP HA USAT PISTA, PUNTUACIÓ A LA MEITAT
+      if (teamUsedHint) {
+        score = Math.floor(score / 2);
+      }
 
       // 1. Guardem l'estimació BASE ràpidament per no bloquejar el joc
       const isFreeHint = room.rounds?.[room.currentRound]?.sharedHint?.isFree;
@@ -727,7 +765,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         lng: guessLng,
         distance,
         score,
-        usedHint: hasUsedHint && !isFreeHint
+        usedHint: !!(hasUsedHint && !isFreeHint || teamUsedHint)
       };
 
       const guessRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`);

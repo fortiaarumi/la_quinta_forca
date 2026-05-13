@@ -619,102 +619,144 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         <h2 className="text-white text-xl font-black text-center mb-1 uppercase tracking-tighter italic">Resultats — Ronda {round + 1}</h2>
         <p className="text-gray-500 text-[10px] text-center mb-4 font-mono tracking-widest uppercase">{actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}</p>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {playerIds.map((pid, i) => {
-            const guess = guesses[pid];
-            const player = room.players[pid];
-            const color = COLORS[i % COLORS.length];
-            const isMe = pid === playerId;
+        <div className={`grid ${room.gameType === 'teams' ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar`}>
+          {room.gameType === 'teams' ? (
+            // VISTA PER EQUIPS (RESULTATS DE RONDA)
+            Array.from({ length: room.teamSettings?.count || 2 }).map((_, i) => {
+              const teamName = `Equip ${i + 1}`;
+              const teamPlayers = playerIds.filter(pid => room.players[pid]?.teamId === teamName);
+              const teamScore = teamPlayers.reduce((acc, pid) => {
+                const g = guesses[pid];
+                return acc + (g ? (g.usedHint ? Math.round(g.score / 2) : g.score) : 0);
+              }, 0);
 
-            // Calcular dany rebut per animació
-            const lostHP = damageDealt[pid];
-            const isHurt = showPenalty && lostHP > 0;
+              const colors = ['border-blue-500/30 bg-blue-500/10', 'border-red-500/30 bg-red-500/10', 'border-emerald-500/30 bg-emerald-500/10', 'border-yellow-500/30 bg-yellow-500/10'];
+              const textColors = ['text-blue-400', 'text-red-400', 'text-emerald-400', 'text-yellow-400'];
 
-            return (
-              <div key={pid} className={`rounded-xl p-4 relative overflow-hidden transition-all duration-1000 ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`} style={{ background: `${color}10`, borderLeft: `4px solid ${color}` }}>
-                {player?.isEliminated && <div className="absolute top-2 right-2 text-2xl animate-pulse">💀</div>}
-
-                {/* Overlay de dany */}
-                {isHurt && (
-                  <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none" />
-                )}
-
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 bg-black/40">
-                    {player?.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs opacity-40">👤</div>}
+              return (
+                <div key={teamName} className={`rounded-2xl border-2 p-4 ${colors[i % 4]}`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className={`text-xs font-black uppercase tracking-[0.3em] ${textColors[i % 4]}`}># {teamName}</h4>
+                    <span className="text-2xl font-black text-white italic">+{teamScore.toLocaleString()}</span>
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-white font-black text-xs uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
-                    {player?.badges && player.badges.length > 0 && (
-                      <div className="flex gap-1.5 mt-1">
-                        {player.badges.slice(0, 3).map((bId: string, bi: number) => {
-                          const badgeDef = ALL_BADGES.find(b => b.id === bId);
-                          return (
-                            <div
-                              key={bi}
-                              className="group relative flex items-center justify-center cursor-pointer"
-                              onClick={() => setSelectedBadge(bId)}
-                            >
-                              <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
-                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
-                                {bId}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                  <div className="flex flex-wrap gap-2">
+                    {teamPlayers.map(pid => {
+                      const p = room.players[pid];
+                      const g = guesses[pid];
+                      return (
+                        <div key={pid} className="bg-black/40 rounded-xl px-3 py-2 flex items-center gap-2 border border-white/5">
+                          <div className="w-6 h-6 rounded-full overflow-hidden border border-white/10">
+                            {p?.avatarUrl ? <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px]">👤</span>}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase text-white/80 leading-none">{p?.name}</span>
+                            <span className="text-[9px] font-bold text-yellow-500/70">+{g?.score || 0}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                {guess ? (
-                  <div className={`text-yellow-400 font-black text-3xl flex items-center gap-2 transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
-                    <span
-                      className="transition-all duration-700"
-                      style={{
-                        transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
-                        color: isDividing[pid] ? '#EF4444' : '#FBBF24'
-                      }}
-                    >
-                      +{animatedScores[pid]?.toLocaleString() || 0}
-                    </span>
-                    {guess.usedHint && showPenalty && (
-                      <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                        50% PISTA
-                      </span>
-                    )}
-                  </div>
-                ) : <div className="text-gray-500 text-[10px] font-black uppercase italic">Sense tirada</div>}
+              );
+            })
+          ) : (
+            // VISTA CLÀSSICA / DUEL / BR
+            playerIds.map((pid, i) => {
+              const guess = guesses[pid];
+              const player = room.players[pid];
+              const color = COLORS[i % COLORS.length];
+              const isMe = pid === playerId;
 
-                {room.gameType === '1vs1' && player?.health !== undefined && (
-                  <div className="mt-4 relative">
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1.5">
-                      <span className="text-gray-400">Vida Restant</span>
-                      <span className={`text-sm ${(displayHealth[pid] ?? 10000) > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{displayHealth[pid] ?? 10000} / 10000</span>
+              // Calcular dany rebut per animació
+              const lostHP = damageDealt[pid];
+              const isHurt = showPenalty && lostHP > 0;
+
+              return (
+                <div key={pid} className={`rounded-xl p-4 relative overflow-hidden transition-all duration-1000 ${player?.isEliminated ? 'opacity-40 grayscale' : ''}`} style={{ background: `${color}10`, borderLeft: `4px solid ${color}` }}>
+                  {player?.isEliminated && <div className="absolute top-2 right-2 text-2xl animate-pulse">💀</div>}
+
+                  {/* Overlay de dany */}
+                  {isHurt && (
+                    <div className="absolute inset-0 bg-red-600/20 animate-pulse z-10 flex items-center justify-center pointer-events-none" />
+                  )}
+
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 bg-black/40">
+                      {player?.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs opacity-40">👤</div>}
                     </div>
-                    <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
-                      <div
-                        className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`}
-                        style={{
-                          width: `${((damageStage[pid] === 'impact' ? (initialHealth[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%`
-                        }}
-                      />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white font-black text-xs uppercase truncate">{player?.name}{isMe ? ' (Tu)' : ''}</span>
+                      {player?.badges && player.badges.length > 0 && (
+                        <div className="flex gap-1.5 mt-1">
+                          {player.badges.slice(0, 3).map((bId: string, bi: number) => {
+                            const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                            return (
+                              <div
+                                key={bi}
+                                className="group relative flex items-center justify-center cursor-pointer"
+                                onClick={() => setSelectedBadge(bId)}
+                              >
+                                <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
+                                  {bId}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    {/* Missatge de dany flotant */}
-                    {damageStage[pid] === 'impact' && (
-                      <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
-                        -{lostHP} HP
-                      </div>
-                    )}
-                    {damageStage[pid] === 'draining' && (
-                      <div className="absolute -top-12 right-0 text-red-400 font-black text-2xl animate-out fade-out slide-out-to-top duration-1000 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
-                        -{lostHP} HP
-                      </div>
-                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  {guess ? (
+                    <div className={`text-yellow-400 font-black text-3xl flex items-center gap-2 transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
+                      <span
+                        className="transition-all duration-700"
+                        style={{
+                          transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
+                          color: isDividing[pid] ? '#EF4444' : '#FBBF24'
+                        }}
+                      >
+                        +{animatedScores[pid]?.toLocaleString() || 0}
+                      </span>
+                      {guess.usedHint && showPenalty && (
+                        <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                          50% PISTA
+                        </span>
+                      )}
+                    </div>
+                  ) : <div className="text-gray-500 text-[10px] font-black uppercase italic">Sense tirada</div>}
+
+                  {room.gameType === '1vs1' && player?.health !== undefined && (
+                    <div className="mt-4 relative">
+                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1.5">
+                        <span className="text-gray-400">Vida Restant</span>
+                        <span className={`text-sm ${(displayHealth[pid] ?? 10000) > 5000 ? 'text-emerald-400' : 'text-red-500'}`}>{displayHealth[pid] ?? 10000} / 10000</span>
+                      </div>
+                      <div className="h-4 w-full bg-black/40 rounded-lg overflow-hidden border-2 border-white/10 relative">
+                        <div
+                          className={`h-full transition-all duration-[2000ms] ${damageStage[pid] === 'impact' ? 'bg-red-600 animate-pulse' : ((displayHealth[pid] ?? 10000) > 5000 ? 'bg-emerald-500' : (displayHealth[pid] ?? 10000) > 2000 ? 'bg-yellow-500' : 'bg-red-500')}`}
+                          style={{
+                            width: `${((damageStage[pid] === 'impact' ? (initialHealth[pid] || 10000) : (displayHealth[pid] ?? 10000)) / 10000) * 100}%`
+                          }}
+                        />
+                      </div>
+                      {/* Missatge de dany flotant */}
+                      {damageStage[pid] === 'impact' && (
+                        <div className="absolute -top-12 right-0 text-red-500 font-black text-4xl animate-bounce drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                          -{lostHP} HP
+                        </div>
+                      )}
+                      {damageStage[pid] === 'draining' && (
+                        <div className="absolute -top-12 right-0 text-red-400 font-black text-2xl animate-out fade-out slide-out-to-top duration-1000 drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] z-20">
+                          -{lostHP} HP
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* OVERLAY COMBAT 1VS1 CENTRAL (SOBRE EL MAPA) */}

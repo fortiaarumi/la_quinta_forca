@@ -98,36 +98,47 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
     return () => unsub();
   }, [user]);
 
-  const sorted = Object.entries(room.players)
-    .map(([id, player]) => ({
-      id,
-      name: player.name,
-      score: room.totalScores?.[id] ?? 0,
-      isAdmin: (player as any).isAdmin,
-      isEliminated: player.isEliminated || false,
-      eliminatedAtRound: (player as any).eliminatedAtRound ?? -1,
-    }))
-    .sort((a, b) => {
-      if (room.gameType === 'battle_royale') {
-        // 1. Si un està viu i l'altre no, el viu va primer
-        if (!a.isEliminated && b.isEliminated) return -1;
-        if (a.isEliminated && !b.isEliminated) return 1;
+  const isTeamMode = room.gameType === 'teams';
 
-        // 2. Si tots dos estan eliminats, el que va sobreviure a més rondes guanya
-        if (a.isEliminated && b.isEliminated) {
-          if (b.eliminatedAtRound !== a.eliminatedAtRound) {
-            return b.eliminatedAtRound - a.eliminatedAtRound;
+  // Lògica de classificació (Individual o per Equips)
+  const sorted = isTeamMode 
+    ? Array.from({ length: room.teamSettings?.count || 2 }).map((_, i) => {
+        const teamName = `Equip ${i + 1}`;
+        const teamPlayers = Object.entries(room.players).filter(([, p]) => p.teamId === teamName);
+        const score = teamPlayers.reduce((acc, [id]) => acc + (room.totalScores?.[id] ?? 0), 0);
+        return {
+          id: teamName,
+          name: teamName,
+          score,
+          players: teamPlayers,
+          isTeam: true
+        };
+      }).sort((a, b) => b.score - a.score)
+    : Object.entries(room.players)
+        .map(([id, player]) => ({
+          id,
+          name: player.name,
+          score: room.totalScores?.[id] ?? 0,
+          isAdmin: (player as any).isAdmin,
+          isEliminated: player.isEliminated || false,
+          eliminatedAtRound: (player as any).eliminatedAtRound ?? -1,
+          isTeam: false
+        }))
+        .sort((a, b) => {
+          if (room.gameType === 'battle_royale') {
+            if (!a.isEliminated && b.isEliminated) return -1;
+            if (a.isEliminated && !b.isEliminated) return 1;
+            if (a.isEliminated && b.isEliminated) {
+              if (b.eliminatedAtRound !== a.eliminatedAtRound) return b.eliminatedAtRound - a.eliminatedAtRound;
+            }
+            return b.score - a.score;
           }
-        }
-        // 3. Si empaten o estan vius tots dos, desempatem pels punts totals
-        return b.score - a.score;
-      }
-      // Mode Clàssic o 1vs1: Només ens importen els punts
-      return b.score - a.score;
-    });
+          return b.score - a.score;
+        });
 
   const winner = sorted[0];
-  const iWon = winner?.id === playerId;
+  const myTeamId = room.players[playerId]?.teamId;
+  const iWon = isTeamMode ? (myTeamId === winner.id) : (winner?.id === playerId);
 
   useEffect(() => {
     stopAllMusic();
@@ -291,11 +302,48 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           </div>
         </div>
 
-        <div className="space-y-4 mb-12">
+        <div className="space-y-4 mb-12 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
           {sorted.map((p, i) => {
-            const isMe = p.id === playerId;
-            const pct = Math.min(100, Math.round((p.score / MAX_SCORE) * 100));
+            const isMe = isTeamMode ? (p.id === myTeamId) : (p.id === playerId);
+            const maxScoreValue = isTeamMode ? (MAX_SCORE * (room.teamSettings?.size || 1)) : MAX_SCORE;
+            const pct = Math.min(100, Math.round((p.score / maxScoreValue) * 100));
             const medals = ['🥇', '🥈', '🥉'];
+            
+            if (isTeamMode) {
+              // CARD PER EQUIPS
+              const colors = ['border-blue-500/40 bg-blue-500/10', 'border-red-500/40 bg-red-500/10', 'border-emerald-500/40 bg-emerald-500/10', 'border-yellow-500/40 bg-yellow-500/10'];
+              return (
+                <div 
+                  key={p.id} 
+                  className={`rounded-[2rem] p-6 border transition-all duration-500 animate-slide-up backdrop-blur-2xl ${isMe ? 'shadow-[0_0_40px_rgba(255,255,255,0.1)] ring-2 ring-white/20' : 'bg-white/5 border-white/10'} ${colors[i % 4]}`}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="text-4xl">{medals[i] ?? '🤝'}</div>
+                      <div>
+                        <h3 className="font-black text-2xl uppercase italic tracking-tighter">{p.name}</h3>
+                        <div className="flex -space-x-2 mt-2">
+                          {(p as any).players.map(([id, player]: [string, any]) => (
+                            <div key={id} className="w-8 h-8 rounded-full border-2 border-gray-900 overflow-hidden bg-gray-800">
+                              {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-[10px] flex items-center justify-center h-full">👤</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-4xl font-black text-white font-mono">{p.score.toLocaleString()}</div>
+                      <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">PUNTS TOTALS</div>
+                    </div>
+                  </div>
+                  <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/5">
+                    <div className="h-full bg-white transition-all duration-[2000ms]" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={p.id}
@@ -317,9 +365,9 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
                     <div>
                       <div className="font-black text-2xl uppercase tracking-tighter italic flex items-center gap-2">
                         {p.name}
-                        {p.isAdmin && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
-                        {p.isEliminated && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">ELIMINAT {p.eliminatedAtRound >= 0 ? `(R${p.eliminatedAtRound + 1})` : ''}</span>}
-                        {!p.isEliminated && room.gameType === 'battle_royale' && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.5)]">SUPERVIVENT</span>}
+                        {(p as any).isAdmin && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">👑 ADMIN</span>}
+                        {(p as any).isEliminated && <span className="text-[8px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(220,38,38,0.5)]">ELIMINAT {(p as any).eliminatedAtRound >= 0 ? `(R${(p as any).eliminatedAtRound + 1})` : ''}</span>}
+                        {!(p as any).isEliminated && room.gameType === 'battle_royale' && <span className="text-[8px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.5)]">SUPERVIVENT</span>}
                       </div>
                       {room.players[p.id]?.badges && room.players[p.id].badges!.length > 0 && (
                         <div className="flex gap-2 mb-1 mt-1">

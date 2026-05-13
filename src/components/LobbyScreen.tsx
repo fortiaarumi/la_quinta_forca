@@ -143,6 +143,21 @@ export default function LobbyScreen({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShuffleTeams = async () => {
+    if (!isHost || !room.teamSettings) return;
+    const teamCount = room.teamSettings.count;
+    const playerIds = Object.keys(room.players);
+    const shuffled = [...playerIds].sort(() => Math.random() - 0.5);
+    
+    const updates: Record<string, any> = {};
+    shuffled.forEach((id, index) => {
+      const teamIdx = (index % teamCount) + 1;
+      updates[`players/${id}/teamId`] = `Equip ${teamIdx}`;
+    });
+    
+    await update(ref(db, `rooms/${roomId}`), updates);
+  };
+
   return (
     <div className="min-h-screen bg-[#06080f] text-white flex flex-col items-center justify-start pt-16 md:pt-20 p-8 relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
@@ -169,51 +184,83 @@ export default function LobbyScreen({
               Jugadors <span className="text-white italic">({players.length}/10)</span>
             </p>
           </div>
-          <div className="space-y-3">
-            {players.map(([id, player]) => (
-              <div key={id} className={`flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10 ${id === playerId ? 'border-indigo-500/30' : ''}`}>
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex items-center justify-center shadow-inner">
-                    {player.avatarUrl ? <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" /> : <span className="text-xl opacity-40">👤</span>}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0c0f1a] shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-black text-sm uppercase tracking-tight">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
-                  {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
-                    <div className="flex gap-2 mt-2">
-                      {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
-                        const badgeDef = ALL_BADGES.find(b => b.id === bId);
-                        return (
-                          <div
-                            key={bi}
-                            className="group relative flex items-center justify-center cursor-pointer"
-                            onClick={() => setSelectedBadge(bId)}
-                          >
-                            <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                              {bId}
-                            </div>
+          <div className="space-y-6">
+            {room.gameType === 'teams' ? (
+              // VISTA PER EQUIPS
+              Array.from({ length: room.teamSettings?.count || 2 }).map((_, i) => {
+                const teamName = `Equip ${i + 1}`;
+                const teamPlayers = players.filter(([_, p]) => p.teamId === teamName);
+                const colors = ['border-blue-500/30 bg-blue-500/5', 'border-red-500/30 bg-red-500/5', 'border-emerald-500/30 bg-emerald-500/5', 'border-yellow-500/30 bg-yellow-500/5'];
+                const textColors = ['text-blue-400', 'text-red-400', 'text-emerald-400', 'text-yellow-400'];
+                
+                return (
+                  <div key={teamName} className={`rounded-3xl border p-4 ${colors[i % 4]}`}>
+                    <h4 className={`text-[10px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2 ${textColors[i % 4]}`}>
+                      <span className="opacity-50">#</span> {teamName}
+                    </h4>
+                    <div className="space-y-2">
+                      {teamPlayers.length > 0 ? teamPlayers.map(([id, player]) => (
+                        <div key={id} className="flex items-center gap-3 bg-white/5 rounded-xl p-2 border border-white/5">
+                          <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
+                            {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-xs opacity-40">👤</span>}
                           </div>
-                        );
-                      })}
+                          <span className="font-black text-xs uppercase tracking-tight truncate">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
+                          {id === room.hostId && <span className="ml-auto text-[6px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full font-black">HOST</span>}
+                        </div>
+                      )) : (
+                        <p className="text-[9px] text-gray-600 italic uppercase tracking-widest text-center py-2">Esperant jugadors...</p>
+                      )}
                     </div>
-                  )}
+                  </div>
+                );
+              })
+            ) : (
+              // VISTA CLÀSSICA (LLISTA PLANA)
+              players.map(([id, player]) => (
+                <div key={id} className={`flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10 ${id === playerId ? 'border-indigo-500/30' : ''}`}>
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex items-center justify-center shadow-inner">
+                      {player.avatarUrl ? <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover" /> : <span className="text-xl opacity-40">👤</span>}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0c0f1a] shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-black text-sm uppercase tracking-tight">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
+                    {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
+                      <div className="flex gap-2 mt-2">
+                        {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
+                          const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                          return (
+                            <div
+                              key={bi}
+                              className="group relative flex items-center justify-center cursor-pointer"
+                              onClick={() => setSelectedBadge(bId)}
+                            >
+                              <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform" />
+                              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                {bId}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    {id === room.hostId && <span className="text-[8px] bg-yellow-500/20 text-yellow-500 px-3 py-1 rounded-full font-black uppercase tracking-widest border border-yellow-500/30">HOST</span>}
+                    {user && id !== playerId && !myFriends.includes(id) && (
+                      <button
+                        onClick={async () => { await sendFriendRequest(user.uid, id); setFriendReqSent(prev => ({ ...prev, [id]: true })); }}
+                        disabled={friendReqSent[id]}
+                        className={`text-[9px] uppercase font-black px-3 py-2 rounded-xl transition-all ${friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'}`}
+                      >
+                        {friendReqSent[id] ? '✓ Enviada' : '+ Amic'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
-                  {id === room.hostId && <span className="text-[8px] bg-yellow-500/20 text-yellow-500 px-3 py-1 rounded-full font-black uppercase tracking-widest border border-yellow-500/30">HOST</span>}
-                  {user && id !== playerId && !myFriends.includes(id) && (
-                    <button
-                      onClick={async () => { await sendFriendRequest(user.uid, id); setFriendReqSent(prev => ({ ...prev, [id]: true })); }}
-                      disabled={friendReqSent[id]}
-                      className={`text-[9px] uppercase font-black px-3 py-2 rounded-xl transition-all ${friendReqSent[id] ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg active:scale-95'}`}
-                    >
-                      {friendReqSent[id] ? '✓ Enviada' : '+ Amic'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -272,6 +319,14 @@ export default function LobbyScreen({
         <div className="flex flex-col gap-4">
           {isHost ? (
             <>
+              {room.gameType === 'teams' && (
+                <button
+                  onClick={handleShuffleTeams}
+                  className="w-full py-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 hover:bg-indigo-600/30 transition-all text-[10px] font-black uppercase tracking-widest mb-4 flex items-center justify-center gap-2"
+                >
+                  🎲 BARREJAR EQUIPS
+                </button>
+              )}
               <button
                 onClick={onStart}
                 disabled={!canStart}

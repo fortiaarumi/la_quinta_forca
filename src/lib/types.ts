@@ -22,6 +22,7 @@ export interface RoundData {
     imageUrl?: string;
     isFree?: boolean; // 👈 NOU
   };
+  teamHints?: Record<string, boolean>; // 👈 NOU: Pistes comprades per equips
 }
 
 export interface Player {
@@ -33,6 +34,7 @@ export interface Player {
   health?: number;
   isEliminated?: boolean;
   eliminatedAtRound?: number;
+  teamId?: string; // 👈 NOU: Equip al que pertany
 }
 
 export interface DailyQuest {
@@ -123,7 +125,7 @@ export interface Room {
   isPublic?: boolean; // 👈 NOU
   gameMode?: GameMode;
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
-  gameType?: 'classic' | '1vs1' | 'battle_royale'; // 👈 NOU
+  gameType?: 'classic' | '1vs1' | 'battle_royale' | 'teams'; // 👈 ACTUALITZAT
   hintsEnabled?: boolean; // 👈 NOU
   roundEndsAt?: number;
   lastLaughAt?: number; // 👈 NOU
@@ -146,4 +148,5 @@ export interface Room {
     prompt?: string;
     error?: string;
   };
+  teamSettings?: { size: number, count: number }; // 👈 NOU
 }
