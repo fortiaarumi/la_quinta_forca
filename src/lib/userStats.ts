@@ -142,11 +142,39 @@ export async function completeSongQuest(uid: string): Promise<{ leveledUp: boole
     currentLevel++;
   }
 
-  await update(ref(db, `users/${uid}`), {
+  const updates: any = {
     dailyQuests: updatedQuests,
     level: currentLevel,
     xp: currentXP
-  });
+  };
+
+  // ── FIX BUG 2: Incrementar el comptador d'objectius diaris per a la meta-quest setmanal ──
+  const newCompletedCount = (profile.dailyQuestsCompleted || 0) + 1;
+  updates.dailyQuestsCompleted = newCompletedCount;
+
+  // Si té la quest setmanal de "Completar 15 diaris", l'actualitzem
+  if (profile.weeklyQuests) {
+    const weekly = [...profile.weeklyQuests];
+    const wIdx = weekly.findIndex(w => w.id === 'complete_15_daily' && !w.completed);
+    if (wIdx !== -1) {
+      weekly[wIdx].progress = Math.min(newCompletedCount, weekly[wIdx].target);
+      if (weekly[wIdx].progress >= weekly[wIdx].target) {
+        weekly[wIdx].completed = true;
+        // Si es completa la setmanal aquí, també donem l'XP (opcional, però recomanat)
+        let weeklyXP = weekly[wIdx].xpReward;
+        currentXP += weeklyXP;
+        while (currentXP >= currentLevel * 1000) {
+          currentXP -= currentLevel * 1000;
+          currentLevel++;
+        }
+        updates.level = currentLevel;
+        updates.xp = currentXP;
+      }
+      updates.weeklyQuests = weekly;
+    }
+  }
+
+  await update(ref(db, `users/${uid}`), updates);
 
   return { leveledUp: currentLevel > prevLevel, newLevel: currentLevel, description: updatedQuests[questIdx].description };
 }

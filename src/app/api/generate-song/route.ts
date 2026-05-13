@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
       REGLES ESTRICTES DE FORMAT:
       1. OBLIGATORI mencionar noms de jugadors i noms de lloc REALS de les dades.
-      2. PROHIBIT números en dígits → sempre en lletres (trenta-dos, no 32).
+      2. PROHIBIT números en dígits → sempre en lletres (trenta-dos, no 32) (molt important posar-los sempre amb lletres!).
       3. PROHIBIT l'abreviatura "km" → sempre "quilòmetres".
       4. PROHIBIT paraules: "Suno", "IA", "Bot", "Llama", "oceà".
       5. NO useu expressions genèriques com "Espanya" si les dades donen llocs més específics.

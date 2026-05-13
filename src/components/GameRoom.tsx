@@ -822,11 +822,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const isWinner = sortedForRank[0]?.id === playerId && myTotalScore > 0;
       const isLast = sortedForRank[sortedForRank.length - 1]?.id === playerId;
 
-      // 2. Recopilem dades de les rondes
-      const myRoundScores = [0, 1, 2, 3, 4].map(roundIdx =>
+      // 2. Recopilem dades de les rondes (Dinàmic per a Duels i BR)
+      const roundsKeys = room.rounds ? Object.keys(room.rounds).map(Number).sort((a, b) => a - b) : [];
+      const myRoundScores = roundsKeys.map(roundIdx =>
         room.rounds?.[roundIdx]?.guesses?.[playerId]?.score || 0
       );
-      const myRoundHints = [0, 1, 2, 3, 4].map(roundIdx =>
+      const myRoundHints = roundsKeys.map(roundIdx =>
         !!room.rounds?.[roundIdx]?.guesses?.[playerId]?.usedHint
       );
 
