@@ -447,6 +447,12 @@ export default function HomeScreen() {
   }, []);
 
   const handleSolo = async () => {
+    // Injecció Social Bar en crear partida
+    const script = document.createElement('script');
+    script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
+    script.async = true;
+    document.body.appendChild(script);
+
     setLoading(true); setError('');
     try {
       const playerId = getPlayerId();
@@ -474,6 +480,12 @@ export default function HomeScreen() {
   };
 
   const handleCreate = async () => {
+    // Injecció Social Bar en crear sala
+    const script = document.createElement('script');
+    script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
+    script.async = true;
+    document.body.appendChild(script);
+
     setLoading(true); setError('');
     try {
       const canCreate = await checkDailyLimit();
@@ -646,8 +658,8 @@ export default function HomeScreen() {
 
       <div className="max-w-7xl mx-auto px-6 py-12 min-h-screen flex flex-col relative z-10">
         
-        {/* BANNER ESQUERRA (DESKTOP) */}
-        <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
+        {/* BANNER ESQUERRA (DESKTOP) - Mogut més avall per evitar solapaments */}
+        <div className="fixed left-4 bottom-10 hidden xl:block z-50">
           <IframeAd 
             width={160} 
             height={300} 
@@ -1392,6 +1404,16 @@ export default function HomeScreen() {
           </div>
         </div>
       )}
+
+      {/* ── PUBLICITAT MOBILE (BOTTOM) ── */}
+      <div className="fixed bottom-0 left-0 w-full z-[9999] md:hidden">
+        <IframeAd 
+          width={320} 
+          height={50} 
+          src="/ad-mobile-bottom.html" 
+          className="mx-auto rounded-none border-x-0 border-b-0 shadow-none bg-black"
+        />
+      </div>
     </main>
   );
 }
