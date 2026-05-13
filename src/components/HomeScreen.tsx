@@ -758,6 +758,16 @@ export default function HomeScreen() {
                     <span>Banda Sonora</span>
                   </Link>
                 </div>
+
+                {/* PUBLICITAT ESTÀTICA SOTA ELS BOTONS DE NAVEGACIÓ */}
+                <div className="mt-12 mb-4 animate-fade-in hidden md:block w-full">
+                  <IframeAd 
+                    width={300} 
+                    height={250} 
+                    src="/ad-results.html" 
+                    className="mx-auto lg:mx-0 shadow-none border-white/5 bg-transparent"
+                  />
+                </div>
               </div>
 
               {/* Columna Dreta: Vídeo i Stats Ràpides */}
@@ -792,15 +802,6 @@ export default function HomeScreen() {
                   </button>
                 </div>
 
-                {/* PUBLICITAT ESTÀTICA SOTA EL BOTÓ PRINCIPAL */}
-                <div className="mt-8 mb-4 animate-fade-in hidden md:block">
-                  <IframeAd 
-                    width={300} 
-                    height={250} 
-                    src="/ad-results.html" 
-                    className="mx-auto lg:mx-0 shadow-none border-white/5 bg-transparent"
-                  />
-                </div>
 
                 {/* Estadístiques Ràpides */}
                 {user && (
