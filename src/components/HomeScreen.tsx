@@ -13,7 +13,6 @@ import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import DailyVideo from './DailyVideo';
 import IframeAd from './IframeAd';
-import AdNative from './AdNative';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { GameResult } from '@/lib/userStats';
@@ -652,18 +651,7 @@ export default function HomeScreen() {
           <IframeAd 
             width={160} 
             height={300} 
-            htmlContent={`
-              <script type="text/javascript">
-                atOptions = {
-                  'key' : 'd44d91807a3cd10077c161a15344a1b0',
-                  'format' : 'iframe',
-                  'height' : 300,
-                  'width' : 160,
-                  'params' : {}
-                };
-              </script>
-              <script type="text/javascript" src="https://www.highperformanceformat.com/d44d91807a3cd10077c161a15344a1b0/invoke.js"></script>
-            `}
+            src="/ad-left.html"
           />
         </div>
 
@@ -671,19 +659,8 @@ export default function HomeScreen() {
         <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
           <IframeAd 
             width={160} 
-            height={300} 
-            htmlContent={`
-              <script type="text/javascript">
-                atOptions = {
-                  'key' : 'd44d91807a3cd10077c161a15344a1b0',
-                  'format' : 'iframe',
-                  'height' : 300,
-                  'width' : 160,
-                  'params' : {}
-                };
-              </script>
-              <script type="text/javascript" src="https://www.highperformanceformat.com/d44d91807a3cd10077c161a15344a1b0/invoke.js"></script>
-            `}
+            height={600} 
+            src="/ad-right.html"
           />
         </div>
 
@@ -904,7 +881,14 @@ export default function HomeScreen() {
                 )}
 
                 {/* PUBLICITAT NATIVE */}
-                <AdNative />
+                <div className="flex justify-center mt-8">
+                  <IframeAd 
+                    width={728}
+                    height={90}
+                    src="/ad-native.html"
+                    className="max-w-full overflow-hidden"
+                  />
+                </div>
 
                 {/* Usuaris Online */}
                 <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-8 py-4 rounded-3xl backdrop-blur-md">

@@ -754,18 +754,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           <IframeAd 
             width={300} 
             height={250} 
-            htmlContent={`
-              <script type="text/javascript">
-                atOptions = {
-                  'key' : '321cb3c4d2cdb42d23e831f23b5b303e',
-                  'format' : 'iframe',
-                  'height' : 250,
-                  'width' : 300,
-                  'params' : {}
-                };
-              </script>
-              <script type="text/javascript" src="https://www.highperformanceformat.com/321cb3c4d2cdb42d23e831f23b5b303e/invoke.js"></script>
-            `}
+            src="/ad-results.html"
           />
         </div>
 

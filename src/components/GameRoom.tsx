@@ -108,7 +108,19 @@ export default function GameRoom({ roomId, playerId }: Props) {
     }
   }, [room?.gameState]);
 
-  // ───────────────────────────────────
+  // ── MONETITZACIÓ: POPUNDER ──
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "https://pl29437067.profitablecpmratenetwork.com/4a/4a/9f/4a4a9f511859e6af6c4c3e65cfc77313.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     loadGoogleMaps()

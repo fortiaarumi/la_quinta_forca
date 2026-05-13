@@ -63,6 +63,32 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
     return () => unsub();
   }, []);
 
+  // ── MONETITZACIÓ: SOCIAL BAR (Interval de 5 partides) ──
+  useEffect(() => {
+    const GAMES_PLAYED_KEY = 'lqf_games_played_counter';
+    const currentCount = parseInt(localStorage.getItem(GAMES_PLAYED_KEY) || '0');
+    const newCount = currentCount + 1;
+    
+    if (newCount >= 5) {
+      // Disparem el Social Bar
+      const script = document.createElement('script');
+      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
+      script.async = true;
+      document.body.appendChild(script);
+      
+      // Reiniciem el comptador
+      localStorage.setItem(GAMES_PLAYED_KEY, '0');
+      
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    } else {
+      localStorage.setItem(GAMES_PLAYED_KEY, newCount.toString());
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     const friendsRef = ref(db, `users/${user.uid}/friends`);
@@ -367,18 +393,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           <IframeAd 
             width={300} 
             height={250} 
-            htmlContent={`
-              <script type="text/javascript">
-                atOptions = {
-                  'key' : '321cb3c4d2cdb42d23e831f23b5b303e',
-                  'format' : 'iframe',
-                  'height' : 250,
-                  'width' : 300,
-                  'params' : {}
-                };
-              </script>
-              <script type="text/javascript" src="https://www.highperformanceformat.com/321cb3c4d2cdb42d23e831f23b5b303e/invoke.js"></script>
-            `}
+            src="/ad-results.html"
           />
         </div>
 
