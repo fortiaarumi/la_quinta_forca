@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
 import { ALL_BADGES } from '@/lib/badges';
 import { completeSongQuest } from '@/lib/userStats';
+import IframeAd from './IframeAd';
 
 interface Props {
   roomId: string;
@@ -359,6 +360,26 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
               </div>
             );
           })}
+        </div>
+
+        {/* PUBLICITAT SQUARE EN RESULTATS FINALS */}
+        <div className="flex justify-center mb-12 animate-fade-in">
+          <IframeAd 
+            width={300} 
+            height={250} 
+            htmlContent={`
+              <script type="text/javascript">
+                atOptions = {
+                  'key' : '321cb3c4d2cdb42d23e831f23b5b303e',
+                  'format' : 'iframe',
+                  'height' : 250,
+                  'width' : 300,
+                  'params' : {}
+                };
+              </script>
+              <script type="text/javascript" src="https://www.highperformanceformat.com/321cb3c4d2cdb42d23e831f23b5b303e/invoke.js"></script>
+            `}
+          />
         </div>
 
         {/* HISTORIAL DE BATALLA (1VS1) */}

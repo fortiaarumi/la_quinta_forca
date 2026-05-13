@@ -8,7 +8,7 @@ import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 import { ALL_BADGES } from '@/lib/badges';
-import AdBanner from './AdBanner';
+import IframeAd from './IframeAd';
 
 interface Props {
   room: Room;
@@ -751,7 +751,22 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
         
         {/* PUBLICITAT SQUARE EN RESULTATS */}
         <div className="flex justify-center my-6 animate-fade-in">
-          <AdBanner type="square" />
+          <IframeAd 
+            width={300} 
+            height={250} 
+            htmlContent={`
+              <script type="text/javascript">
+                atOptions = {
+                  'key' : '321cb3c4d2cdb42d23e831f23b5b303e',
+                  'format' : 'iframe',
+                  'height' : 250,
+                  'width' : 300,
+                  'params' : {}
+                };
+              </script>
+              <script type="text/javascript" src="https://www.highperformanceformat.com/321cb3c4d2cdb42d23e831f23b5b303e/invoke.js"></script>
+            `}
+          />
         </div>
 
         <div className="flex gap-3 mt-4">

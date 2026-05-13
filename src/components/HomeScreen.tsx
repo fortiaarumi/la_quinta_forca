@@ -12,7 +12,7 @@ import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import DailyVideo from './DailyVideo';
-import AdBanner from './AdBanner';
+import IframeAd from './IframeAd';
 import AdNative from './AdNative';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
@@ -649,12 +649,42 @@ export default function HomeScreen() {
         
         {/* BANNER ESQUERRA (DESKTOP) */}
         <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
-          <AdBanner />
+          <IframeAd 
+            width={160} 
+            height={300} 
+            htmlContent={`
+              <script type="text/javascript">
+                atOptions = {
+                  'key' : 'd44d91807a3cd10077c161a15344a1b0',
+                  'format' : 'iframe',
+                  'height' : 300,
+                  'width' : 160,
+                  'params' : {}
+                };
+              </script>
+              <script type="text/javascript" src="https://www.highperformanceformat.com/d44d91807a3cd10077c161a15344a1b0/invoke.js"></script>
+            `}
+          />
         </div>
 
         {/* BANNER DRETA (DESKTOP) */}
         <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
-          <AdBanner />
+          <IframeAd 
+            width={160} 
+            height={300} 
+            htmlContent={`
+              <script type="text/javascript">
+                atOptions = {
+                  'key' : 'd44d91807a3cd10077c161a15344a1b0',
+                  'format' : 'iframe',
+                  'height' : 300,
+                  'width' : 160,
+                  'params' : {}
+                };
+              </script>
+              <script type="text/javascript" src="https://www.highperformanceformat.com/d44d91807a3cd10077c161a15344a1b0/invoke.js"></script>
+            `}
+          />
         </div>
 
         {/* HEADER */}
