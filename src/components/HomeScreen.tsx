@@ -12,6 +12,8 @@ import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import DailyVideo from './DailyVideo';
+import AdBanner from './AdBanner';
+import AdNative from './AdNative';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { GameResult } from '@/lib/userStats';
@@ -645,6 +647,16 @@ export default function HomeScreen() {
 
       <div className="max-w-7xl mx-auto px-6 py-12 min-h-screen flex flex-col relative z-10">
         
+        {/* BANNER ESQUERRA (DESKTOP) */}
+        <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
+          <AdBanner />
+        </div>
+
+        {/* BANNER DRETA (DESKTOP) */}
+        <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
+          <AdBanner />
+        </div>
+
         {/* HEADER */}
         <header className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 animate-fade-in">
           <div>
@@ -860,6 +872,9 @@ export default function HomeScreen() {
                     </div>
                   </div>
                 )}
+
+                {/* PUBLICITAT NATIVE */}
+                <AdNative />
 
                 {/* Usuaris Online */}
                 <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-8 py-4 rounded-3xl backdrop-blur-md">

@@ -8,6 +8,7 @@ import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 import { ALL_BADGES } from '@/lib/badges';
+import AdBanner from './AdBanner';
 
 interface Props {
   room: Room;
@@ -747,6 +748,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             </div>
           </div>
         )}
+        
+        {/* PUBLICITAT SQUARE EN RESULTATS */}
+        <div className="flex justify-center my-6 animate-fade-in">
+          <AdBanner type="square" />
+        </div>
 
         <div className="flex gap-3 mt-4">
           <button onClick={onLeave} className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-400 font-black py-4 rounded-2xl text-xs transition-all border border-red-500/20 uppercase tracking-widest cursor-pointer border-none">🏃 Abandonar</button>
