@@ -5,6 +5,7 @@ import { ref, get, set, update, onValue, remove } from 'firebase/database';
 import { db, auth } from '@/lib/firebase'; // 👈 AFEGIT: auth
 import { sendPasswordResetEmail } from 'firebase/auth'; // 👈 AFEGIT: Enviar correus
 import { useAuth } from '@/lib/authContext';
+import DailyVideo from './DailyVideo';
 import { useRouter } from 'next/navigation';
 
 type AdminTab = 'users' | 'rooms' | 'app';
@@ -274,9 +275,12 @@ export default function AdminPanel() {
               {/* Vista prèvia de com quedarà */}
               <div className="bg-black/40 rounded-xl p-4 border border-white/5">
                 <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4 text-center">Vista Prèvia</div>
-                <div className="rounded-xl overflow-hidden shadow-lg border border-white/10 bg-black aspect-video mb-3">
+                <div className="mb-3">
                   {videoUrl ? (
-                    <video src={videoUrl} autoPlay loop muted playsInline className="w-full h-full object-contain" />
+                    <DailyVideo 
+                      src={videoUrl} 
+                      containerClassName="rounded-xl shadow-lg border border-white/10" 
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">Sense vídeo</div>
                   )}

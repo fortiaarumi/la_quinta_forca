@@ -11,6 +11,7 @@ import { getUserProfile, checkAndUpdateDailyLogin } from '@/lib/userStats';
 import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
+import DailyVideo from './DailyVideo';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { GameResult } from '@/lib/userStats';
@@ -735,8 +736,12 @@ export default function HomeScreen() {
                   <div className="absolute top-4 right-4 z-20">
                     <span className="bg-indigo-600 text-[8px] font-black uppercase px-4 py-1.5 rounded-full shadow-lg tracking-widest">Vídeo del dia</span>
                   </div>
-                  <div className="aspect-video rounded-[2rem] overflow-hidden bg-black mb-4 relative shadow-inner">
-                    <video src={homeVideoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-1000" />
+                  <div className="mb-4 relative shadow-inner">
+                    <DailyVideo 
+                      src={homeVideoUrl} 
+                      containerClassName="rounded-[2rem]" 
+                      className="opacity-60 group-hover:opacity-90 transition-opacity duration-1000" 
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />
                     <div className="absolute bottom-4 left-6">
                       <p className="text-sm font-black italic uppercase tracking-tight text-white">{homeVideoCaption}</p>

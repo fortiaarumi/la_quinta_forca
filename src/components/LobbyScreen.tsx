@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import LobbyChat from './LobbyChat';
+import DailyVideo from './DailyVideo';
 import { useRouter } from 'next/navigation';
 import { ALL_BADGES } from '@/lib/badges';
 import { useAudio } from '@/lib/AudioContext';
@@ -250,8 +251,12 @@ export default function LobbyScreen({
 
         <div className="mb-10">
           <div className="bg-white/5 border border-white/10 rounded-[2rem] p-5 shadow-2xl backdrop-blur-xl">
-            <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black flex justify-center mb-4 relative group">
-              <video src={lobbyVideo.url} autoPlay loop muted playsInline className="w-full h-[220px] object-cover transition-transform duration-700 group-hover:scale-110" />
+            <div className="mb-4 relative group">
+              <DailyVideo 
+                src={lobbyVideo.url} 
+                containerClassName="rounded-2xl shadow-2xl border border-white/10" 
+                className="transition-transform duration-700 group-hover:scale-110" 
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60" />
               <div className="absolute bottom-4 left-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-black text-sm shadow-lg">📹</div>

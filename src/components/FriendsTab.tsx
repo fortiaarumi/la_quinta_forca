@@ -5,6 +5,7 @@ import { ref, onValue, push, serverTimestamp, update, get } from 'firebase/datab
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/lib/authContext';
 import { getUserByEmail, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
+import DailyVideo from './DailyVideo';
 import { ALL_BADGES } from '@/lib/badges';
 
 interface FriendData {
@@ -389,8 +390,11 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
       <div className="mt-8 pt-6 border-t border-white/10">
         <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-4 text-center">Mentre esperes els amics...</h3>
         <div className="bg-black/30 rounded-2xl p-3 border border-white/5">
-          <div className="rounded-xl overflow-hidden shadow-lg border border-white/5 bg-black flex justify-center mb-3">
-            <video src={friendVideo.url} autoPlay loop muted playsInline className="w-full h-[150px] object-contain" />
+          <div className="mb-3">
+            <DailyVideo 
+              src={friendVideo.url} 
+              containerClassName="rounded-xl shadow-lg border border-white/5" 
+            />
           </div>
           <div className="text-center px-2">
             <p className="text-gray-300 text-xs font-bold m-0">{friendVideo.caption}</p>
