@@ -786,7 +786,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       // Si ets el primer en Multijugador, reduïm el temps de la sala segons el mode
       const tSettings = getTimeSettings(room.timeMode);
-      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt && tSettings.panic) {
+      if (isFirstToGuess && !isSinglePlayer && room.gameType !== 'teams' && room.roundEndsAt && tSettings.panic) {
         const panicTime = Date.now() + tSettings.panic;
         if (panicTime < room.roundEndsAt) {
           await update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });

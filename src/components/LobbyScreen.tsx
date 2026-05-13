@@ -183,6 +183,14 @@ export default function LobbyScreen({
             <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
               Jugadors <span className="text-white italic">({players.length}/10)</span>
             </p>
+            {isHost && room.gameType === 'teams' && (
+              <button
+                onClick={handleShuffleTeams}
+                className="bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 hover:bg-indigo-600/30 transition-all text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl flex items-center gap-1.5"
+              >
+                🎲 BARREJAR
+              </button>
+            )}
           </div>
           <div className="space-y-6">
             {room.gameType === 'teams' ? (
@@ -204,7 +212,29 @@ export default function LobbyScreen({
                           <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center">
                             {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-xs opacity-40">👤</span>}
                           </div>
-                          <span className="font-black text-xs uppercase tracking-tight truncate">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-black text-[11px] uppercase tracking-tight truncate">{player.name}{id === playerId ? ' (Tu)' : ''}</span>
+                            {id === playerId && (
+                              <select 
+                                value={player.teamId}
+                                onChange={async (e) => {
+                                  await update(ref(db, `rooms/${roomId}/players/${playerId}`), { teamId: e.target.value });
+                                }}
+                                className="bg-transparent text-indigo-400 text-[9px] font-black uppercase tracking-widest border-none outline-none cursor-pointer hover:text-white transition-colors"
+                              >
+                                {Array.from({ length: room.teamSettings?.count || 2 }).map((_, idx) => {
+                                  const tName = `Equip ${idx + 1}`;
+                                  const tSize = players.filter(([_, p]) => p.teamId === tName).length;
+                                  const isFull = tSize >= (room.teamSettings?.size || 2) && player.teamId !== tName;
+                                  return (
+                                    <option key={tName} value={tName} disabled={isFull} className="bg-[#0c0f1a] text-white">
+                                      {tName} {isFull ? '(Ple)' : ''}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            )}
+                          </div>
                           {id === room.hostId && <span className="ml-auto text-[6px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full font-black">HOST</span>}
                         </div>
                       )) : (
@@ -319,14 +349,6 @@ export default function LobbyScreen({
         <div className="flex flex-col gap-4">
           {isHost ? (
             <>
-              {room.gameType === 'teams' && (
-                <button
-                  onClick={handleShuffleTeams}
-                  className="w-full py-4 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 hover:bg-indigo-600/30 transition-all text-[10px] font-black uppercase tracking-widest mb-4 flex items-center justify-center gap-2"
-                >
-                  🎲 BARREJAR EQUIPS
-                </button>
-              )}
               <button
                 onClick={onStart}
                 disabled={!canStart}

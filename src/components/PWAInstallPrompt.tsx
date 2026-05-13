@@ -34,44 +34,53 @@ export default function PWAInstallPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-500">
-      <div className="bg-[#12141c] border border-yellow-500/30 w-full max-w-md rounded-[2.5rem] p-8 shadow-[0_0_50px_rgba(212,175,55,0.15)] relative overflow-hidden">
+    <div className="fixed inset-0 z-[15000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="bg-[#0c0f1a] border border-indigo-500/30 rounded-[3.5rem] w-full max-w-sm p-8 relative shadow-[0_0_80px_rgba(99,102,241,0.25)] text-center overflow-hidden">
+        {/* Botó de tancar elegant */}
+        <button 
+          onClick={() => setShowPrompt(false)}
+          className="absolute top-8 right-8 text-red-500 hover:text-red-400 text-4xl font-black cursor-pointer bg-transparent border-none transition-transform hover:scale-110 active:scale-90"
+        >
+          ×
+        </button>
+
         {/* Decoració de fons */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl" />
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
         
-        <div className="relative z-10 text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-yellow-500/20 transform rotate-12">
-            <span className="text-4xl">🏰</span>
+        <div className="relative z-10">
+          <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-[0_20px_40px_rgba(99,102,241,0.3)] transform rotate-12">
+            <span className="text-5xl">🏰</span>
           </div>
           
-          <h2 className="text-2xl font-black uppercase italic tracking-tighter text-white mb-2">Instal·la l&apos;App</h2>
-          <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-            Per a la millor experiència de joc i accés ràpid, afegeix <span className="text-yellow-500 font-bold italic">La Quinta Forca</span> a la teva pantalla d&apos;inici.
+          <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-3">Instal·la l&apos;App</h2>
+          <p className="text-gray-400 text-xs mb-10 font-medium leading-relaxed px-4">
+            Per a la millor experiència i accés ràpid, afegeix <span className="text-indigo-400 font-bold italic">La Quinta Forca</span> a la teva pantalla d&apos;inici.
           </p>
 
-          <div className="bg-white/5 rounded-2xl p-6 border border-white/10 text-left mb-8">
-            <p className="text-[10px] font-black uppercase tracking-widest text-yellow-500/70 mb-4 italic">Instruccions</p>
+          <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-left mb-10 backdrop-blur-md">
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-5 italic text-center">Instruccions de joc</p>
             
             {platform === 'ios' ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">1</div>
-                  <p className="text-xs text-gray-300">Clica el botó <span className="inline-block px-2 py-0.5 bg-white/10 rounded">Compartir</span> (quadrat amb fletxa).</p>
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-black text-indigo-300">1</div>
+                  <p className="text-[11px] text-gray-300 leading-tight">Clica el botó <span className="font-bold text-white px-2 py-0.5 bg-white/10 rounded-md">Compartir</span> (icona quadrada amb fletxa).</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">2</div>
-                  <p className="text-xs text-gray-300">Selecciona <span className="text-white font-bold italic">&quot;Afegir a la pantalla d&apos;inici&quot;</span>.</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-black text-indigo-300">2</div>
+                  <p className="text-[11px] text-gray-300 leading-tight">Busca l&apos;opció <span className="text-white font-black italic">&quot;Afegir a la pantalla d&apos;inici&quot;</span>.</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">1</div>
-                  <p className="text-xs text-gray-300">Clica els <span className="font-bold text-white">tres punts</span> del navegador.</p>
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-black text-indigo-300">1</div>
+                  <p className="text-[11px] text-gray-300 leading-tight">Clica els <span className="font-bold text-white">tres punts</span> (menú) del navegador.</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">2</div>
-                  <p className="text-xs text-gray-300">Selecciona <span className="text-white font-bold italic">&quot;Instal·lar aplicació&quot;</span>.</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-black text-indigo-300">2</div>
+                  <p className="text-[11px] text-gray-300 leading-tight">Selecciona <span className="text-white font-black italic">&quot;Instal·lar aplicació&quot;</span>.</p>
                 </div>
               </div>
             )}
@@ -79,9 +88,9 @@ export default function PWAInstallPrompt() {
 
           <button 
             onClick={() => setShowPrompt(false)}
-            className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 transition-all active:scale-95"
+            className="w-full py-5 bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_25px_rgba(99,102,241,0.4)] transition-all active:scale-95 border-none cursor-pointer"
           >
-            Entès, ho faré després
+            D&apos;acord, entès! 🚀
           </button>
         </div>
       </div>

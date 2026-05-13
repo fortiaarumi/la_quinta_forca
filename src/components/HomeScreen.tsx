@@ -1089,9 +1089,11 @@ export default function HomeScreen() {
               {setupStep === 'teamSize' && (
                 <StepWrapper direction={animDirection}>
                   <h3 className="text-5xl font-black uppercase italic mb-12 tracking-tighter leading-none">Mida de l&apos;Equip</h3>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <OptionCard selected={teamSize === 2} title="2 Jugadors" desc="Equips de parelles." icon="👥" onClick={() => setTeamSize(2)} />
                     <OptionCard selected={teamSize === 3} title="3 Jugadors" desc="Equips de tres persones." icon="👨‍👩‍👧" onClick={() => setTeamSize(3)} />
+                    <OptionCard selected={teamSize === 4} title="4 Jugadors" desc="Equips de quatre." icon="🍀" onClick={() => setTeamSize(4)} />
+                    <OptionCard selected={teamSize === 5} title="5 Jugadors" desc="Equips de cinc (Squad)." icon="✋" onClick={() => setTeamSize(5)} />
                   </div>
                   <GoldButton onClick={() => goToStep('teamCount')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
                 </StepWrapper>
