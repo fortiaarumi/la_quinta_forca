@@ -38,8 +38,8 @@ export default function PWAInstallPrompt() {
       <div className="bg-[#0c0f1a] border border-indigo-500/30 rounded-[3.5rem] w-full max-w-sm p-8 relative shadow-[0_0_80px_rgba(99,102,241,0.25)] text-center overflow-hidden">
         {/* Botó de tancar elegant */}
         <button 
-          onClick={() => setShowPrompt(false)}
-          className="absolute top-8 right-8 text-red-500 hover:text-red-400 text-4xl font-black cursor-pointer bg-transparent border-none transition-transform hover:scale-110 active:scale-90"
+          onClick={(e) => { e.stopPropagation(); setShowPrompt(false); }}
+          className="absolute top-6 right-6 z-[15001] text-red-500 hover:text-red-400 text-4xl font-black cursor-pointer bg-transparent border-none transition-transform hover:scale-110 active:scale-90"
         >
           ×
         </button>

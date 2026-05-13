@@ -220,7 +220,7 @@ export default function LobbyScreen({
                                 onChange={async (e) => {
                                   await update(ref(db, `rooms/${roomId}/players/${playerId}`), { teamId: e.target.value });
                                 }}
-                                className="bg-transparent text-indigo-400 text-[9px] font-black uppercase tracking-widest border-none outline-none cursor-pointer hover:text-white transition-colors"
+                                className="bg-transparent text-indigo-400 text-[9px] font-black uppercase tracking-widest border-none outline-none cursor-pointer hover:text-white transition-colors appearance-auto pr-8"
                               >
                                 {Array.from({ length: room.teamSettings?.count || 2 }).map((_, idx) => {
                                   const tName = `Equip ${idx + 1}`;

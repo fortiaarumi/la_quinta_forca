@@ -786,7 +786,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       // Si ets el primer en Multijugador, reduïm el temps de la sala segons el mode
       const tSettings = getTimeSettings(room.timeMode);
-      if (isFirstToGuess && !isSinglePlayer && room.gameType !== 'teams' && room.roundEndsAt && tSettings.panic) {
+      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt && tSettings.panic) {
         const panicTime = Date.now() + tSettings.panic;
         if (panicTime < room.roundEndsAt) {
           await update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });
@@ -1064,7 +1064,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
         )}
 
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <div className="absolute top-12 md:top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
           <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
             {room.gameType === '1vs1'
               ? `Ronda ${room.currentRound + 1}`
@@ -1094,7 +1094,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           )}
         </div>
 
-        <div className="absolute top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
+        <div className="absolute top-12 md:top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
           {allPlayerIds.map((id, i) => {
             const player = room.players[id];
             const isMe = id === playerId;
@@ -1146,7 +1146,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
 
         {room.hintsEnabled && !hasGuessed && (
-          <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
+          <div className="absolute top-12 md:top-4 right-4 z-10 flex flex-col gap-2 items-end">
             {!hasUsedHint ? (
               <button
                 onClick={fetchHint}
