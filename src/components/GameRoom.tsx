@@ -109,39 +109,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
     }
   }, [room?.gameState]);
 
-  // ── MONETITZACIÓ: POPUNDER (Limitat a 5 partides diàries) ──
-  useEffect(() => {
-    const DAILY_COUNT_KEY = 'lqf_daily_play_count';
-    const LAST_PLAYED_KEY = 'lqf_last_played_date';
-    
-    const today = new Date().toISOString().split('T')[0];
-    const lastDate = localStorage.getItem(LAST_PLAYED_KEY);
-    let count = parseInt(localStorage.getItem(DAILY_COUNT_KEY) || '0');
-
-    if (lastDate !== today) {
-      count = 0;
-      localStorage.setItem(LAST_PLAYED_KEY, today);
-    }
-
-    // Incrementem el comptador per aquesta partida
-    count += 1;
-    localStorage.setItem(DAILY_COUNT_KEY, count.toString());
-
-    // Només injectem si portem 5 o més partides avui
-    if (count >= 5) {
-      const script = document.createElement('script');
-      script.src = "https://pl29437067.profitablecpmratenetwork.com/4a/4a/9f/4a4a9f511859e6af6c4c3e65cfc77313.js";
-      script.async = true;
-      document.head.appendChild(script);
-
-      return () => {
-        if (document.head.contains(script)) {
-          document.head.removeChild(script);
-        }
-      };
-    }
-  }, []);
-
   useEffect(() => {
     loadGoogleMaps()
       .then(() => setMapsReady(true))

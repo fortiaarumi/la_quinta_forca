@@ -447,11 +447,15 @@ export default function HomeScreen() {
   }, []);
 
   const handleSolo = async () => {
-    // Injecció Social Bar en crear partida
-    const script = document.createElement('script');
-    script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
-    script.async = true;
-    document.body.appendChild(script);
+    // Injecció Social Bar (Ajudant de monetització)
+    const scriptId = 'adsterra-social-bar';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
     setLoading(true); setError('');
     try {
@@ -480,11 +484,15 @@ export default function HomeScreen() {
   };
 
   const handleCreate = async () => {
-    // Injecció Social Bar en crear sala
-    const script = document.createElement('script');
-    script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
-    script.async = true;
-    document.body.appendChild(script);
+    // Injecció Social Bar (Ajudant de monetització)
+    const scriptId = 'adsterra-social-bar';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
     setLoading(true); setError('');
     try {
@@ -658,14 +666,6 @@ export default function HomeScreen() {
 
       <div className="max-w-7xl mx-auto px-6 py-12 min-h-screen flex flex-col relative z-10">
         
-        {/* BANNER ESQUERRA (DESKTOP) - Mogut més avall per evitar solapaments */}
-        <div className="fixed left-4 bottom-10 hidden xl:block z-50">
-          <IframeAd 
-            width={160} 
-            height={300} 
-            src="/ad-left.html"
-          />
-        </div>
 
         {/* BANNER DRETA (DESKTOP) */}
         <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
@@ -790,6 +790,16 @@ export default function HomeScreen() {
                       Suggereix un vídeo del dia clicant aquí
                     </span>
                   </button>
+                </div>
+
+                {/* PUBLICITAT ESTÀTICA SOTA EL BOTÓ PRINCIPAL */}
+                <div className="mt-8 mb-4 animate-fade-in hidden md:block">
+                  <IframeAd 
+                    width={300} 
+                    height={250} 
+                    src="/ad-results.html" 
+                    className="mx-auto lg:mx-0 shadow-none border-white/5 bg-transparent"
+                  />
                 </div>
 
                 {/* Estadístiques Ràpides */}
