@@ -1307,15 +1307,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
       )}
 
-      {/* ── PUBLICITAT MOBILE (BOTTOM) ── */}
-      <div className="fixed bottom-0 left-0 w-full z-[9999] md:hidden">
-        <IframeAd 
-          width={320} 
-          height={50} 
-          src="/ad-mobile-bottom.html" 
-          className="mx-auto rounded-none border-x-0 border-b-0 shadow-none bg-black"
-        />
-      </div>
     </>
   );
 }
