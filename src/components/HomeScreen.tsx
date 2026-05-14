@@ -355,15 +355,19 @@ export default function HomeScreen() {
     return () => unsub();
   }, [user]);
 
-  // Escolta de sales públiques
   useEffect(() => {
     if (setupStep === 'joinChoice') {
       const roomsRef = ref(db, 'rooms');
+      const currentPlayerId = getPlayerId();
       const unsub = onValue(roomsRef, (snap) => {
         if (snap.exists()) {
           const all = snap.val();
           const listed = Object.entries(all)
-            .filter(([_, r]: any) => r.isPublic && r.gameState === 'lobby' && !r.isSinglePlayer)
+            .filter(([_, r]: any) => {
+              const isPublic = r.isPublic && r.gameState === 'lobby';
+              const isAlreadyIn = r.players && r.players[currentPlayerId];
+              return (isPublic || isAlreadyIn) && !r.isSinglePlayer;
+            })
             .map(([id, r]: any) => ({ id, room: r }))
             .sort((a, b) => (b.room.createdAt || 0) - (a.room.createdAt || 0));
           setPublicRooms(listed);
@@ -1040,7 +1044,9 @@ export default function HomeScreen() {
                                   <p className="text-[8px] text-gray-500 font-bold uppercase tracking-wider">{room.gameMode} • {room.timeMode} • {Object.keys(room.players).length} jugadors</p>
                                 </div>
                               </div>
-                              <span className="text-yellow-500 font-black tracking-widest text-xs group-hover:translate-x-1 transition-transform">ENTRAR →</span>
+                              <span className={`${room.gameState === 'playing' ? 'text-emerald-500' : 'text-yellow-500'} font-black tracking-widest text-xs group-hover:translate-x-1 transition-transform`}>
+                                {room.gameState === 'playing' ? 'RECONNECTAR 🔄' : 'ENTRAR →'}
+                              </span>
                             </button>
                           ))}
                         </div>

@@ -99,6 +99,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
   const [showRoundIntro, setShowRoundIntro] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
+  const [showLeaveModal, setShowLeaveModal] = useState(false); // 👈 NOU
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic, isMuted, toggleMute, nextTrack, prevTrack } = useAudio();
@@ -238,6 +239,32 @@ export default function GameRoom({ roomId, playerId }: Props) {
     await update(roomRef, updates);
     router.push('/');
   }, [room, roomId, playerId, isHost, router]);
+
+  const requestLeave = () => setShowLeaveModal(true);
+
+  // ── INTERCEPTORS DE SORTIDA ──
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  useEffect(() => {
+    // Empenyem un estat inicial per poder interceptar el "back"
+    window.history.pushState({ noBack: true }, '');
+
+    const handlePopState = (e: PopStateEvent) => {
+      // Quan l'usuari prem "enrere", el forcem a quedar-se i mostrem el modal
+      window.history.pushState({ noBack: true }, '');
+      setShowLeaveModal(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
@@ -963,7 +990,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         playerId={playerId}
         isHost={isHost}
         onStart={generateLocations}
-        onLeave={handleLeave} // 👈 Passem el nou handler
+        onLeave={requestLeave}
         isGenerating={room.gameState === 'generating'}
         mapsReady={mapsReady}
       />
@@ -975,7 +1002,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         room={room}
         playerId={playerId}
         onRestart={generateLocations}
-        onLeave={handleLeave}
+        onLeave={requestLeave}
         isHost={isHost}
       />
     );
@@ -988,7 +1015,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         isHost={isHost}
         playerId={playerId}
         onNext={nextRound}
-        onLeave={handleLeave}
+        onLeave={requestLeave}
         mapsReady={mapsReady}
         initialHealth={prevHealth}
       />
@@ -999,10 +1026,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
     content = (
       <div className="min-h-screen bg-[#06080f] relative">
-      {/* NOU: Preload de l'asset 5k per evitar retards o fallades */}
       <link rel="preload" href="/siu.mp4" as="video" />
       <div className={`relative w-full h-[100dvh] overflow-hidden bg-black transition-all duration-700 ${isEliminated && isSpectating ? 'grayscale sepia-[0.2]' : ''}`}>
-        {/* ROUND INTRO OVERLAY */}
         {showRoundIntro && room.gameState === 'playing' && (
           <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
             <div className="text-center bg-black/60 backdrop-blur-xl p-16 rounded-[4rem] border border-white/20 shadow-2xl scale-110">
@@ -1017,7 +1042,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         )}
 
-        {/* ELIMINATION OVERLAY */}
         {isEliminated && !isSpectating && (
           <div className="absolute inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-6 animate-in fade-in duration-1000">
             <div className="text-center max-w-md">
@@ -1034,7 +1058,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
                   QUEDAR-SE COM A ESPECTADOR
                 </GoldButton>
                 <button
-                  onClick={handleLeave}
+                  onClick={requestLeave}
                   className="w-full py-5 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-all"
                 >
                   ABANDONAR LA PARTIDA
@@ -1176,7 +1200,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 </div>
               </div>
             )}
-            {/* CONTROLS D'ÀUDIO — just a sota de la pista revelada */}
             <div className="flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
               <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
               <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
@@ -1185,7 +1208,6 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         )}
 
-        {/* CONTROLS D'ÀUDIO — quan les pistes estan desactivades */}
         {(!room.hintsEnabled || hasGuessed) && (
           <div className="absolute top-4 right-4 z-[11] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
             <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
@@ -1229,7 +1251,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   }
 
   return (
-    <>
+    <main>
       {content}
 
       {showAlert && (
@@ -1306,7 +1328,34 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         </div>
       )}
+      <PWAInstallPrompt />
 
-    </>
+      {/* MODAL DE CONFIRMACIÓ PER ABANDONAR */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-[#0c0f1a] border border-red-500/30 p-12 rounded-[3rem] max-w-md w-full text-center shadow-2xl shadow-red-500/10 animate-slide-up">
+            <div className="text-6xl mb-6 animate-bounce">🏃💨</div>
+            <h2 className="text-3xl font-black uppercase italic mb-4 tracking-tighter text-white">Segur que vols abandonar?</h2>
+            <p className="text-gray-400 text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed">
+              Si abandones ara, perdràs tot el teu progrés i els teus punts d&apos;aquesta partida.
+            </p>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={handleLeave}
+                className="w-full py-6 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-red-600/20 transition-all active:scale-95"
+              >
+                🏃 Sí, Abandonar
+              </button>
+              <button 
+                onClick={() => setShowLeaveModal(false)}
+                className="py-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors"
+              >
+                ❌ Cancel·lar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
