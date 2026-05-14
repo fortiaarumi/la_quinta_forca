@@ -610,7 +610,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
 
       <div ref={mapRef} className="flex-1 min-h-0" />
 
-      <div className="bg-gray-900 border-t border-gray-700/50 p-5 flex-shrink-0 relative">
+      <div className="bg-gray-900 border-t border-gray-700/50 p-5 pb-20 md:pb-5 flex-shrink-0 relative">
         {damageMsg && (
           <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-2 rounded-full font-black uppercase text-sm animate-bounce shadow-2xl z-50">
             {damageMsg}

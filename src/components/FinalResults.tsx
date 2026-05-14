@@ -290,7 +290,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-yellow-600/10 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 pb-20 md:pb-0">
         <div className="text-center mb-12">
           <div className="text-9xl mb-6 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] animate-bounce">{iWon ? '🏆' : '🌍'}</div>
           <h1 className="text-6xl font-black uppercase italic tracking-tighter mb-2">Fi del Joc!</h1>
