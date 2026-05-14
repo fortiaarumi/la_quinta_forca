@@ -388,10 +388,11 @@ export async function updateUserStatsAfterGame(
 
   if (questsUpdated) {
     updates.dailyQuests = quests;
-    // Comptem quantes s'han completat ara per la setmanal
-    const justFinishedCount = quests.filter(q => q.completed && !profile.dailyQuests?.find((orig: any) => orig.id === q.id && orig.completed)).length;
+    // Comptem quantes s'han completat ARA comparant amb l'estat anterior del perfil
+    const justFinishedCount = quests.filter((q, idx) => q.completed && !profile.dailyQuests?.[idx]?.completed).length;
     if (justFinishedCount > 0) {
-      updates.dailyQuestsCompleted = (profile.dailyQuestsCompleted || 0) + justFinishedCount;
+      const currentCompletedCount = profile.dailyQuestsCompleted || 0;
+      updates.dailyQuestsCompleted = currentCompletedCount + justFinishedCount;
     }
   }
 
@@ -471,7 +472,7 @@ export async function updateUserStatsAfterGame(
         break;
     }
 
-    if (progress !== wq.progress) {
+    if (progress !== wq.progress || (progress >= wq.target && !wq.completed)) {
       weeklyUpdated = true;
       wq.progress = Math.min(progress, wq.target);
       if (wq.progress >= wq.target) {
