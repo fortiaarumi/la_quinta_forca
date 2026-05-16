@@ -15,10 +15,10 @@ import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
 import GoldButton from './GoldButton';
 import PWAInstallPrompt from './PWAInstallPrompt';
-import Head from 'next/head'; // 👈 AFEGIT
+import Head from 'next/head';
 import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame, GameResult } from '@/lib/userStats';
-import { useAudio } from '@/lib/AudioContext'; // 👈 AFEGIT: Importem el cervell musical
+import { useAudio } from '@/lib/AudioContext';
 import { ALL_BADGES } from '@/lib/badges';
 
 interface Props {
@@ -45,12 +45,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [syncReady, setSyncReady] = useState(false); // 👈 NOU: Per garantir que tots tenen les coordenades
+  const [syncReady, setSyncReady] = useState(false);
   const [hasGuessed, setHasGuessed] = useState(false);
   const [showGuessMap, setShowGuessMap] = useState(false);
-  const [hasUsedHint, setHasUsedHint] = useState(false); // 👈 NOU
-  const [currentHint, setCurrentHint] = useState<string | null>(null); // 👈 NOU
-  const [hintLoading, setHintLoading] = useState(false); // 👈 NOU
+  const [hasUsedHint, setHasUsedHint] = useState(false);
+  const [currentHint, setCurrentHint] = useState<string | null>(null);
+  const [hintLoading, setHintLoading] = useState(false);
   const [mapsReady, setMapsReady] = useState(false);
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
@@ -90,16 +90,16 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setPrevHealth(currentH);
     }
   }, [room?.currentRound, room?.gameState]); // S'actualitza en canviar de ronda o tornar a 'playing'
-  const tempPinRef = useRef<{ lat: number, lng: number } | null>(null); // 👈 AFEGIT
+  const tempPinRef = useRef<{ lat: number, lng: number } | null>(null);
   const [showAlert, setShowAlert] = useState(false);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
   const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
   const [questToast, setQuestToast] = useState<string | null>(null);
-  const [systemMessage, setSystemMessage] = useState<string | null>(null); // 👈 NOU
-  const lastEventRef = useRef<number>(0); // 👈 NOU: Per no repetir missatges
+  const [systemMessage, setSystemMessage] = useState<string | null>(null);
+  const lastEventRef = useRef<number>(0);
   const [showRoundIntro, setShowRoundIntro] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
-  const [showLeaveModal, setShowLeaveModal] = useState(false); // 👈 NOU
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic, isMuted, toggleMute, nextTrack, prevTrack } = useAudio();
@@ -177,9 +177,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
       setHasGuessed(false);
       setShowGuessMap(false);
       transitionedRef.current = false;
-      tempPinRef.current = null; // 👈 AFEGIT: Netejem el pin al canviar de ronda
-      setHasUsedHint(false); // 👈 NOU
-      setCurrentHint(null);  // 👈 NOU
+      tempPinRef.current = null;
+      setHasUsedHint(false);
+      setCurrentHint(null);
       prevRoundRef.current = room.currentRound;
 
       if (room.gameState === 'playing') {
@@ -287,15 +287,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
         const remaining = Math.max(0, room.roundEndsAt - Date.now());
         const secondsLeft = Math.ceil(remaining / 1000);
         setTimeLeft(secondsLeft);
-
-        // 👈 AFEGIT: Si queden exactament 10 segons, disparem el so
         if (secondsLeft === 10 && tickTockRef.current && tickTockRef.current.paused) {
           tickTockRef.current.play().catch(e => console.log('Error àudio', e));
           if (alertaRef.current) {
             alertaRef.current.play().catch(e => console.log('Error alerta', e));
           }
           setShowAlert(true);
-          setTimeout(() => setShowAlert(false), 2000); // 👈 CANVIAT A 2 SEGONS
+          setTimeout(() => setShowAlert(false), 2000);
         }
 
         if (remaining === 0) isTimeUp = true;
@@ -333,7 +331,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
               playerIds.forEach(id => {
                 const g = finalGuesses[id];
                 let roundScore = g?.score || 0;
-                if (g?.usedHint) roundScore = Math.min(2500, Math.round(roundScore / 2)); // 👈 NOU: Penalització
+                if (g?.usedHint) roundScore = Math.min(2500, Math.round(roundScore / 2));
 
                 const currentTotal = room.totalScores?.[id] || 0;
                 updates[`totalScores/${id}`] = currentTotal + roundScore;
@@ -403,7 +401,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
         rounds: null,
         songState: null,
         roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
-        syncKey: Date.now() // 👈 NOU: Clau de sincronització
+        syncKey: Date.now()
       });
     } else {
       await update(ref(db, `rooms/${roomId}`), { locations: updatedLocations });
@@ -852,7 +850,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
       currentRound: next,
       gameState: 'playing',
       roundEndsAt: tSettings.total ? Date.now() + tSettings.total : null,
-      syncKey: Date.now() // 👈 NOU
+      syncKey: Date.now()
     });
   }, [room, isHost, roomId, addMoreLocations]);
 
@@ -917,7 +915,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             result.badges.forEach((b, i) => {
               setTimeout(() => {
                 setBadgeToast(b);
-                setTimeout(() => setBadgeToast(null), 3000); // 👈 3s
+                setTimeout(() => setBadgeToast(null), 3000);
               }, i * 4000);
             });
           }
@@ -931,7 +929,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             pending.completedQuests = result.completedQuests;
           }
           if (result.badges && result.badges.length > 0) {
-            pending.badges = result.badges; // 👈 NOU
+            pending.badges = result.badges;
           }
           if (Object.keys(pending).length > 0) {
             sessionStorage.setItem('pendingAnimations', JSON.stringify(pending));
@@ -941,14 +939,14 @@ export default function GameRoom({ roomId, playerId }: Props) {
           if (result.leveledUp) {
             setTimeout(() => {
               setLevelUpToast(result.newLevel);
-              setTimeout(() => setLevelUpToast(null), 3000); // 👈 3s
+              setTimeout(() => setLevelUpToast(null), 3000);
             }, 1000);
           }
           if (result.completedQuests && result.completedQuests.length > 0) {
             result.completedQuests.forEach((qDesc, i) => {
               setTimeout(() => {
                 setQuestToast(qDesc);
-                setTimeout(() => setQuestToast(null), 4000); // 👈 4s
+                setTimeout(() => setQuestToast(null), 4000);
               }, (result.leveledUp || (result.badges?.length) ? 8000 : 1000) + i * 5000);
             });
           }

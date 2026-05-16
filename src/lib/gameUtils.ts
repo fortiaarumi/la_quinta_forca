@@ -15,7 +15,6 @@ export function haversineDistance(
 }
 
 export function calculateScore(distanceKm: number, mode: string = 'world'): number {
-  // 👈 AFEGIT: Tolerància de 50 metres (0.05 km) per la puntuació perfecta
   if (distanceKm <= 0.05) return 5000;
 
   if (distanceKm <= 0.05) return 5000;

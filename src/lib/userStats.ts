@@ -13,7 +13,7 @@ export const QUEST_POOL = [
   { id: 'win_1_world', description: 'Guanyar una partida a Món', target: 1, xpReward: 400 },
   { id: 'duel_6_rounds', description: 'Fer un duel de més de 6 rondes', target: 1, xpReward: 500 },
   { id: 'generate_song', description: 'Generar una cançó satírica al final d\'una partida', target: 1, xpReward: 400 },
-  { id: 'suggest_video', description: 'Sugerir 1 vídeo del dia', target: 1, xpReward: 300 } // 👈 NOU
+  { id: 'suggest_video', description: 'Sugerir 1 vídeo del dia', target: 1, xpReward: 300 }
 ];
 
 export const WEEKLY_QUEST_POOL = [
@@ -184,9 +184,9 @@ export interface LeaderboardEntry {
   nickname: string;
   score: number;
   total5k?: number;
-  avatarUrl?: string; // 👈 NOU
-  badges?: string[];  // 👈 NOU
-  selectedBadges?: string[]; // 👈 NOU
+  avatarUrl?: string;
+  badges?: string[];
+  selectedBadges?: string[];
 }
 
 // Crea el perfil d'usuari nou a la base de dades

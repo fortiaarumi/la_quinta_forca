@@ -29,7 +29,7 @@ export default function LobbyScreen({
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [showHostMessage, setShowHostMessage] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const { isMuted, toggleMute, nextTrack, prevTrack, hasInteracted } = useAudio();
 
   useEffect(() => {

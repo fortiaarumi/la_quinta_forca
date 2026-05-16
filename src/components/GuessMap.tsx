@@ -16,9 +16,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
   const [pinPos, setPinPos] = useState<{ lat: number; lng: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false); // 👈 AFEGIT
-
-  // 👈 AFEGIT: Detectem si és mòbil al carregar
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -49,8 +47,6 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
       const latLng = e.latLng;
       const pos = { lat: latLng.lat(), lng: latLng.lng() };
       setPinPos(pos);
-
-      // 👈 AFEGIT 1: Avisem a la sala just quan fem el clic
       if (onPinChange) onPinChange(pos.lat, pos.lng);
 
       if (markerRef.current) {
@@ -65,8 +61,6 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         markerRef.current.addListener('dragend', (de: google.maps.MapMouseEvent) => {
           if (de.latLng) {
             setPinPos({ lat: de.latLng.lat(), lng: de.latLng.lng() });
-
-            // 👈 AFEGIT 2: Avisem a la sala just quan acabem d'arrossegar la xinxeta
             if (onPinChange) onPinChange(de.latLng.lat(), de.latLng.lng());
           }
         });

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { ref, get, set, update, onValue, remove } from 'firebase/database';
-import { db, auth } from '@/lib/firebase'; // 👈 AFEGIT: auth
-import { sendPasswordResetEmail } from 'firebase/auth'; // 👈 AFEGIT: Enviar correus
+import { db, auth } from '@/lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '@/lib/authContext';
 import DailyVideo from './DailyVideo';
 import { useRouter } from 'next/navigation';
@@ -20,9 +20,7 @@ export default function AdminPanel() {
   const [videoCaption, setVideoCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ text: '', type: '' });
-  const [suggestions, setSuggestions] = useState<any[]>([]); // 👈 AFEGIT: Memòria de suggeriments
-
-  // 👈 AFEGIT: Estats i funcions per a les Sales
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
 
   useEffect(() => {
@@ -54,8 +52,6 @@ export default function AdminPanel() {
       await remove(ref(db, 'rooms'));
     }
   };
-
-  // 👈 AFEGIT: Estats i funcions per als Usuaris
   const [usersList, setUsersList] = useState<any[]>([]);
   const [editingUser, setEditingUser] = useState<any | null>(null);
 
@@ -112,7 +108,7 @@ export default function AdminPanel() {
         bestScoreCultural_normal: Number(editingUser.bestScoreCultural_normal) || 0,
         bestScoreCultural_infinit: Number(editingUser.bestScoreCultural_infinit) || 0,
         total5k: Number(editingUser.total5k) || 0,
-        badges: editingUser.badges || [], // 👈 NOU
+        badges: editingUser.badges || [],
       });
       setEditingUser(null);
       alert('✅ Dades de l\'usuari actualitzades!');
@@ -134,8 +130,6 @@ export default function AdminPanel() {
     };
     fetchConfig();
   }, [isAdmin]);
-
-  // 👈 AFEGIT: Escoltar la bústia de suggeriments
   useEffect(() => {
     if (!isAdmin || activeTab !== 'app') return;
     const sugRef = ref(db, 'suggestions');
@@ -295,7 +289,7 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* 👈 AFEGIT: LA BÚSTIA DE SUGGERIMENTS VISUAL */}
+            {}
             <div className="mt-12 pt-8 border-t border-white/10">
               <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
                 💡 Bústia de Suggeriments <span className="bg-emerald-500 text-black text-xs px-2 py-1 rounded-full">{suggestions.length}</span>

@@ -22,8 +22,8 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<any[]>([]); // Canviem a any[] pels camps dinàmics
   const [mode, setMode] = useState<'world' | 'catalunya' | 'pixapins' | 'estadis' | 'cultural' | '5k'>('world');
-  const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala'); // 👈 AFEGIT
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU: Controla el pop-up de la insígnia
+  const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala');
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRankings = async () => {
@@ -74,7 +74,7 @@ export default function StatsPage() {
     };
 
     fetchRankings();
-  }, [mode, timeFilter]); // 👈 AQUÍ AFEGIM EL timeFilter
+  }, [mode, timeFilter]);
 
   return (
     <div className="relative min-h-screen w-full bg-[#0a0f1a] text-white p-6 md:p-12 overflow-x-hidden font-sans">
@@ -168,7 +168,7 @@ export default function StatsPage() {
                                   <div
                                     key={bi}
                                     className="group relative flex items-center justify-center cursor-pointer"
-                                    onClick={() => setSelectedBadge(bId)} /* 👈 AFEGIT: Obre el modal al clicar */
+                                    onClick={() => setSelectedBadge(bId)}
                                   >
                                     <img
                                       src={badgeDef?.image || '/badges/default.png'}
@@ -213,7 +213,7 @@ export default function StatsPage() {
         </p>
       </div>
 
-      {/* 👈 NOU: MODAL GLOBAL D'INSÍGNIES */}
+      {}
       {selectedBadge && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer"

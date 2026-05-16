@@ -12,7 +12,7 @@ import { db } from '@/lib/firebase';
 export default function BadgesPage() {
   const { badges, user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU: Controla el pop-up
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -80,7 +80,7 @@ export default function BadgesPage() {
                       <tr
                         key={b.id}
                         className={`border-b border-white/5 transition-all duration-500 hover:bg-white/5 cursor-pointer ${isUnlocked ? 'bg-indigo-500/5' : ''}`}
-                        onClick={() => setSelectedBadge(b.id)} // 👈 Clic a tota la fila obre el pop-up
+                        onClick={() => setSelectedBadge(b.id)}
                       >
                         <td className="p-5">
                           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
@@ -145,7 +145,7 @@ export default function BadgesPage() {
         )}
       </div>
 
-      {/* 👈 NOU: POP-UP (MODAL) QUAN CLIQUES UNA INSÍGNIA */}
+      {}
       {selectedBadge && (
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 cursor-pointer"

@@ -60,7 +60,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [combatLoser, setCombatLoser] = useState<string | null>(null);
   const [combatWinner, setCombatWinner] = useState<string | null>(null);
   const [showRoulette, setShowRoulette] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [localTieBreak, setLocalTieBreak] = useState<Room['tieBreak'] | null>(null);
   const [rouletteWinnerId, setRouletteWinnerId] = useState<string | null>(null);
   const [spinFinished, setSpinFinished] = useState(false);

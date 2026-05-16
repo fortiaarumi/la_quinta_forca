@@ -58,14 +58,14 @@ export default function HomeScreen() {
   const [tab, setTab] = useState<'solo' | 'create' | 'join'>('solo');
   const [gameMode, setGameMode] = useState<GameMode>('world');
   const [timeMode, setTimeMode] = useState<'bala' | 'normal' | 'infinit'>('bala');
-  const [gameType, setGameType] = useState<'classic' | '1vs1' | 'battle_royale' | 'teams'>('classic'); // 👈 ACTUALITZAT
-  const [teamSize, setTeamSize] = useState<number>(2); // 👈 NOU
-  const [teamCount, setTeamCount] = useState<number>(2); // 👈 NOU
-  const [hintsEnabled, setHintsEnabled] = useState(false); // 👈 NOU
+  const [gameType, setGameType] = useState<'classic' | '1vs1' | 'battle_royale' | 'teams'>('classic');
+  const [teamSize, setTeamSize] = useState<number>(2);
+  const [teamCount, setTeamCount] = useState<number>(2);
+  const [hintsEnabled, setHintsEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
-  const [badgeToast, setBadgeToast] = useState<{ id: string, label: string, image: string } | null>(null); // 👈 NOU
+  const [badgeToast, setBadgeToast] = useState<{ id: string, label: string, image: string } | null>(null);
   const [questToast, setQuestToast] = useState<string | null>(null);
 
   const [questTab, setQuestTab] = useState<'daily' | 'weekly'>('daily');
@@ -93,7 +93,7 @@ export default function HomeScreen() {
       if (pending.levelUp) {
         setTimeout(() => {
           setLevelUpToast(pending.levelUp);
-          setTimeout(() => setLevelUpToast(null), 3000); // 👈 3s ara
+          setTimeout(() => setLevelUpToast(null), 3000);
         }, 1500);
       }
 
@@ -103,7 +103,7 @@ export default function HomeScreen() {
           setTimeout(() => {
             const bDef = ALL_BADGES.find(b => b.id === bId);
             setBadgeToast({ id: bId, label: bDef?.label || bId, image: bDef?.image || '' });
-            setTimeout(() => setBadgeToast(null), 3000); // 👈 3s també
+            setTimeout(() => setBadgeToast(null), 3000);
           }, (pending.levelUp ? 5000 : 1500) + i * 4000);
         });
       }
@@ -124,7 +124,7 @@ export default function HomeScreen() {
   type SetupStep = 'idle' | 'type' | 'gameType' | 'teamSize' | 'teamCount' | 'mode' | 'time' | 'hints' | 'join' | 'joinChoice';
   const [setupStep, setSetupStep] = useState<SetupStep>('idle');
   const [animDirection, setAnimDirection] = useState<'forward' | 'backward'>('forward');
-  const [publicRooms, setPublicRooms] = useState<{id: string, room: Room}[]>([]); // 👈 NOU
+  const [publicRooms, setPublicRooms] = useState<{id: string, room: Room}[]>([]);
 
   const goToStep = (step: SetupStep, direction: 'forward' | 'backward' = 'forward') => {
     if (step === setupStep) return; // No fem transició si és el mateix pas (toggling options)
@@ -418,7 +418,7 @@ export default function HomeScreen() {
   const [myXP, setMyXP] = useState<number>(0);
   const [myStreak, setMyStreak] = useState<number>(1);
   const [myQuests, setMyQuests] = useState<DailyQuest[]>([]);
-  const [myWeeklyQuests, setMyWeeklyQuests] = useState<WeeklyQuest[]>([]); // 👈 NOU
+  const [myWeeklyQuests, setMyWeeklyQuests] = useState<WeeklyQuest[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -433,7 +433,7 @@ export default function HomeScreen() {
         setMyXP(profile.xp || 0);
         setMyStreak(profile.currentStreak || 1);
         setMyQuests(profile.dailyQuests || []);
-        setMyWeeklyQuests(profile.weeklyQuests || []); // 👈 NOU
+        setMyWeeklyQuests(profile.weeklyQuests || []);
       }
     });
   }, [user]);

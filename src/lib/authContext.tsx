@@ -8,9 +8,9 @@ import { auth, db } from './firebase';
 interface AuthContextType {
   user: User | null;
   nickname: string | null;
-  avatarUrl: string | null; // 👈 NOU
-  badges: string[];         // 👈 NOU
-  selectedBadges: string[]; // 👈 NOU
+  avatarUrl: string | null;
+  badges: string[];
+  selectedBadges: string[];
   isAdmin: boolean;
   isGuest: boolean;
   loading: boolean;
@@ -22,9 +22,9 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   nickname: null,
-  avatarUrl: null, // 👈 NOU
-  badges: [],      // 👈 NOU
-  selectedBadges: [], // 👈 NOU
+  avatarUrl: null,
+  badges: [],
+  selectedBadges: [],
   isAdmin: false,
   isGuest: false,
   loading: true,
@@ -36,9 +36,9 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // 👈 NOU
-  const [badges, setBadges] = useState<string[]>([]);              // 👈 NOU
-  const [selectedBadges, setSelectedBadges] = useState<string[]>([]); // 👈 NOU
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [badges, setBadges] = useState<string[]>([]);
+  const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,13 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (snap.exists()) {
             const data = snap.val();
             setNickname(data.nickname);
-            setAvatarUrl(data.avatarUrl || null); // 👈 NOU
-            setBadges(data.badges || []);        // 👈 NOU
-            setSelectedBadges(data.selectedBadges || []); // 👈 NOU
-            // 👈 AFEGIT: Si tens el rol a la DB O ets el Fortià, s'activa!
+            setAvatarUrl(data.avatarUrl || null);
+            setBadges(data.badges || []);
+            setSelectedBadges(data.selectedBadges || []);
             setIsAdmin(data.isAdmin === true || u.email === 'fortiaarumi@gmail.com'); 
           } else if (u.email === 'fortiaarumi@gmail.com') {
-            // 👈 AFEGIT: Per si de cas no tinguessis el perfil creat per un error, t'assegures entrar
             setIsAdmin(true);
           }
 
@@ -97,9 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
     setIsGuest(false);
     setNickname(null);
-    setAvatarUrl(null); // 👈 NOU
-    setBadges([]);      // 👈 NOU
-    setSelectedBadges([]); // 👈 NOU
+    setAvatarUrl(null);
+    setBadges([]);
+    setSelectedBadges([]);
   };
 
   const setGuestMode = (v: boolean) => {
@@ -115,9 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       nickname, 
-      avatarUrl, // 👈 NOU
-      badges,    // 👈 NOU
-      selectedBadges, // 👈 NOU
+      avatarUrl,
+      badges,
+      selectedBadges,
       isAdmin,
       isGuest, 
       loading, 

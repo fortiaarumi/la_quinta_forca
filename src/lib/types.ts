@@ -11,18 +11,18 @@ export interface PlayerGuess {
   score: number;
   guessCountry?: string;
   actualCountry?: string;
-  usedHint?: boolean; // 👈 NOU
+  usedHint?: boolean;
 }
 
 export interface RoundData {
   guesses: Record<string, PlayerGuess>;
-  sharedHint?: { // 👈 NOU
+  sharedHint?: {
     type: string;
     value: string;
     imageUrl?: string;
-    isFree?: boolean; // 👈 NOU
+    isFree?: boolean;
   };
-  teamHints?: Record<string, boolean>; // 👈 NOU: Pistes comprades per equips
+  teamHints?: Record<string, boolean>;
 }
 
 export interface Player {
@@ -30,11 +30,11 @@ export interface Player {
   joinedAt: number;
   avatarUrl?: string;
   badges?: string[];
-  selectedBadges?: string[]; // 👈 NOU
+  selectedBadges?: string[];
   health?: number;
   isEliminated?: boolean;
   eliminatedAtRound?: number;
-  teamId?: string; // 👈 NOU: Equip al que pertany
+  teamId?: string;
 }
 
 export interface DailyQuest {
@@ -82,21 +82,21 @@ export interface UserProfile {
   lastVideoUploadDate?: string;
   avatarUrl?: string;
   badges?: string[];
-  selectedBadges?: string[]; // 👈 NOU: Insígnies fixades pel jugador
+  selectedBadges?: string[];
   totalGames?: number;
   totalWins?: number;
-  totalWins1vs1?: number; // 👈 NOU: Insígnia Duel Joan
-  hintsRevealed?: number; // 👈 NOU: Insígnia Muniani
+  totalWins1vs1?: number;
+  hintsRevealed?: number;
   lastLoginDate?: string;
   currentStreak?: number;
   level?: number;
   xp?: number;
   dailyQuests?: DailyQuest[];
-  weeklyQuests?: WeeklyQuest[]; // 👈 NOU
-  dailyQuestsCompleted?: number; // 👈 Per a la quest setmanal
-  brMatchesPlayed?: number;      // 👈 Per a la quest setmanal
-  videoSuggestions?: number;    // 👈 Per a la quest setmanal
-  lastWeeklyReset?: string;     // 👈 Per saber quan resetejar setmanals
+  weeklyQuests?: WeeklyQuest[];
+  dailyQuestsCompleted?: number;
+  brMatchesPlayed?: number;
+  videoSuggestions?: number;
+  lastWeeklyReset?: string;
 }
 
 export type GameState =
@@ -122,15 +122,15 @@ export interface Room {
   totalScores?: Record<string, number>;
   createdAt: number;
   isSinglePlayer?: boolean;
-  isPublic?: boolean; // 👈 NOU
+  isPublic?: boolean;
   gameMode?: GameMode;
   timeMode?: TimeMode; // <-- NOVA PROPIETAT AFEGIDA AQUÍ
-  gameType?: 'classic' | '1vs1' | 'battle_royale' | 'teams'; // 👈 ACTUALITZAT
-  hintsEnabled?: boolean; // 👈 NOU
+  gameType?: 'classic' | '1vs1' | 'battle_royale' | 'teams';
+  hintsEnabled?: boolean;
   roundEndsAt?: number;
-  lastLaughAt?: number; // 👈 NOU
-  lastCongratsAt?: number; // 👈 NOU
-  lastEvent?: { // 👈 NOU
+  lastLaughAt?: number;
+  lastCongratsAt?: number;
+  lastEvent?: {
     type: 'leave';
     playerName: string;
     timestamp: number;
@@ -148,5 +148,5 @@ export interface Room {
     prompt?: string;
     error?: string;
   };
-  teamSettings?: { size: number, count: number }; // 👈 NOU
+  teamSettings?: { size: number, count: number };
 }

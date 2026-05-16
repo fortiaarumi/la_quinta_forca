@@ -88,7 +88,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const handleSetInteracted = (val: boolean) => {
     setHasInteracted(val);
-    hasInteractedRef.current = val; // 👈 AFEGIT: Actualitzem el ref immediatament per evitar race conditions
+    hasInteractedRef.current = val;
     sessionStorage.setItem('geoAudioInteracted', String(val));
   };
 

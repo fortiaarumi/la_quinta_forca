@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail, // 👈 AFEGIT
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { createUserProfile } from '@/lib/userStats';
@@ -14,7 +14,7 @@ interface Props {
   onGuestContinue: () => void;
 }
 
-type Panel = 'welcome' | 'login' | 'signup' | 'guest' | 'reset'; // 👈 AFEGIT 'reset'
+type Panel = 'welcome' | 'login' | 'signup' | 'guest' | 'reset';
 
 const GlassInput = ({
   type, placeholder, value, onChange, autoComplete,
@@ -61,8 +61,6 @@ export default function AuthScreen({ onGuestContinue }: Props) {
 
   // Guest
   const [guestNick, setGuestNick] = useState('');
-
-  // 👈 AFEGIT: Recuperar contrasenya
   const [resetEmail, setResetEmail] = useState('');
   const [resetRepeat, setResetRepeat] = useState('');
   const [resetMsg, setResetMsg] = useState('');
@@ -71,8 +69,6 @@ export default function AuthScreen({ onGuestContinue }: Props) {
   const [error, setError] = useState('');
 
   const clearError = () => setError('');
-
-  // 👈 AFEGIT: Funció que demana l'email a Firebase
   const handleResetPassword = async () => {
     if (!resetEmail.trim() || !resetRepeat.trim()) return setError('Emplena tots els camps');
     if (resetEmail.trim() !== resetRepeat.trim()) return setError('Els correus no coincideixen');
@@ -267,7 +263,7 @@ export default function AuthScreen({ onGuestContinue }: Props) {
                 <GlassInput type="password" placeholder="••••••••" value={loginPassword} onChange={setLoginPassword} autoComplete="current-password" />
               </div>
             </div>
-            {/* 👈 AFEGIT: Botó per anar a recuperar-la */}
+            {}
             <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '15px' }}>
               <button 
                 onClick={() => { setPanel('reset'); clearError(); }} 

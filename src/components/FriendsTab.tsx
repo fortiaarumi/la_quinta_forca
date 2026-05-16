@@ -46,7 +46,7 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   const [openChatFriend, setOpenChatFriend] = useState<FriendData | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null); // 👈 NOU
+  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
