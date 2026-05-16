@@ -11,7 +11,6 @@ import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
 import { ALL_BADGES } from '@/lib/badges';
 import { completeSongQuest } from '@/lib/userStats';
-import IframeAd from './IframeAd';
 
 interface Props {
   roomId: string;
@@ -63,31 +62,6 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
     return () => unsub();
   }, []);
 
-  // ── MONETITZACIÓ: SOCIAL BAR (Interval de 5 partides) ──
-  useEffect(() => {
-    const GAMES_PLAYED_KEY = 'lqf_games_played_counter';
-    const currentCount = parseInt(localStorage.getItem(GAMES_PLAYED_KEY) || '0');
-    const newCount = currentCount + 1;
-    
-    if (newCount >= 5) {
-      // Disparem el Social Bar
-      const script = document.createElement('script');
-      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
-      script.async = true;
-      document.body.appendChild(script);
-      
-      // Reiniciem el comptador
-      localStorage.setItem(GAMES_PLAYED_KEY, '0');
-      
-      return () => {
-        if (document.body.contains(script)) {
-          document.body.removeChild(script);
-        }
-      };
-    } else {
-      localStorage.setItem(GAMES_PLAYED_KEY, newCount.toString());
-    }
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -290,7 +264,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-yellow-600/10 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10 pb-20 md:pb-0">
+      <div className="w-full max-w-md relative z-10 pb-5">
         <div className="text-center mb-12">
           <div className="text-9xl mb-6 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] animate-bounce">{iWon ? '🏆' : '🌍'}</div>
           <h1 className="text-6xl font-black uppercase italic tracking-tighter mb-2">Fi del Joc!</h1>
@@ -436,14 +410,6 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
           })}
         </div>
 
-        {/* PUBLICITAT SQUARE EN RESULTATS FINALS */}
-        <div className="flex justify-center mb-12 animate-fade-in">
-          <IframeAd 
-            width={300} 
-            height={250} 
-            src="/ad-results.html"
-          />
-        </div>
 
         {/* HISTORIAL DE BATALLA (1VS1) */}
         {room.gameType === '1vs1' && (

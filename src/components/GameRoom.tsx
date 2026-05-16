@@ -14,7 +14,6 @@ import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
 import GoldButton from './GoldButton';
-import IframeAd from './IframeAd';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import Head from 'next/head'; // 👈 AFEGIT
 import { useAuth } from '@/lib/authContext';

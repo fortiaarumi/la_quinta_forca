@@ -12,7 +12,6 @@ import { acceptFriendRequest, rejectFriendRequest } from '@/lib/friendUtils';
 import Link from 'next/link';
 import FriendsTab from './FriendsTab';
 import DailyVideo from './DailyVideo';
-import IframeAd from './IframeAd';
 import { useAudio, MENU_TRACKS, GAME_TRACKS } from '@/lib/AudioContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { GameResult } from '@/lib/userStats';
@@ -454,16 +453,6 @@ export default function HomeScreen() {
   }, []);
 
   const handleSolo = async () => {
-    // Injecció Social Bar (Ajudant de monetització)
-    const scriptId = 'adsterra-social-bar';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
     setLoading(true); setError('');
     try {
       const playerId = getPlayerId();
@@ -493,16 +482,6 @@ export default function HomeScreen() {
   };
 
   const handleCreate = async () => {
-    // Injecció Social Bar (Ajudant de monetització)
-    const scriptId = 'adsterra-social-bar';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = "https://pl29437059.profitablecpmratenetwork.com/70/53/b9/7053b999110b835e0a64d2bbca9e213e.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
     setLoading(true); setError('');
     try {
       const canCreate = await checkDailyLimit();
@@ -698,14 +677,6 @@ export default function HomeScreen() {
       <div className="max-w-7xl mx-auto px-6 py-12 min-h-screen flex flex-col relative z-10">
         
 
-        {/* BANNER DRETA (DESKTOP) */}
-        <div className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:block z-50">
-          <IframeAd 
-            width={160} 
-            height={600} 
-            src="/ad-right.html"
-          />
-        </div>
 
         {/* HEADER */}
         <header className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 animate-fade-in">
@@ -790,15 +761,6 @@ export default function HomeScreen() {
                   </Link>
                 </div>
 
-                {/* PUBLICITAT ESTÀTICA SOTA ELS BOTONS DE NAVEGACIÓ */}
-                <div className="mt-12 mb-4 animate-fade-in hidden md:block w-full">
-                  <IframeAd 
-                    width={300} 
-                    height={250} 
-                    src="/ad-results.html" 
-                    className="mx-auto lg:mx-0 shadow-none border-white/5 bg-transparent"
-                  />
-                </div>
               </div>
 
               {/* Columna Dreta: Vídeo i Stats Ràpides */}
@@ -934,15 +896,6 @@ export default function HomeScreen() {
                   </div>
                 )}
 
-                {/* PUBLICITAT NATIVE */}
-                <div className="flex justify-center mt-8">
-                  <IframeAd 
-                    width={728}
-                    height={90}
-                    src="/ad-native.html"
-                    className="max-w-full overflow-hidden"
-                  />
-                </div>
 
                 {/* Usuaris Online */}
                 <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-8 py-4 rounded-3xl backdrop-blur-md">
@@ -1477,15 +1430,6 @@ export default function HomeScreen() {
         </div>
       )}
 
-      {/* ── PUBLICITAT MOBILE (BOTTOM) ── */}
-      <div className="fixed bottom-0 left-0 w-full z-[9999] md:hidden">
-        <IframeAd 
-          width={320} 
-          height={50} 
-          src="/ad-mobile-bottom.html" 
-          className="mx-auto rounded-none border-x-0 border-b-0 shadow-none bg-black"
-        />
-      </div>
     </main>
   );
 }

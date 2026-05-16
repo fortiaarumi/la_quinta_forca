@@ -8,7 +8,6 @@ import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 import { ALL_BADGES } from '@/lib/badges';
-import IframeAd from './IframeAd';
 
 interface Props {
   room: Room;
