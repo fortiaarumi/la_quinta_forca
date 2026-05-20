@@ -1241,6 +1241,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }}
             onClose={() => setShowGuessMap(false)}
             gameMode={room.gameMode}
+            userEmail={user?.email}
           />
         )}
       </div>

@@ -7,9 +7,11 @@ interface Props {
   onPinChange?: (lat: number, lng: number) => void;
   onClose: () => void;
   gameMode?: string;
+  userEmail?: string | null;
 }
 
-export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'world' }: Props) {
+export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'world', userEmail }: Props) {
+  const isArnau = userEmail === 'arnau.montull@gmail.com';
   const mapRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -94,7 +96,9 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
       {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
         className={`fixed z-50 flex flex-col items-end transition-all duration-300 ease-out
-          ${isMobile
+          ${isArnau && expanded 
+            ? 'inset-0 w-full h-[100dvh] bg-black z-[99999]' 
+            : isMobile
             ? (expanded
               ? 'inset-x-4 top-[12vh] bottom-[20vh]'
               : 'bottom-6 right-6')
@@ -107,11 +111,12 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         {/* ── BOTÓ EXPLÍCIT PER A TOTHOM (A SOBRE DEL MAPA) ── */}
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className={`mb-3 px-6 py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-2xl transition-all border backdrop-blur-xl group
+          className={`px-6 py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-2xl transition-all border backdrop-blur-xl group
             ${expanded
               ? 'bg-black/80 text-red-400 border-red-500/30 hover:bg-red-500/10'
               : 'bg-black/80 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10'
-            }`}
+            }
+            ${isArnau && expanded ? 'absolute top-6 left-1/2 -translate-x-1/2 z-[99999]' : 'mb-3'}`}
         >
           <span className="group-hover:scale-110 transition-transform inline-block mr-2">
             {expanded ? '↙️' : '↗️'}
@@ -121,8 +126,10 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
 
         {/* ── EL MAPA I LA UI ── */}
         <div className={`relative w-full overflow-hidden shadow-2xl transition-all duration-300
-          ${isMobile && !expanded ? 'w-32 h-32 rounded-2xl border-2 border-white/20 ml-auto' : 'flex-1 rounded-3xl border-2 border-emerald-500/50'}
-          ${!isMobile ? 'h-full rounded-2xl border border-white/20' : ''}
+          ${isArnau && expanded ? 'flex-1 h-full rounded-none border-none' : (
+            isMobile && !expanded ? 'w-32 h-32 rounded-2xl border-2 border-white/20 ml-auto' : 'flex-1 rounded-3xl border-2 border-emerald-500/50'
+          )}
+          ${!isMobile && !(isArnau && expanded) ? 'h-full rounded-2xl border border-white/20' : ''}
         `}>
           {/* El contenidor del mapa de Google */}
           <div ref={mapRef} className="absolute inset-0 bg-slate-800" />
