@@ -13,17 +13,19 @@ export default function StreetViewPane({ location, gameMode, onReady }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const isRestricted = gameMode === 'cultural' || gameMode === 'pixapins';
+    // Fix #2: "Cultural" i "Barcelona/Pixapins" modes apliquen restricció de no-moviment
+    const isRestricted = gameMode === 'cultural' || gameMode === 'pixapins' || gameMode === 'barcelona';
 
     const options: google.maps.StreetViewPanoramaOptions = {
       addressControl: false,
       showRoadLabels: false,
 
       // ── RESTRICCIONS "NO MOVE" ──
-      // Si és cultural o pixapins, bloquegem el zoom i apaguem les fletxes de terra
+      // Si és cultural, pixapins o barcelona, bloquegem el moviment completament
       zoomControl: !isRestricted,
-      clickToGo: !isRestricted,
+      clickToGo: false,        // Sempre desactivat per evitar navegació accidental
       linksControl: !isRestricted,
+      scrollwheel: !isRestricted,
 
       zoomControlOptions: {
         position: google.maps.ControlPosition.RIGHT_BOTTOM,
@@ -31,7 +33,7 @@ export default function StreetViewPane({ location, gameMode, onReady }: Props) {
       fullscreenControl: false,
       motionTracking: false,
       motionTrackingControl: false,
-      panControl: true, // Sempre permetem girar el cap
+      panControl: true, // Sempre permetem girar el cap (360°)
       enableCloseButton: false,
       imageDateControl: false,
     };

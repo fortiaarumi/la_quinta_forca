@@ -1033,7 +1033,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
               <h2 className="text-8xl font-black italic uppercase tracking-tighter text-white mb-6">Ronda {room.currentRound + 1}</h2>
               {room.gameType === '1vs1' && (
                 <div className="bg-red-600 text-white px-8 py-3 rounded-2xl font-black text-2xl animate-pulse">
-                  MAL x{(1 + (room.currentRound * 0.5)).toFixed(1)}
+                  MAL x{(1.0 + (room.currentRound * 0.5)).toFixed(1)}
                 </div>
               )}
             </div>
@@ -1079,6 +1079,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
             <>
               <StreetViewPane
                 location={room.locations![room.currentRound]}
+                gameMode={room.gameMode}
                 onReady={() => setMapsReady(true)}
               />
             </>
@@ -1107,9 +1108,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 }`}>
                 ⏱️ {timeLeft}s
               </div>
-              {(timeLeft ?? 100) <= 15 && !hasGuessed && !isSinglePlayer && (
+              {/* Fix #5: El missatge "L'altre jugador ha tirat" NOMÉS es mostra si l'oponent ha enviat la jugada de veritat,
+                  no automàticament quan el temps arriba a 15 segons. Es deriva de l'estat real de Firebase. */}
+              {!hasGuessed && !isSinglePlayer && (() => {
+                const opponentId = Object.keys(room.players).find(id => id !== playerId);
+                const opponentHasGuessed = opponentId ? !!(room.rounds?.[room.currentRound]?.guesses?.[opponentId]) : false;
+                return opponentHasGuessed;
+              })() && (
                 <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
-                  ⚠️ L'altre jugador ha tirat!
+                  ⚠️ L&apos;altre jugador ha tirat!
                 </div>
               )}
             </div>

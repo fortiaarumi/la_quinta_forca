@@ -121,7 +121,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
             const winner = s1 > s2 ? p1 : p2;
             const loser = s1 > s2 ? p2 : p1;
             const diff = Math.abs(s1 - s2);
-            const mult = 0.5 + (round * 0.5);
+            // Fix #6: Multiplicador corregit — Round 1 (index 0) = x1.0, Round 2 = x1.5, etc.
+            // Formula: mult = 0.5 + ((round + 1) * 0.5) = 1.0 + (round * 0.5)
+            const mult = 0.5 + ((round + 1) * 0.5);
             const damage = Math.round(diff * mult);
 
             setCombatWinner(winner);
@@ -213,8 +215,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           if (s1 !== s2) {
             const loser = s1 > s2 ? p2 : p1;
             const diff = Math.abs(s1 - s2);
-            // Multiplicador: 0.5 a la ronda 1 (index 0), 1.0 a la ronda 2, etc.
-            const damage = Math.round(diff * (0.5 + (round * 0.5)));
+            // Fix #6: Multiplicador corregit — Round 1 (index 0) = x1.0, Round 2 = x1.5, etc.
+            // Multiplicador: 1.0 a la ronda 1 (index 0), 1.5 a la ronda 2, etc.
+            const damage = Math.round(diff * (0.5 + ((round + 1) * 0.5)));
 
             const currentHealth = room.players[loser]?.health ?? 10000;
             const newHealth = Math.max(0, currentHealth - damage);
@@ -403,8 +406,13 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     }
     confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 10000 });
 
+    // Fix #1: Si el jugador que felicita és el mateix que ha fet 5K, el text canvia
+    const playerName = room.players[playerId]?.name || 'Algú';
+    const isSelfCongrats = perfectScorers.includes(playerName);
+    const congratsText = isSelfCongrats ? `${playerName} s'ha felicitat a ell mateix` : playerName;
+
     await update(ref(db, `rooms/${roomId}`), {
-      congratsEvent: { from: room.players[playerId]?.name || 'Algú', timestamp: Date.now() },
+      congratsEvent: { from: congratsText, timestamp: Date.now() },
       lastCongratsAt: Date.now()
     });
   };

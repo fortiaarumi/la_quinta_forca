@@ -202,11 +202,11 @@ export function applyRandomOffset(coords: Coords, radiusKm: number): Coords {
 
 /**
  * Retorna una ubicació equilibrada:
- * - 25% dels cops (Math.random() < 0.25) força una ciutat del pool URBÀ (Seeds + Radius).
- * - 75% dels cops (resta) fa un RNG pur (Bounding Box) per mantenir el feeling salvatge del joc.
+ * - 5% dels cops (Math.random() < 0.05) força una ciutat del pool URBÀ (Seeds + Radius).
+ * - 95% dels cops (resta) fa un RNG pur (Bounding Box) per mantenir el feeling salvatge del joc.
  */
 export function getBalancedLocation(mode: string): Coords {
-  const forceUrban = Math.random() < 0.25;
+  const forceUrban = Math.random() < 0.05;
 
   if (forceUrban) {
     let seeds: Coords[];
@@ -270,6 +270,9 @@ export function randomCatalunyaCoords(): Coords {
 }
 
 // Genera coordenades aleatòries dins d'una caixa delimitadora per a Barcelona (Pixapins)
+// Aplica restricció diagonal per excloure la costa (Mar Mediterrani) del bounding box.
+// La línia de costa de Barcelona segueix aproximadament: lat = 41.46 - 0.55 * (lng - 2.10)
+// Qualsevol punt per sota d'aquesta línia (al mar) és rebutjat i es regenera.
 export function randomPixapinsCoords(): Coords {
   // Límits geogràfics aproximats de Barcelona ciutat i àrea molt propera
   const minLat = 41.34;
@@ -277,8 +280,18 @@ export function randomPixapinsCoords(): Coords {
   const minLng = 2.10;
   const maxLng = 2.22;
 
-  const lat = minLat + Math.random() * (maxLat - minLat);
-  const lng = minLng + Math.random() * (maxLng - minLng);
+  let lat: number;
+  let lng: number;
+  let isInland: boolean;
+
+  do {
+    lat = minLat + Math.random() * (maxLat - minLat);
+    lng = minLng + Math.random() * (maxLng - minLng);
+    // Restricció lineal de la costa: la línia de costa de Barcelona va de SW a NE (pendent positiu)
+    // Formula: lat > 41.35 + 0.85 * (lng - 2.15) assegura que el punt és terra endins
+    const coastlineThreshold = 41.35 + 0.85 * (lng - 2.15);
+    isInland = lat > coastlineThreshold;
+  } while (!isInland);
 
   return { lat, lng };
 }

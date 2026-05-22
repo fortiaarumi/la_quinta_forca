@@ -806,90 +806,135 @@ export default function HomeScreen() {
 
                 {/* Sistema de Progressió */}
                 {user && (
-                  <div className="bg-black/20 p-6 rounded-3xl border border-white/5 flex flex-col gap-4 shadow-xl">
+                  <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 flex flex-col gap-5 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                    {/* Capçalera: Nivell + Ratxa */}
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Nivell Actual</p>
-                        <p className="text-3xl font-black italic text-yellow-500">{myLevel}</p>
+                      <div className="flex flex-col">
+                        <p className="text-[9px] font-black uppercase tracking-[0.35em] text-gray-500 mb-0.5">Nivell Actual</p>
+                        <p className="text-4xl font-black italic text-yellow-400 leading-none">{myLevel}</p>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Ratxa Diària</p>
-                        <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                          <span className="text-xl animate-pulse">🔥</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="text-[9px] font-black uppercase tracking-[0.35em] text-gray-500">Ratxa Diària</p>
+                        <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
+                          <span className="text-base">🔥</span>
                           <span className="text-sm font-black text-orange-400">{myStreak} {myStreak === 1 ? 'dia' : 'dies'}</span>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Barra d'XP */}
-                    <div className="w-full bg-black/40 rounded-full h-3 border border-white/10 overflow-hidden relative">
-                      <div 
-                        className="bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 h-full rounded-full transition-all duration-1000 relative"
-                        style={{ width: `${Math.min(100, (myXP / (myLevel * 1000)) * 100)}%` }}
-                      >
-                        <div className="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="w-full bg-black/40 rounded-full h-2.5 border border-white/5 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-yellow-600 via-yellow-400 to-amber-500 h-full rounded-full transition-all duration-1000 relative overflow-hidden"
+                          style={{ width: `${Math.min(100, (myXP / (myLevel * 1000)) * 100)}%` }}
+                        >
+                          <div className="absolute inset-0 bg-white/25 w-1/2 animate-pulse" />
+                        </div>
                       </div>
+                      <p className="text-right text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                        {myXP.toLocaleString()} / {(myLevel * 1000).toLocaleString()} XP
+                      </p>
                     </div>
-                    <p className="text-right text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-[-8px]">
-                      {myXP} / {myLevel * 1000} XP
-                    </p>
 
-                    {/* SISTEMA D'OBJECTIUS DUAL */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                      {/* Bloc Diari */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 mb-4 px-2">
-                          <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm">📅</div>
-                          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 italic">Objectius Diaris</h3>
-                        </div>
-                        {myQuests.length > 0 ? myQuests.map((q: any) => (
-                          <div key={q.id} className={`group relative p-4 rounded-2xl border transition-all duration-500 ${q.completed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5 hover:border-indigo-500/30 hover:bg-white/8'}`}>
-                            <div className="flex justify-between items-start mb-3">
-                              <p className={`text-xs font-black uppercase tracking-tighter italic ${q.completed ? 'text-emerald-400' : 'text-white'}`}>{q.description}</p>
-                              {q.completed ? (
-                                <div className="text-emerald-400 text-xs">✅</div>
-                              ) : (
-                                <span className="text-[10px] font-black text-indigo-400">+{q.xpReward} XP</span>
-                              )}
-                            </div>
-                            <div className="relative h-1 w-full bg-black/40 rounded-full overflow-hidden">
-                              <div className={`absolute left-0 top-0 h-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
-                            </div>
-                          </div>
-                        )) : (
-                          <div className="p-8 text-center bg-white/5 rounded-3xl border border-white/5 opacity-40">
-                            <p className="text-[9px] font-black uppercase tracking-widest">Sense objectius</p>
-                          </div>
-                        )}
+                    {/* SISTEMA D'OBJECTIUS DUAL — Fix #7: disseny premium */}
+                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
+                      {/* Tabs */}
+                      <div className="flex border-b border-white/5">
+                        <button
+                          onClick={() => setQuestTab('daily')}
+                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 cursor-pointer border-none ${questTab === 'daily' ? 'bg-indigo-500/15 text-indigo-300 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
+                        >
+                          <span>📅</span> Diaris
+                        </button>
+                        <button
+                          onClick={() => setQuestTab('weekly')}
+                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 cursor-pointer border-none ${questTab === 'weekly' ? 'bg-yellow-500/10 text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
+                        >
+                          <span>⭐</span> Setmanals
+                        </button>
                       </div>
 
-                      {/* Bloc Setmanal */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 mb-4 px-2">
-                          <div className="w-8 h-8 rounded-xl bg-yellow-500/20 flex items-center justify-center text-yellow-500 text-sm">⭐</div>
-                          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 italic">Objectius Setmanals</h3>
-                        </div>
-                        {myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
-                          <div key={q.id} className={`group relative p-4 rounded-2xl border transition-all duration-500 ${q.completed ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/5 border-white/5 hover:border-yellow-500/30 hover:bg-white/8'}`}>
-                            <div className="flex justify-between items-start mb-3">
-                              <p className={`text-xs font-black uppercase tracking-tighter italic ${q.completed ? 'text-yellow-400' : 'text-white'}`}>{q.description}</p>
-                              {q.completed ? (
-                                <div className="text-yellow-400 text-xs">⭐</div>
-                              ) : (
-                                <span className="text-[10px] font-black text-yellow-500">+{q.xpReward} XP</span>
-                              )}
+                      {/* Contingut de quests */}
+                      <div className="p-4 space-y-2.5">
+                        {questTab === 'daily' ? (
+                          myQuests.length > 0 ? myQuests.map((q: any) => (
+                            <div
+                              key={q.id}
+                              className={`group relative p-3.5 rounded-xl border transition-all duration-500 ${q.completed
+                                ? 'bg-emerald-500/8 border-emerald-500/25 shadow-[0_0_20px_rgba(16,185,129,0.05)]'
+                                : 'bg-white/3 border-white/5 hover:border-indigo-500/25 hover:bg-indigo-500/5'}`}
+                            >
+                              <div className="flex justify-between items-center mb-2.5">
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                  <span className={`text-base flex-shrink-0 ${q.completed ? '' : 'opacity-60 group-hover:opacity-100 transition-opacity'}`}>
+                                    {q.completed ? '✅' : '🎯'}
+                                  </span>
+                                  <p className={`text-xs font-bold leading-tight truncate ${q.completed ? 'text-emerald-300' : 'text-white/85'}`}>
+                                    {q.description}
+                                  </p>
+                                </div>
+                                <span className={`ml-3 flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full ${q.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/15 text-indigo-400'}`}>
+                                  +{q.xpReward} XP
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex-1 h-1 bg-black/40 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-indigo-400'}`}
+                                    style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[9px] text-gray-500 font-black tabular-nums flex-shrink-0">
+                                  {q.progress}/{q.target}
+                                </span>
+                              </div>
                             </div>
-                            <div className="relative h-1 w-full bg-black/40 rounded-full overflow-hidden">
-                              <div className={`absolute left-0 top-0 h-full transition-all duration-1000 ${q.completed ? 'bg-yellow-500' : 'bg-yellow-600'}`} style={{ width: `${(q.progress / q.target) * 100}%` }} />
+                          )) : (
+                            <div className="py-10 text-center opacity-40">
+                              <p className="text-2xl mb-2">🎯</p>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Sense objectius per avui</p>
                             </div>
-                            <div className="flex justify-between items-center mt-2">
-                              <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest">{q.progress} / {q.target}</span>
+                          )
+                        ) : (
+                          myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
+                            <div
+                              key={q.id}
+                              className={`group relative p-3.5 rounded-xl border transition-all duration-500 ${q.completed
+                                ? 'bg-yellow-500/8 border-yellow-500/25 shadow-[0_0_20px_rgba(234,179,8,0.05)]'
+                                : 'bg-white/3 border-white/5 hover:border-yellow-500/25 hover:bg-yellow-500/5'}`}
+                            >
+                              <div className="flex justify-between items-center mb-2.5">
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                  <span className={`text-base flex-shrink-0 ${q.completed ? '' : 'opacity-60 group-hover:opacity-100 transition-opacity'}`}>
+                                    {q.completed ? '⭐' : '🏆'}
+                                  </span>
+                                  <p className={`text-xs font-bold leading-tight truncate ${q.completed ? 'text-yellow-300' : 'text-white/85'}`}>
+                                    {q.description}
+                                  </p>
+                                </div>
+                                <span className={`ml-3 flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full ${q.completed ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                                  +{q.xpReward} XP
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex-1 h-1 bg-black/40 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-1000 ${q.completed ? 'bg-yellow-400' : 'bg-gradient-to-r from-yellow-700 to-yellow-500'}`}
+                                    style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[9px] text-gray-500 font-black tabular-nums flex-shrink-0">
+                                  {q.progress}/{q.target}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        )) : (
-                          <div className="p-8 text-center bg-white/5 rounded-3xl border border-white/5 opacity-40">
-                            <p className="text-[9px] font-black uppercase tracking-widest">Pendent de càrrega...</p>
-                          </div>
+                          )) : (
+                            <div className="py-10 text-center opacity-40">
+                              <p className="text-2xl mb-2">⭐</p>
+                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Carregant objectius setmanals...</p>
+                            </div>
+                          )
                         )}
                       </div>
                     </div>
@@ -898,18 +943,19 @@ export default function HomeScreen() {
 
 
                 {/* Usuaris Online */}
-                <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-8 py-4 rounded-3xl backdrop-blur-md">
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-6 py-3.5 rounded-2xl backdrop-blur-md">
+                  <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
                       {onlineCount} Jugadors en línia
                     </span>
                   </div>
                   {user && !isGuest && (
-                    <button onClick={() => setActiveMenu('friends')} className="text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors">Veure Amics →</button>
+                    <button onClick={() => setActiveMenu('friends')} className="flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer border-none bg-transparent">Veure Amics →</button>
                   )}
                 </div>
               </div>
+
 
 
             </div>
