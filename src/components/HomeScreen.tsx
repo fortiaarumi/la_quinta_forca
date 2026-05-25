@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ref, set, get, query, orderByChild, endAt, remove, onValue, runTransaction, update, limitToLast, onDisconnect } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import { generateRoomCode } from '@/lib/gameUtils';
 import { useRouter } from 'next/navigation';
 import { GameMode, Room, DailyQuest, WeeklyQuest } from '@/lib/types';
@@ -139,6 +140,7 @@ export default function HomeScreen() {
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [suggestTitle, setSuggestTitle] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [fileSizeError, setFileSizeError] = useState('');
   const [suggestMsg, setSuggestMsg] = useState({ text: '', type: '' });
 
   // Estat pel manual de Suno
@@ -234,9 +236,25 @@ export default function HomeScreen() {
     return () => unsub();
   }, []);
 
-  // Enviar Suggeriment de Vídeo
+  // Enviar Suggeriment de Vídeo (Firebase Storage)
   const handleSuggestVideo = async () => {
     if (!videoFile || !suggestTitle.trim() || !user) return;
+
+    // ── VALIDACIÓ PRE-PUJADA ──
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB en bytes
+    if (videoFile.type !== 'video/mp4') {
+      setFileSizeError('Només s\'accepten fitxers .mp4.');
+      return;
+    }
+    if (videoFile.size > MAX_SIZE) {
+      const sizeMB = (videoFile.size / (1024 * 1024)).toFixed(2);
+      setFileSizeError(
+        `L'arxiu pesa ${sizeMB} MB. El límit estricte és 5 MB per evitar col·lapsar el servidor. Si us plau, comprimeix el teu vídeo a format .mp4 (pots fer servir eines com FreeConvert.com o enviar-te'l prèviament per WhatsApp per reduir-ne el pes automàticament).`
+      );
+      return;
+    }
+    setFileSizeError('');
+
     setLoading(true);
     setSuggestMsg({ text: '⌛ Comprovant límit diari...', type: '' });
     try {
@@ -249,31 +267,35 @@ export default function HomeScreen() {
         setSuggestMsg({ text: '✋ Ja has pujat un vídeo avui. Torna demà!', type: 'error' });
         return;
       }
-      setSuggestMsg({ text: '🚀 Pujant vídeo... (això pot trigar)', type: '' });
-      const formData = new FormData();
-      formData.append('file', videoFile);
-      formData.append('upload_preset', 'la_quinta_forca_videos');
-      const res = await fetch(`https://api.cloudinary.com/v1_1/ddvvk5jii/video/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const cloudinaryData = await res.json();
-      if (!cloudinaryData.secure_url) throw new Error('Error en la pujada');
-      const newVideoRef = ref(db, `videoQueue/${crypto.randomUUID()}`);
+
+      setSuggestMsg({ text: '🚀 Pujant vídeo a Firebase... (això pot trigar)', type: '' });
+
+      // ── PUJADA A FIREBASE STORAGE ──
+      const fileId = crypto.randomUUID();
+      const storagePath = `pending_videos/${fileId}.mp4`;
+      const fileRef = storageRef(storage, storagePath);
+      await uploadBytes(fileRef, videoFile, { contentType: 'video/mp4' });
+      const downloadURL = await getDownloadURL(fileRef);
+
+      // ── GUARDAR A LA CUA DE FIREBASE RTDB ──
+      const newVideoRef = ref(db, `videoQueue/${fileId}`);
       await update(newVideoRef, {
-        url: cloudinaryData.secure_url,
+        url: downloadURL,
+        storageRef: storagePath,
         title: suggestTitle.trim(),
         suggestedBy: nickname || 'Un amic',
         userEmail: user.email,
         userId: user.uid,
         timestamp: Date.now()
       });
+
       // ── NOU: Progressar Quests de Vídeos ──
       const newSuggestions = (userData?.videoSuggestions || 0) + 1;
-      await update(userRef, { 
+      await update(userRef, {
         lastVideoUploadDate: today,
         videoSuggestions: newSuggestions
       });
+
       setSuggestMsg({ text: '✅ Vídeo enviat! Si és triat, rebràs un correu.', type: 'success' });
       setVideoFile(null);
       setSuggestTitle('');
@@ -1342,15 +1364,39 @@ export default function HomeScreen() {
                 <input type="text" value={suggestTitle} onChange={(e) => setSuggestTitle(e.target.value)} placeholder="Ex: Moment èpic" className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-yellow-500 transition-all text-sm font-bold text-white" />
               </div>
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 mb-3 ml-2 italic">Arxiu .MP4</label>
-                <input type="file" accept="video/mp4" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} className="w-full text-xs text-gray-500 file:bg-indigo-600 file:text-white file:border-none file:px-4 file:py-2 file:rounded-full cursor-pointer" />
+                <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-gray-600 mb-3 ml-2 italic">Arxiu .MP4 (màxim 5 MB)</label>
+                <input
+                  type="file"
+                  accept="video/mp4"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setVideoFile(file);
+                    if (file && file.size > 5 * 1024 * 1024) {
+                      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                      setFileSizeError(
+                        `L'arxiu pesa ${sizeMB} MB. El límit estricte és 5 MB per evitar col·lapsar el servidor. Si us plau, comprimeix el teu vídeo a format .mp4 (pots fer servir eines com FreeConvert.com o enviar-te'l prèviament per WhatsApp per reduir-ne el pes automàticament).`
+                      );
+                    } else {
+                      setFileSizeError('');
+                    }
+                  }}
+                  className="w-full text-xs text-gray-500 file:bg-indigo-600 file:text-white file:border-none file:px-4 file:py-2 file:rounded-full cursor-pointer"
+                />
               </div>
+              {/* Error de mida — molt prominent, bloqueja l'enviament */}
+              {fileSizeError && (
+                <div className="p-5 rounded-2xl border-2 border-red-500/50 bg-red-500/10">
+                  <p className="text-[11px] font-black text-red-400 leading-relaxed">
+                    🚫 {fileSizeError}
+                  </p>
+                </div>
+              )}
               {suggestMsg.text && (
                 <div className={`p-4 rounded-2xl border text-center ${suggestMsg.type === 'error' ? 'bg-red-500/5 border-red-500/20 text-red-400' : 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400'}`}>
                   <p className="text-[10px] font-black uppercase tracking-widest">{suggestMsg.text}</p>
                 </div>
               )}
-              <GoldButton onClick={handleSuggestVideo} disabled={loading || !videoFile || !suggestTitle} className="w-full py-5 rounded-2xl">
+              <GoldButton onClick={handleSuggestVideo} disabled={loading || !videoFile || !suggestTitle || !!fileSizeError} className="w-full py-5 rounded-2xl">
                 {loading ? 'Enviant...' : 'ENVIAR SUGGERIMENT'}
               </GoldButton>
             </div>
