@@ -103,14 +103,6 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         />
       )}
 
-      {/* Global Expand Map Button (outside the mini-map) */}
-      <button
-        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-        className="fixed bottom-24 md:bottom-10 left-4 z-[100] bg-zinc-900 text-white px-5 py-2 rounded-full font-bold shadow-xl border border-zinc-800 hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
-      >
-        {expanded ? '↙️ Collapsar' : '↗️ Ampliar Mapa'}
-      </button>
-
       {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
         className={`fixed z-[100] flex flex-col items-end transition-all duration-300 ease-out
@@ -119,26 +111,31 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
             : isMobile
             ? (expanded
               ? 'inset-x-4 top-[12vh] bottom-[20vh]'
-              : 'bottom-6 right-6')
+              : 'bottom-6 right-6 w-32 h-32')
             : (expanded
               ? 'bottom-6 right-6 w-[480px] h-[360px]'
               : 'bottom-6 right-6 w-48 h-32')
           }`}
 
       >
-        {/* Botó eliminat d'aquí - mogut a dins del contenidor del mapa */}
 
         {/* ── EL MAPA I LA UI ── */}
-        <div className={`relative w-full overflow-hidden shadow-2xl transition-all duration-300
-          ${isArnau && expanded ? 'flex-1 h-full rounded-none border-none' : (
-            isMobile && !expanded ? 'w-32 h-32 rounded-2xl border-2 border-white/20 ml-auto' : 'flex-1 rounded-3xl border-2 border-emerald-500/50'
+        <div className={`relative w-full h-full overflow-hidden shadow-2xl transition-all duration-300
+          ${isArnau && expanded ? 'flex-1 rounded-none border-none' : (
+            isMobile && !expanded ? 'rounded-2xl border-2 border-white/20 ml-auto' : 'flex-1 rounded-3xl border-2 border-emerald-500/50'
           )}
-          ${!isMobile && !(isArnau && expanded) ? 'h-full rounded-2xl border border-white/20' : ''}
+          ${!isMobile && !(isArnau && expanded) ? 'rounded-2xl border border-white/20' : ''}
         `}>
           {/* El contenidor del mapa de Google */}
           <div ref={mapRef} className="absolute inset-0 bg-slate-800" />
 
-          {/* Task 3: Button moved to global scope */}
+          {/* Clean Header Expand Button */}
+          <div
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className="absolute top-0 left-0 w-full bg-black/80 hover:bg-black text-white py-1.5 z-10 text-center cursor-pointer font-bold text-xs"
+          >
+            {expanded ? '↙️ COLLAPSAR' : '↗️ AMPLIAR MAPA'}
+          </div>
 
           {/* Overlay col·lapsat (text "Ampliar" - només PC) */}
           {!isMobile && !expanded && (
