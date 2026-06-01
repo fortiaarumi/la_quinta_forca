@@ -95,17 +95,25 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
 
   return (
     <>
-      {/* ── FONS FOSC (només per mòbil, quan està expandit) ── */}
-      {isMobile && expanded && (
+      {/* Background Overlay */}
+      {expanded && (
         <div
-          className="fixed inset-0 bg-black/60 z-40"
+          className="fixed inset-0 bg-black/60 z-[90]"
           onClick={() => !submitting && setExpanded(false)}
         />
       )}
 
+      {/* Global Expand Map Button (outside the mini-map) */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+        className="fixed bottom-24 md:bottom-10 left-4 z-[100] bg-zinc-900 text-white px-5 py-2 rounded-full font-bold shadow-xl border border-zinc-800 hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
+      >
+        {expanded ? '↙️ Collapsar' : '↗️ Ampliar Mapa'}
+      </button>
+
       {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
-        className={`fixed z-50 flex flex-col items-end transition-all duration-300 ease-out
+        className={`fixed z-[100] flex flex-col items-end transition-all duration-300 ease-out
           ${isArnau && expanded 
             ? 'inset-0 w-full h-[100dvh] bg-black z-[99999]' 
             : isMobile
@@ -130,13 +138,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
           {/* El contenidor del mapa de Google */}
           <div ref={mapRef} className="absolute inset-0 bg-slate-800" />
 
-          {/* TASK 1: New Expand Map Button positioned inside top-left */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="absolute top-4 left-4 z-[60] bg-zinc-900 text-white px-5 py-2 rounded-full font-bold shadow-xl border border-zinc-800 hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
-          >
-            {expanded ? '↙️ Collapsar' : '↗️ Ampliar Mapa'}
-          </button>
+          {/* Task 3: Button moved to global scope */}
 
           {/* Overlay col·lapsat (text "Ampliar" - només PC) */}
           {!isMobile && !expanded && (

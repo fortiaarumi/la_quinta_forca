@@ -752,7 +752,7 @@ export default function HomeScreen() {
                       if (!hasInteracted) setHasInteracted(true);
                       goToStep('type');
                     }}
-                    className="bg-white text-black font-black uppercase tracking-widest rounded-full py-5 px-12 text-xl shadow-[0_10px_40px_rgba(255,255,255,0.2)] hover:shadow-[0_15px_50px_rgba(255,255,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 mx-auto"
+                    className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-black uppercase tracking-widest rounded-full py-5 px-12 text-xl shadow-lg shadow-yellow-500/20 hover:from-yellow-300 hover:to-yellow-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 mx-auto"
                   >
                     <span>JUGA ARA</span>
                     <span className="text-3xl">→</span>

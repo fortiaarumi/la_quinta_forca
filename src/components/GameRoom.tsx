@@ -1162,138 +1162,129 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
         )}
 
-        <div className="absolute top-12 md:top-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
-          <div className="bg-black/70 backdrop-blur-md text-white px-5 py-2 rounded-full font-bold text-sm shadow-xl border border-white/10">
-            {room.gameType === '1vs1'
-              ? `Ronda ${room.currentRound + 1}`
-              : room.gameType === 'battle_royale'
-              ? `Ronda ${room.currentRound + 1} (${Object.keys(room.players).length} jugadors)`
-              : `Ronda ${room.currentRound + 1} / 5`}
-          </div>
-          {room.gameMode === 'catalunya' && (
-            <div className="bg-red-600/20 border border-red-500/40 text-red-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              🚩 Catalunya
-            </div>
-          )}
-          {room.timeMode !== 'infinit' && room.roundEndsAt && (
-            <div className="flex flex-col items-center">
-              {/* ── TASK 2: Isolated timer – only this node re-renders each tick ── */}
-              <TimerDisplay roundEndsAt={room.roundEndsAt} />
-              {/* Fix #5: El missatge "L'altre jugador ha tirat" NOMÉS es mostra si l'oponent ha enviat la jugada de veritat,
-                  no automàticament quan el temps arriba a 15 segons. Es deriva de l'estat real de Firebase. */}
-              {!hasGuessed && !isSinglePlayer && (() => {
-                const opponentId = Object.keys(room.players).find(id => id !== playerId);
-                const opponentHasGuessed = opponentId ? !!(room.rounds?.[room.currentRound]?.guesses?.[opponentId]) : false;
-                return opponentHasGuessed;
-              })() && (
-                <div className="mt-3 bg-red-600/90 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
-                  ⚠️ L&apos;altre jugador ha tirat!
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="absolute top-12 md:top-4 left-4 z-10 bg-black/70 backdrop-blur-md rounded-xl px-4 py-3 border border-white/10 shadow-xl min-w-[160px]">
-          {allPlayerIds.map((id, i) => {
-            const player = room.players[id];
-            const isMe = id === playerId;
-            return (
-              <div
-                key={id}
-                className={`flex items-center justify-between gap-3 text-sm ${i > 0 ? 'mt-2 pt-2 border-t border-white/10' : ''}`}
-              >
-                <div className="flex flex-col">
-                  <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
-                    {isMe ? '★ ' : ''}{player.name}
-                  </span>
-                  {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
-                    <div className="flex gap-1 mt-1">
-                      {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
-                        const badgeDef = ALL_BADGES.find(b => b.id === bId);
-                        return (
-                          <div key={bi} className="relative group cursor-pointer">
-                            <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
-                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-black/90 border border-white/20 text-white text-[8px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                              {bId}
+        <div className="absolute top-4 left-0 w-full px-2 md:px-4 z-20 flex flex-wrap justify-between items-start gap-2 pointer-events-none">
+          
+          {/* 1. PLAYER SCORES (Left side, or Row 2 Left on mobile) */}
+          <div className="bg-black/70 backdrop-blur-md rounded-xl px-3 py-2 md:px-4 md:py-3 border border-white/10 shadow-xl min-w-[140px] md:min-w-[160px] pointer-events-auto flex-1 md:flex-none max-w-[45%] md:max-w-none order-2 md:order-none">
+            {allPlayerIds.map((id, i) => {
+              const player = room.players[id];
+              const isMe = id === playerId;
+              return (
+                <div
+                  key={id}
+                  className={`flex items-center justify-between gap-3 text-xs md:text-sm ${i > 0 ? 'mt-2 pt-2 border-t border-white/10' : ''}`}
+                >
+                  <div className="flex flex-col">
+                    <span className={isMe ? 'text-green-400 font-bold' : 'text-gray-300'}>
+                      {isMe ? '★ ' : ''}{player.name}
+                    </span>
+                    {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).length > 0 && (
+                      <div className="flex gap-1 mt-1">
+                        {((player.selectedBadges?.length ? player.selectedBadges : player.badges) || []).slice(0, 3).map((bId: string, bi: number) => {
+                          const badgeDef = ALL_BADGES.find(b => b.id === bId);
+                          return (
+                            <div key={bi} className="relative group cursor-pointer">
+                              <img src={badgeDef?.image || '/badges/default.png'} alt={bId} className="w-4 h-4 md:w-5 md:h-5 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-end">
-                  {room.gameType === '1vs1' ? (
-                    <>
-                      <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
-                        <div
-                          className={`h-full transition-all duration-1000 ${player.health! > 5000 ? 'bg-emerald-500' : player.health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                          style={{ width: `${(player.health! / 10000) * 100}%` }}
-                        />
+                          );
+                        })}
                       </div>
-                      <span className="text-[10px] text-gray-400 font-bold">{player.health} HP</span>
-                    </>
-                  ) : (
-                    <span className="text-yellow-400 font-bold">
-                      {(room.totalScores?.[id] ?? 0).toLocaleString()}
-                    </span>
-                  )}
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end">
+                    {room.gameType === '1vs1' ? (
+                      <>
+                        <div className="w-16 md:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden mb-1">
+                          <div
+                            className={`h-full transition-all duration-1000 ${player.health! > 5000 ? 'bg-emerald-500' : player.health! > 2000 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                            style={{ width: `${(player.health! / 10000) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] md:text-[10px] text-gray-400 font-bold">{player.health} HP</span>
+                      </>
+                    ) : (
+                      <span className="text-yellow-400 font-bold">
+                        {(room.totalScores?.[id] ?? 0).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
 
-        {room.hintsEnabled && !hasGuessed && (
-          <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-4 pointer-events-none">
-            {/* Audio Controls */}
-            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-lg pointer-events-auto">
-              <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏮</button>
-              <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center text-sm border border-white/5 cursor-pointer transition-colors">{isMuted ? '🔇' : '🔊'}</button>
-              <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏭</button>
+          {/* 2. ROUND & TIMER (Center on Desktop, Top Row Full Width on Mobile) */}
+          <div className="flex flex-col items-center gap-2 pointer-events-auto order-first w-full md:w-auto md:order-none mb-2 md:mb-0">
+            <div className="bg-black/70 backdrop-blur-md text-white px-4 py-1.5 md:px-5 md:py-2 rounded-full font-bold text-xs md:text-sm shadow-xl border border-white/10">
+              {room.gameType === '1vs1'
+                ? `Ronda ${room.currentRound + 1}`
+                : room.gameType === 'battle_royale'
+                ? `Ronda ${room.currentRound + 1} (${Object.keys(room.players).length} jugadors)`
+                : `Ronda ${room.currentRound + 1} / 5`}
             </div>
-
-            {/* Hint Button */}
-            {!hasUsedHint ? (
-              <button
-                onClick={fetchHint}
-                disabled={hintLoading}
-                className="pointer-events-auto bg-black/60 backdrop-blur-md border border-white/10 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform active:scale-95 hover:bg-black/80 flex items-center gap-2"
-              >
-                {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
-              </button>
-            ) : (
-              <div className="pointer-events-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2 max-w-[90vw] md:max-w-md text-center">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">✨ Pista Revelada</span>
-                <div className="flex items-center gap-3">
-                  {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
-                    <div className="flex flex-col items-center gap-2">
-                      <img
-                        src={room.rounds?.[room.currentRound]?.sharedHint?.imageUrl}
-                        alt="Flag"
-                        className="h-20 w-auto rounded-lg shadow-lg border-2 border-black"
-                      />
-                      <span className="font-black uppercase text-xs">{room.rounds?.[room.currentRound]?.sharedHint?.type}</span>
-                    </div>
-                  ) : (
-                    <span className="font-black uppercase tracking-tight text-sm md:text-lg whitespace-normal break-words">
-                      {currentHint || `${room.rounds?.[room.currentRound]?.sharedHint?.type || ''}: ${room.rounds?.[room.currentRound]?.sharedHint?.value || ''}`}
-                    </span>
-                  )}
-                </div>
+            {room.gameMode === 'catalunya' && (
+              <div className="bg-red-600/20 border border-red-500/40 text-red-400 px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest">
+                🚩 <span className="hidden md:inline">Catalunya</span>
+              </div>
+            )}
+            {room.timeMode !== 'infinit' && room.roundEndsAt && (
+              <div className="flex flex-col items-center">
+                <TimerDisplay roundEndsAt={room.roundEndsAt} />
+                {!hasGuessed && !isSinglePlayer && (() => {
+                  const opponentId = Object.keys(room.players).find(id => id !== playerId);
+                  const opponentHasGuessed = opponentId ? !!(room.rounds?.[room.currentRound]?.guesses?.[opponentId]) : false;
+                  return opponentHasGuessed;
+                })() && (
+                  <div className="mt-3 bg-red-600/90 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full animate-bounce shadow-lg">
+                    ⚠️ <span className="hidden md:inline">L&apos;altre jugador ha tirat!</span><span className="md:hidden">TIRAT!</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
 
-        {(!room.hintsEnabled || hasGuessed) && (
-          <div className="absolute top-6 right-6 z-[11] flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-lg">
-            <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏮</button>
-            <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center text-sm border border-white/5 cursor-pointer transition-colors">{isMuted ? '🔇' : '🔊'}</button>
-            <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏭</button>
+          {/* 3. AUDIO & HINT (Right side, or Row 2 Right on mobile) */}
+          <div className="flex flex-col items-end gap-2 pointer-events-none order-3 md:order-none">
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-lg pointer-events-auto">
+              <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 md:w-8 md:h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-xs md:text-sm transition-colors">⏮</button>
+              <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center text-xs md:text-sm border border-white/5 cursor-pointer transition-colors">{isMuted ? '🔇' : '🔊'}</button>
+              <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 md:w-8 md:h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-xs md:text-sm transition-colors">⏭</button>
+            </div>
+
+            {room.hintsEnabled && !hasGuessed && (
+              <>
+                {!hasUsedHint ? (
+                  <button
+                    onClick={fetchHint}
+                    disabled={hintLoading}
+                    className="pointer-events-auto bg-black/60 backdrop-blur-md border border-white/10 text-white font-bold py-2 px-4 md:py-3 md:px-6 rounded-full shadow-lg transition-transform active:scale-95 hover:bg-black/80 flex items-center gap-2 text-xs md:text-base"
+                  >
+                    {hintLoading ? '⏳...' : '💡 Pista'}
+                  </button>
+                ) : (
+                  <div className="pointer-events-auto bg-yellow-500 text-black px-4 py-2 md:px-6 md:py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2 max-w-[45vw] md:max-w-md text-center">
+                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] opacity-60">✨ Revelada</span>
+                    <div className="flex items-center gap-3">
+                      {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <img
+                            src={room.rounds?.[room.currentRound]?.sharedHint?.imageUrl}
+                            alt="Flag"
+                            className="h-12 md:h-20 w-auto rounded-lg shadow-lg border-2 border-black"
+                          />
+                        </div>
+                      ) : (
+                        <span className="font-black uppercase tracking-tight text-xs md:text-lg whitespace-normal break-words">
+                          {currentHint || `${room.rounds?.[room.currentRound]?.sharedHint?.type || ''}: ${room.rounds?.[room.currentRound]?.sharedHint?.value || ''}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-10 w-[90%] max-w-sm">
           {!hasGuessed && !showGuessMap && (
