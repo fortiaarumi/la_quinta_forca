@@ -1,15 +1,15 @@
 /// <reference types="@types/google.maps" />
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
 import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, getBalancedLocation, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
-import StreetViewPane from './StreetViewPane';
-import GuessMap from './GuessMap';
+import StreetViewPaneBase from './StreetViewPane';
+import GuessMapBase from './GuessMap';
 import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
 import LobbyScreen from './LobbyScreen';
@@ -20,6 +20,54 @@ import { useAuth } from '@/lib/authContext';
 import { updateUserStatsAfterGame, GameResult } from '@/lib/userStats';
 import { useAudio } from '@/lib/AudioContext';
 import { ALL_BADGES } from '@/lib/badges';
+import ChatToastNotification from './ChatToastNotification';
+
+// ── TASK 2: Memoised wrappers – only re-render when lat/lng actually change ──
+// This prevents StreetViewPane from re-rendering on every timer tick.
+const StreetViewPane = memo(StreetViewPaneBase, (prev, next) =>
+  prev.location.lat === next.location.lat &&
+  prev.location.lng === next.location.lng &&
+  prev.location.panoId === next.location.panoId &&
+  prev.gameMode === next.gameMode
+);
+
+// This prevents GuessMap from re-rendering on every timer tick.
+const GuessMap = memo(GuessMapBase, (prev, next) =>
+  prev.gameMode === next.gameMode &&
+  prev.userEmail === next.userEmail
+);
+
+// ── TASK 2: Isolated timer component – only THIS node re-renders each second ──
+// roundEndsAt is read once; the interval is entirely local to this component.
+interface TimerDisplayProps {
+  roundEndsAt: number;
+  onTick?: (secondsLeft: number) => void;
+}
+const TimerDisplay = memo(function TimerDisplay({ roundEndsAt, onTick }: TimerDisplayProps) {
+  const spanRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tick = () => {
+      const remaining = Math.max(0, roundEndsAt - Date.now());
+      const s = Math.ceil(remaining / 1000);
+      if (spanRef.current) {
+        spanRef.current.textContent = `⏱️ ${s}s`;
+        // Panic style – toggle classes directly to avoid React re-renders
+        if (s <= 15) {
+          spanRef.current.className = 'px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]';
+        } else {
+          spanRef.current.className = 'px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 bg-black/80 text-white backdrop-blur-md border border-white/20';
+        }
+      }
+      if (onTick) onTick(s);
+    };
+    tick(); // immediate first render
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [roundEndsAt, onTick]);
+
+  return <div ref={spanRef} className="px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 bg-black/80 text-white backdrop-blur-md border border-white/20" />;
+});
 
 interface Props {
   roomId: string;
@@ -54,7 +102,11 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [mapsReady, setMapsReady] = useState(false);
   const transitionedRef = useRef(false);
   const prevRoundRef = useRef(-1);
+  // ── TASK 2: timeLeft is kept as a ref for logic (timer expiry / panic audio) ──
+  // The VISUAL countdown is rendered by the isolated <TimerDisplay> component below,
+  // so this state change no longer forces the whole tree to re-render.
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const timeLeftRef = useRef<number | null>(null);
   const { user, isGuest } = useAuth();
   // Reset de pistes cada cop que canvia la ronda o l'estat del joc
   useEffect(() => {
@@ -100,6 +152,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [showRoundIntro, setShowRoundIntro] = useState(false);
   const [isSpectating, setIsSpectating] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+
+  // Mute state per al ChatToastNotification
+  const [notifMuted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('chatNotifMuted') === 'true';
+  });
 
   // ── AFEGIT: ÀUDIO I EFECTES DE SO ──
   const { playGameMusic, playMenuMusic, isMuted, toggleMute, nextTrack, prevTrack } = useAudio();
@@ -245,18 +303,22 @@ export default function GameRoom({ roomId, playerId }: Props) {
   // ── INTERCEPTORS DE SORTIDA ──
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // TASK 2: Don't block navigation once the game is finished (Final Results screen)
+      if (room?.gameState === 'finished') return;
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
+  }, [room?.gameState]);
 
   useEffect(() => {
     // Empenyem un estat inicial per poder interceptar el "back"
     window.history.pushState({ noBack: true }, '');
 
     const handlePopState = (e: PopStateEvent) => {
+      // TASK 2: If the game is over, let the user go back freely
+      if (room?.gameState === 'finished') return;
       // Quan l'usuari prem "enrere", el forcem a quedar-se i mostrem el modal
       window.history.pushState({ noBack: true }, '');
       setShowLeaveModal(true);
@@ -264,7 +326,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [room?.gameState]);
 
   // ── CERVELL DEL TEMPS I RESULTATS ────────────────────────────────────────
   useEffect(() => {
@@ -282,10 +344,12 @@ export default function GameRoom({ roomId, playerId }: Props) {
       let isTimeUp = false;
 
       // Només calculem el temps si NO estem en mode infinit i tenim una data límit
-      // Només calculem el temps si NO estem en mode infinit i tenim una data límit
       if (room.timeMode !== 'infinit' && room.roundEndsAt) {
         const remaining = Math.max(0, room.roundEndsAt - Date.now());
         const secondsLeft = Math.ceil(remaining / 1000);
+        // ── TASK 2: Update ref for logic checks (no re-render); TimerDisplay handles visual ──
+        timeLeftRef.current = secondsLeft;
+        // Still update state for the "Esperant X..." waiting message and panic border
         setTimeLeft(secondsLeft);
         if (secondsLeft === 10 && tickTockRef.current && tickTockRef.current.paused) {
           tickTockRef.current.play().catch(e => console.log('Error àudio', e));
@@ -298,6 +362,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
         if (remaining === 0) isTimeUp = true;
       } else {
+        timeLeftRef.current = null;
         setTimeLeft(null); // Mode infinit: amaguem el rellotge
       }
 
@@ -1024,7 +1089,17 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
     content = (
       <div className="min-h-screen bg-[#06080f] relative">
-      <link rel="preload" href="/siu.mp4" as="video" />
+      {/* TASK 3: Hidden preload video – forces browser to cache CR7 celebration before score is reached.
+          A <link rel=preload> outside <head> is silently ignored by most browsers, so we use
+          a truly hidden <video preload="auto"> which reliably warms the cache. */}
+      <video
+        src="/siu.mp4"
+        preload="auto"
+        muted
+        playsInline
+        aria-hidden="true"
+        style={{ display: 'none', position: 'absolute', width: 0, height: 0 }}
+      />
       <div className={`relative w-full h-[100dvh] overflow-hidden bg-black transition-all duration-700 ${isEliminated && isSpectating ? 'grayscale sepia-[0.2]' : ''}`}>
         {showRoundIntro && room.gameState === 'playing' && (
           <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none animate-in fade-in zoom-in duration-500">
@@ -1102,12 +1177,8 @@ export default function GameRoom({ roomId, playerId }: Props) {
           )}
           {room.timeMode !== 'infinit' && room.roundEndsAt && (
             <div className="flex flex-col items-center">
-              <div className={`px-5 py-2 rounded-2xl font-black text-xl transition-all duration-300 border-2 ${(timeLeft ?? 100) <= 15
-                ? 'bg-red-600 text-white animate-pulse scale-110 shadow-[0_0_30px_rgba(220,38,38,0.8)]'
-                : 'bg-black/80 text-white backdrop-blur-md border border-white/20'
-                }`}>
-                ⏱️ {timeLeft}s
-              </div>
+              {/* ── TASK 2: Isolated timer – only this node re-renders each tick ── */}
+              <TimerDisplay roundEndsAt={room.roundEndsAt} />
               {/* Fix #5: El missatge "L'altre jugador ha tirat" NOMÉS es mostra si l'oponent ha enviat la jugada de veritat,
                   no automàticament quan el temps arriba a 15 segons. Es deriva de l'estat real de Firebase. */}
               {!hasGuessed && !isSinglePlayer && (() => {
@@ -1175,17 +1246,25 @@ export default function GameRoom({ roomId, playerId }: Props) {
         </div>
 
         {room.hintsEnabled && !hasGuessed && (
-          <div className="absolute top-12 md:top-4 right-4 z-10 flex flex-col gap-2 items-end">
+          <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-4 pointer-events-none">
+            {/* Audio Controls */}
+            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-lg pointer-events-auto">
+              <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏮</button>
+              <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center text-sm border border-white/5 cursor-pointer transition-colors">{isMuted ? '🔇' : '🔊'}</button>
+              <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏭</button>
+            </div>
+
+            {/* Hint Button */}
             {!hasUsedHint ? (
               <button
                 onClick={fetchHint}
                 disabled={hintLoading}
-                className="bg-indigo-600/80 backdrop-blur-md hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-400/30 shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                className="pointer-events-auto bg-black/60 backdrop-blur-md border border-white/10 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-transform active:scale-95 hover:bg-black/80 flex items-center gap-2"
               >
                 {hintLoading ? '⏳ Buscant...' : '💡 Demanar Pista (Costa 50%)'}
               </button>
             ) : (
-              <div className="bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2 max-w-[90vw] md:max-w-md text-center">
+              <div className="pointer-events-auto bg-yellow-500 text-black px-6 py-4 rounded-2xl shadow-[0_0_50px_rgba(234,179,8,0.7)] animate-magic-reveal border-4 border-black flex flex-col items-center gap-2 max-w-[90vw] md:max-w-md text-center">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">✨ Pista Revelada</span>
                 <div className="flex items-center gap-3">
                   {room.rounds?.[room.currentRound]?.sharedHint?.imageUrl ? (
@@ -1205,19 +1284,14 @@ export default function GameRoom({ roomId, playerId }: Props) {
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
-              <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
-              <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
-              <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
-            </div>
           </div>
         )}
 
         {(!room.hintsEnabled || hasGuessed) && (
-          <div className="absolute top-4 right-4 z-[11] flex items-center gap-1 bg-black/70 backdrop-blur-xl border border-white/10 px-2 py-1.5 rounded-full shadow-lg">
-            <button onClick={prevTrack} title="Pista anterior" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏮</button>
-            <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-7 h-7 rounded-full bg-white/5 hover:bg-white/20 flex items-center justify-center text-xs border border-white/5 cursor-pointer">{isMuted ? '🔇' : '🔊'}</button>
-            <button onClick={nextTrack} title="Pista següent" className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center border-none cursor-pointer text-white text-xs">⏭</button>
+          <div className="absolute top-6 right-6 z-[11] flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 p-2 rounded-full shadow-lg">
+            <button onClick={prevTrack} title="Pista anterior" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏮</button>
+            <button onClick={toggleMute} title={isMuted ? 'Activar so' : 'Silenciar'} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/30 flex items-center justify-center text-sm border border-white/5 cursor-pointer transition-colors">{isMuted ? '🔇' : '🔊'}</button>
+            <button onClick={nextTrack} title="Pista següent" className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center border-none cursor-pointer text-white text-sm transition-colors">⏭</button>
           </div>
         )}
 
@@ -1334,6 +1408,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
           </div>
         </div>
       )}
+
+      {/* ── TOAST XAT LOBBY (IN-GAME) ── */}
+      <ChatToastNotification roomId={roomId} playerId={playerId} muted={notifMuted} />
+
       <PWAInstallPrompt />
 
       {/* MODAL DE CONFIRMACIÓ PER ABANDONAR */}

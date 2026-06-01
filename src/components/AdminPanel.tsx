@@ -431,7 +431,8 @@ export default function AdminPanel() {
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nom (Nickname)</label>
-                  <input type="text" value={editingUser.nickname || ''} onChange={(e) => setEditingUser({...editingUser, nickname: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500" />
+                  {/* TASK 1: maxLength={20} keeps admin-side edits consistent with the public signup cap */}
+                  <input type="text" value={editingUser.nickname || ''} onChange={(e) => setEditingUser({...editingUser, nickname: e.target.value})} maxLength={20} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-indigo-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

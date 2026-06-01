@@ -69,10 +69,20 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
       }
     });
 
+    // \u2500\u2500 TASK 1: Full cleanup \u2013 clear all listeners and destroy map to prevent mobile memory leaks \u2500\u2500
     return () => {
       if (markerRef.current) {
+        google.maps.event.clearInstanceListeners(markerRef.current);
         markerRef.current.setMap(null);
         markerRef.current = null;
+      }
+      if (mapInstanceRef.current) {
+        google.maps.event.clearInstanceListeners(mapInstanceRef.current);
+        mapInstanceRef.current = null;
+      }
+      // Empty the container so the browser can GC the detached tile/WebGL context
+      if (mapRef.current) {
+        mapRef.current.innerHTML = '';
       }
     };
   }, []);
@@ -108,21 +118,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
           }`}
 
       >
-        {/* ── BOTÓ EXPLÍCIT PER A TOTHOM (A SOBRE DEL MAPA) ── */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className={`px-6 py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em] shadow-2xl transition-all border backdrop-blur-xl group
-            ${expanded
-              ? 'bg-black/80 text-red-400 border-red-500/30 hover:bg-red-500/10'
-              : 'bg-black/80 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10'
-            }
-            ${isArnau && expanded ? 'absolute top-6 left-1/2 -translate-x-1/2 z-[99999]' : 'mb-3'}`}
-        >
-          <span className="group-hover:scale-110 transition-transform inline-block mr-2">
-            {expanded ? '↙️' : '↗️'}
-          </span>
-          {expanded ? 'Fer mapa petit' : 'Fer mapa gran'}
-        </button>
+        {/* Botó eliminat d'aquí - mogut a dins del contenidor del mapa */}
 
         {/* ── EL MAPA I LA UI ── */}
         <div className={`relative w-full overflow-hidden shadow-2xl transition-all duration-300
@@ -133,6 +129,14 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
         `}>
           {/* El contenidor del mapa de Google */}
           <div ref={mapRef} className="absolute inset-0 bg-slate-800" />
+
+          {/* TASK 1: New Expand Map Button positioned inside top-left */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className="absolute top-4 left-4 z-[60] bg-zinc-900 text-white px-5 py-2 rounded-full font-bold shadow-xl border border-zinc-800 hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
+          >
+            {expanded ? '↙️ Collapsar' : '↗️ Ampliar Mapa'}
+          </button>
 
           {/* Overlay col·lapsat (text "Ampliar" - només PC) */}
           {!isMobile && !expanded && (

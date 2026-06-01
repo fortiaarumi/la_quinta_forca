@@ -17,10 +17,10 @@ interface Props {
 type Panel = 'welcome' | 'login' | 'signup' | 'guest' | 'reset';
 
 const GlassInput = ({
-  type, placeholder, value, onChange, autoComplete,
+  type, placeholder, value, onChange, autoComplete, maxLength,
 }: {
   type: string; placeholder: string; value: string;
-  onChange: (v: string) => void; autoComplete?: string;
+  onChange: (v: string) => void; autoComplete?: string; maxLength?: number;
 }) => (
   <input
     type={type}
@@ -28,6 +28,7 @@ const GlassInput = ({
     value={value}
     onChange={(e) => onChange(e.target.value)}
     autoComplete={autoComplete}
+    maxLength={maxLength}
     style={{
       width: '100%',
       background: 'rgba(0,0,0,0.45)',
@@ -111,9 +112,11 @@ export default function AuthScreen({ onGuestContinue }: Props) {
     if (signupPassword.length < 6) return setError('La contrasenya ha de tenir almenys 6 caràcters');
     if (signupPassword !== signupRepeat) return setError('Les contrasenyes no coincideixen');
     setLoading(true); clearError();
+    // TASK 1: Enforce max 20-char limit server-side before writing to Firebase
+    const safeNick = signupNick.trim().slice(0, 20);
     try {
       const cred = await createUserWithEmailAndPassword(auth, signupEmail.trim(), signupPassword);
-      await createUserProfile(cred.user.uid, signupNick.trim(), signupEmail.trim());
+      await createUserProfile(cred.user.uid, safeNick, signupEmail.trim());
     } catch (e: any) {
       const codes: Record<string, string> = {
         'auth/email-already-in-use': 'Aquest correu ja està en ús.',
@@ -128,7 +131,9 @@ export default function AuthScreen({ onGuestContinue }: Props) {
 
   const handleGuest = () => {
     if (!guestNick.trim()) return setError('Introdueix un nom de convidat');
-    localStorage.setItem('geoGuestName', guestNick.trim());
+    // TASK 1: Enforce max 20-char limit before storing in localStorage
+    const safeGuestNick = guestNick.trim().slice(0, 20);
+    localStorage.setItem('geoGuestName', safeGuestNick);
     let id = localStorage.getItem('geoPlayerId');
     if (!id) { id = crypto.randomUUID(); localStorage.setItem('geoPlayerId', id); }
     setGuestMode(true);
@@ -336,7 +341,7 @@ export default function AuthScreen({ onGuestContinue }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
               <div>
                 <label style={label}>Nickname (públic)</label>
-                <GlassInput type="text" placeholder="El teu nom als rànquings" value={signupNick} onChange={setSignupNick} autoComplete="username" />
+                <GlassInput type="text" placeholder="El teu nom als rànquings" value={signupNick} onChange={setSignupNick} autoComplete="username" maxLength={20} />
               </div>
               <div>
                 <label style={label}>Correu Electrònic</label>
@@ -378,7 +383,7 @@ export default function AuthScreen({ onGuestContinue }: Props) {
             </p>
             <div style={{ marginBottom: '20px' }}>
               <label style={label}>El teu nom per la partida</label>
-              <GlassInput type="text" placeholder="Nickname temporal" value={guestNick} onChange={setGuestNick} />
+              <GlassInput type="text" placeholder="Nickname temporal" value={guestNick} onChange={setGuestNick} maxLength={20} />
             </div>
             {error && <ErrorBox msg={error} />}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>

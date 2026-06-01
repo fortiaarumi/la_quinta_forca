@@ -589,11 +589,12 @@ export default function HomeScreen() {
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative group overflow-hidden px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50
+      className={`relative group overflow-hidden min-h-[56px] px-8 py-4 rounded-2xl font-black uppercase tracking-widest
+        transition-transform duration-200 hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:pointer-events-none
         ${pulse ? 'animate-gold-pulse' : ''}
-        bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700 
+        bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700
         text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)]
-        hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)] hover:-translate-y-1
+        hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)]
         ${className}`}
     >
       <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -741,44 +742,40 @@ export default function HomeScreen() {
             <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center animate-slide-up">
               
               {/* Columna Esquerra: Juga i Botons */}
-              <div className="lg:col-span-7 flex flex-col items-center lg:items-start gap-12">
-                <div className="text-center lg:text-left">
+              <div className="lg:col-span-7 flex flex-col items-center gap-12">
+                <div className="text-center">
                   <h2 className="text-7xl md:text-9xl font-black uppercase tracking-tighter italic mb-8 bg-gradient-to-r from-white via-white to-gray-500 bg-clip-text text-transparent leading-[0.85] select-none">
                     Explora.<br/>Endevina.
                   </h2>
-                  <GoldButton 
-                    pulse 
+                  <button 
                     onClick={() => {
                       if (!hasInteracted) setHasInteracted(true);
                       goToStep('type');
                     }}
-                    className="text-2xl py-7 px-20 rounded-[2rem]"
+                    className="bg-white text-black font-black uppercase tracking-widest rounded-full py-5 px-12 text-xl shadow-[0_10px_40px_rgba(255,255,255,0.2)] hover:shadow-[0_15px_50px_rgba(255,255,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 mx-auto"
                   >
                     <span>JUGA ARA</span>
-                    <span className="text-4xl ml-2">→</span>
-                  </GoldButton>
+                    <span className="text-3xl">→</span>
+                  </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                  <Link href="/stats" className="group relative px-10 py-5 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all font-black uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline overflow-hidden flex items-center gap-3 shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/0 via-yellow-500/5 to-yellow-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                    <span className="text-xl group-hover:scale-125 transition-transform">🏆</span>
+                <div className="flex flex-wrap gap-4 justify-center">
+                  <Link href="/stats" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
+                    <span className="text-lg group-hover:scale-125 transition-transform">🏆</span>
                     <span>Rànquing Global</span>
                   </Link>
-                  <Link href="/badges" className="group relative px-10 py-5 bg-indigo-600/10 border border-indigo-500/20 rounded-3xl hover:bg-indigo-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-indigo-200 backdrop-blur-md no-underline overflow-hidden flex items-center gap-3 shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                    <span className="text-xl group-hover:rotate-12 transition-transform">🏅</span>
+                  <Link href="/badges" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
+                    <span className="text-lg group-hover:rotate-12 transition-transform">🏅</span>
                     <span>Les meves Insígnies</span>
                   </Link>
                   {isAdmin && (
-                    <Link href="/admin" className="group relative px-10 py-5 bg-red-600/10 border border-red-500/20 rounded-3xl hover:bg-red-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-red-400 no-underline flex items-center gap-3">
-                      <span className="text-xl">⚡</span>
+                    <Link href="/admin" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
+                      <span className="text-lg">⚡</span>
                       <span>Administració</span>
                     </Link>
                   )}
-                  <Link href="/soundtrack" className="group relative px-10 py-5 bg-purple-600/10 border border-purple-500/20 rounded-3xl hover:bg-purple-600/20 transition-all font-black uppercase tracking-widest text-[11px] text-purple-300 no-underline flex items-center gap-3 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/10 to-purple-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                    <span className="text-xl group-hover:animate-spin">🎵</span>
+                  <Link href="/soundtrack" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
+                    <span className="text-lg group-hover:animate-spin">🎵</span>
                     <span>Banda Sonora</span>
                   </Link>
                 </div>
@@ -859,107 +856,128 @@ export default function HomeScreen() {
                       </p>
                     </div>
 
-                    {/* SISTEMA D'OBJECTIUS DUAL — Fix #7: disseny premium */}
-                    <div className="bg-black/20 rounded-2xl border border-white/5 overflow-hidden">
-                      {/* Tabs */}
-                      <div className="flex border-b border-white/5">
-                        <button
-                          onClick={() => setQuestTab('daily')}
-                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 cursor-pointer border-none ${questTab === 'daily' ? 'bg-indigo-500/15 text-indigo-300 border-b-2 border-indigo-500' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
-                        >
-                          <span>📅</span> Diaris
-                        </button>
-                        <button
-                          onClick={() => setQuestTab('weekly')}
-                          className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 cursor-pointer border-none ${questTab === 'weekly' ? 'bg-yellow-500/10 text-yellow-400 border-b-2 border-yellow-500' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
-                        >
-                          <span>⭐</span> Setmanals
-                        </button>
-                      </div>
+                {/* ── SISTEMA D'OBJECTIUS DUAL — Premium Gaming Dashboard ── */}
+                <div className="bg-zinc-900 rounded-2xl overflow-hidden">
+                  {/* Pill Tab Switcher */}
+                  <div className="flex gap-1 p-1.5 bg-black/60">
+                    <button
+                      onClick={() => setQuestTab('daily')}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none ${
+                        questTab === 'daily'
+                          ? 'bg-zinc-700 text-white shadow-inner'
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      <span>📅</span> Diaris
+                    </button>
+                    <button
+                      onClick={() => setQuestTab('weekly')}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none ${
+                        questTab === 'weekly'
+                          ? 'bg-zinc-700 text-yellow-400 shadow-inner'
+                          : 'text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      <span>⭐</span> Setmanals
+                    </button>
+                  </div>
 
-                      {/* Contingut de quests */}
-                      <div className="p-4 space-y-2.5">
-                        {questTab === 'daily' ? (
-                          myQuests.length > 0 ? myQuests.map((q: any) => (
-                            <div
-                              key={q.id}
-                              className={`group relative p-3.5 rounded-xl border transition-all duration-500 ${q.completed
-                                ? 'bg-emerald-500/8 border-emerald-500/25 shadow-[0_0_20px_rgba(16,185,129,0.05)]'
-                                : 'bg-white/3 border-white/5 hover:border-indigo-500/25 hover:bg-indigo-500/5'}`}
-                            >
-                              <div className="flex justify-between items-center mb-2.5">
-                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                  <span className={`text-base flex-shrink-0 ${q.completed ? '' : 'opacity-60 group-hover:opacity-100 transition-opacity'}`}>
-                                    {q.completed ? '✅' : '🎯'}
-                                  </span>
-                                  <p className={`text-xs font-bold leading-tight truncate ${q.completed ? 'text-emerald-300' : 'text-white/85'}`}>
-                                    {q.description}
-                                  </p>
-                                </div>
-                                <span className={`ml-3 flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full ${q.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/15 text-indigo-400'}`}>
-                                  +{q.xpReward} XP
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex-1 h-1 bg-black/40 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${q.completed ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-indigo-400'}`}
-                                    style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
-                                  />
-                                </div>
-                                <span className="text-[9px] text-gray-500 font-black tabular-nums flex-shrink-0">
-                                  {q.progress}/{q.target}
-                                </span>
-                              </div>
+                  {/* Quest Cards */}
+                  <div className="p-3 space-y-2">
+                    {questTab === 'daily' ? (
+                      myQuests.length > 0 ? myQuests.map((q: any) => (
+                        <div
+                          key={q.id}
+                          className={`p-4 rounded-xl transition-all duration-300 ${
+                            q.completed
+                              ? 'bg-emerald-950/60'
+                              : 'bg-zinc-800/70'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                              <span className="text-base flex-shrink-0">
+                                {q.completed ? '✅' : '🎯'}
+                              </span>
+                              <p className={`text-xs font-bold leading-tight ${q.completed ? 'text-emerald-400' : 'text-zinc-100'}`}>
+                                {q.description}
+                              </p>
                             </div>
-                          )) : (
-                            <div className="py-10 text-center opacity-40">
-                              <p className="text-2xl mb-2">🎯</p>
-                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Sense objectius per avui</p>
+                            <span className={`flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full ${
+                              q.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-300'
+                            }`}>
+                              +{q.xpReward}
+                            </span>
+                          </div>
+                          {/* Progress bar + fraction */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-3 bg-black/60 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-700 ${
+                                  q.completed ? 'bg-emerald-500' : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
+                              />
                             </div>
-                          )
-                        ) : (
-                          myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
-                            <div
-                              key={q.id}
-                              className={`group relative p-3.5 rounded-xl border transition-all duration-500 ${q.completed
-                                ? 'bg-yellow-500/8 border-yellow-500/25 shadow-[0_0_20px_rgba(234,179,8,0.05)]'
-                                : 'bg-white/3 border-white/5 hover:border-yellow-500/25 hover:bg-yellow-500/5'}`}
-                            >
-                              <div className="flex justify-between items-center mb-2.5">
-                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                  <span className={`text-base flex-shrink-0 ${q.completed ? '' : 'opacity-60 group-hover:opacity-100 transition-opacity'}`}>
-                                    {q.completed ? '⭐' : '🏆'}
-                                  </span>
-                                  <p className={`text-xs font-bold leading-tight truncate ${q.completed ? 'text-yellow-300' : 'text-white/85'}`}>
-                                    {q.description}
-                                  </p>
-                                </div>
-                                <span className={`ml-3 flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full ${q.completed ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-500/10 text-yellow-500'}`}>
-                                  +{q.xpReward} XP
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex-1 h-1 bg-black/40 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${q.completed ? 'bg-yellow-400' : 'bg-gradient-to-r from-yellow-700 to-yellow-500'}`}
-                                    style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
-                                  />
-                                </div>
-                                <span className="text-[9px] text-gray-500 font-black tabular-nums flex-shrink-0">
-                                  {q.progress}/{q.target}
-                                </span>
-                              </div>
+                            <span className="text-[11px] text-zinc-400 font-black tabular-nums flex-shrink-0 w-10 text-right">
+                              {q.progress}<span className="text-zinc-600">/</span>{q.target}
+                            </span>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="py-10 text-center opacity-40">
+                          <p className="text-2xl mb-2">🎯</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Sense objectius per avui</p>
+                        </div>
+                      )
+                    ) : (
+                      myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
+                        <div
+                          key={q.id}
+                          className={`p-4 rounded-xl transition-all duration-300 ${
+                            q.completed
+                              ? 'bg-yellow-950/50'
+                              : 'bg-zinc-800/70'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
+                              <span className="text-base flex-shrink-0">
+                                {q.completed ? '⭐' : '🏆'}
+                              </span>
+                              <p className={`text-xs font-bold leading-tight ${q.completed ? 'text-yellow-400' : 'text-zinc-100'}`}>
+                                {q.description}
+                              </p>
                             </div>
-                          )) : (
-                            <div className="py-10 text-center opacity-40">
-                              <p className="text-2xl mb-2">⭐</p>
-                              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">Carregant objectius setmanals...</p>
+                            <span className={`flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full ${
+                              q.completed ? 'bg-yellow-500/20 text-yellow-400' : 'bg-zinc-700 text-zinc-300'
+                            }`}>
+                              +{q.xpReward}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-3 bg-black/60 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-700 ${
+                                  q.completed ? 'bg-yellow-400' : 'bg-yellow-600'
+                                }`}
+                                style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
+                              />
                             </div>
-                          )
-                        )}
-                      </div>
-                    </div>
+                            <span className="text-[11px] text-zinc-400 font-black tabular-nums flex-shrink-0 w-10 text-right">
+                              {q.progress}<span className="text-zinc-600">/</span>{q.target}
+                            </span>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="py-10 text-center opacity-40">
+                          <p className="text-2xl mb-2">⭐</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Carregant objectius setmanals...</p>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
                   </div>
                 )}
 
@@ -1457,7 +1475,9 @@ export default function HomeScreen() {
               <button onClick={() => setActiveMenu('play')} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all text-2xl text-white border-none cursor-pointer">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto px-10 pb-10">
-              <FriendsTab />
+              {/* TASK 3a: hideVideo={gameMode === 'amistats'} suppresses the Daily Video
+                  when the user has selected the Friends game mode in the setup flow. */}
+              <FriendsTab hideVideo={(gameMode as string) === 'amistats'} />
             </div>
           </div>
         </div>

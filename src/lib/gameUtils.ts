@@ -301,6 +301,20 @@ export const CAMP_NOU_COORDS = { lat: 41.380896, lng: 2.1228198 };
 export const SAGRADA_FAMILIA_COORDS = { lat: 41.4036299, lng: 2.1743558 };
 
 // ── NOU: LLISTES DE COORDENADES TEMÀTIQUES ──
+// ============================================================
+// TODO: Manual pruning required – remove minor/small coordinates
+//
+// ESTADIS_FUTBOL – Known issues to fix before next release:
+//   • Duplicates found: Jonava City Stadium ×3 (lat 55.078), Volksparkstadion ×2 (lat 53.586944),
+//     Al Janoub Stadium ×2, Lawson Tama Stadium ×2, Incheon Munhak ×2, Estadio Nilmo Edwards ×2,
+//     Accra Sports Stadium ×2, Estadio de Béisbol Monterrey ×2, Estadio Juan Canuto Pettengill ×2,
+//     Akhisar Şehir Stadium ×2, Stadio Antonio Molinari ×2, Dens Park / many small club grounds.
+//   • Remove non-football entries (e.g. Colosseu, Newark Velodrome, Oracle Park, FedEx Forum).
+//   • Remove stadiums that are demolished/no longer exist (Giants Stadium, Riverfront Stadium…).
+//   • Target: curate down to ~250 high-quality, well-known football stadiums.
+// Randomiser in GameRoom.tsx (ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)])
+// is already fully scalable – no code changes needed after pruning.
+// ============================================================
 export const ESTADIS_FUTBOL = [
   { lat: 49.980858, lng: 36.261703 }, // Metalist Stadium
   { lat: 45.72408056, lng: 4.82815833 }, // Palais des Sports de Gerland
@@ -8176,6 +8190,17 @@ export const ESTADIS_FUTBOL = [
   { lat: 41.86879, lng: -71.38259 }, // Centreville Bank Stadium
 ];
 
+// ============================================================
+// TODO: Manual pruning required – remove minor/small coordinates
+//
+// MONUMENTS_CULTURALS – Known issues to fix before next release:
+//   • Remove entries without real street-view coverage (small villages, remote ruins).
+//   • Remove non-cultural entries that may have crept in from Wikidata bulk imports.
+//   • Add major missing landmarks: Machu Picchu, Angkor Wat, Alhambra, Petra, Stonehenge, etc.
+//   • Target: ~300 iconic, globally-recognisable cultural/historical monuments.
+// Randomiser in GameRoom.tsx (MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)])
+// is already fully scalable – no code changes needed after pruning.
+// ============================================================
 export const MONUMENTS_CULTURALS = [
   { lat: 51.812499, lng: -2.7168518 }, // Castell de Monmouth
   { lat: 31.780094444, lng: 35.234302777 }, // Fortalesa Antònia

@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from 'react';
 
+const PWA_DISMISSED_KEY = 'pwaPromptDismissed';
+
 export default function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other' | null>(null);
 
+  // TASK 3: Persist dismissal — if the user has already closed it once, never show again
+  const dismiss = () => {
+    localStorage.setItem(PWA_DISMISSED_KEY, 'true');
+    setShowPrompt(false);
+  };
+
   useEffect(() => {
+    // TASK 3: If already dismissed in a previous session, bail out immediately
+    if (localStorage.getItem(PWA_DISMISSED_KEY) === 'true') return;
+
     // 1. Detectar si ja està instal·lada (standalone mode)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
                          || (window.navigator as any).standalone 
@@ -36,10 +47,11 @@ export default function PWAInstallPrompt() {
   return (
     <div className="fixed inset-0 z-[15000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-300">
       <div className="bg-[#0c0f1a] border border-indigo-500/30 rounded-[3.5rem] w-full max-w-sm p-8 relative shadow-[0_0_80px_rgba(99,102,241,0.25)] text-center overflow-hidden">
-        {/* Botó de tancar elegant */}
+        {/* TASK 3: Botó de tancar — w-12 h-12 garanteix un tap target ≥44×44px en mòbil */}
         <button 
-          onClick={(e) => { e.stopPropagation(); setShowPrompt(false); }}
-          className="absolute top-6 right-6 z-[15001] text-red-500 hover:text-red-400 text-4xl font-black cursor-pointer bg-transparent border-none transition-transform hover:scale-110 active:scale-90"
+          onClick={dismiss}
+          aria-label="Tancar"
+          className="absolute top-4 right-4 z-[15001] w-12 h-12 flex items-center justify-center text-red-500 hover:text-red-400 text-4xl font-black cursor-pointer bg-transparent border-none transition-transform hover:scale-110 active:scale-90"
         >
           ×
         </button>
@@ -86,8 +98,9 @@ export default function PWAInstallPrompt() {
             )}
           </div>
 
+          {/* TASK 3: "Got it" button also writes the dismissed key */}
           <button 
-            onClick={() => setShowPrompt(false)}
+            onClick={dismiss}
             className="w-full py-5 bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_25px_rgba(99,102,241,0.4)] transition-all active:scale-95 border-none cursor-pointer"
           >
             D&apos;acord, entès! 🚀

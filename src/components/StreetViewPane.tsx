@@ -9,6 +9,8 @@ interface Props {
 
 export default function StreetViewPane({ location, gameMode, onReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // ── TASK 1: Store panorama instance so we can destroy it on unmount ──
+  const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -44,8 +46,22 @@ export default function StreetViewPane({ location, gameMode, onReady }: Props) {
       options.position = { lat: location.lat, lng: location.lng };
     }
 
-    new google.maps.StreetViewPanorama(containerRef.current, options);
+    const panorama = new google.maps.StreetViewPanorama(containerRef.current, options);
+    panoramaRef.current = panorama;
     if (onReady) onReady();
+
+    // ── TASK 1: Cleanup – destroy panorama to prevent mobile memory leaks ──
+    return () => {
+      if (panoramaRef.current) {
+        // Clear all event listeners attached to this panorama instance
+        google.maps.event.clearInstanceListeners(panoramaRef.current);
+        panoramaRef.current = null;
+      }
+      // Empty the container DOM node so the browser can GC the detached WebGL context
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Munta 1 sola vegada; la key del parent força remuntada entre rondes
 

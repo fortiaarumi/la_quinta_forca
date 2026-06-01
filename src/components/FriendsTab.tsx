@@ -32,7 +32,7 @@ function getChatId(uid1: string, uid2: string): string {
   return [uid1, uid2].sort().join('_');
 }
 
-export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: string, text: string) => void }) {
+export default function FriendsTab({ onNewMessage, hideVideo = false }: { onNewMessage?: (from: string, text: string) => void; hideVideo?: boolean }) {
   const { user, isGuest, nickname } = useAuth();
   const [emailInput, setEmailInput] = useState('');
   const [msg, setMsg] = useState({ text: '', type: '' });
@@ -49,6 +49,19 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // TASK 3d: Mute toggle — persisted to localStorage
+  const [notifMuted, setNotifMuted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('chatNotifMuted') === 'true';
+  });
+  const toggleNotifMute = () => {
+    setNotifMuted(prev => {
+      const next = !prev;
+      localStorage.setItem('chatNotifMuted', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     const unsub = onValue(ref(db, 'appConfig/home'), (snap) => {
@@ -320,25 +333,36 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
 
       {/* ── PANELL DE XAT ── */}
       {openChatFriend && (
-        <div className="mt-4 border border-indigo-500/30 rounded-2xl overflow-hidden bg-black/40 shadow-2xl shadow-indigo-500/10">
+        <div className="mt-4 border border-white/5 rounded-2xl overflow-hidden bg-zinc-900 shadow-2xl">
           {/* Capçalera del xat */}
-          <div className="flex items-center justify-between px-4 py-3 bg-indigo-900/40 border-b border-indigo-500/20">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${openChatFriend.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-              <span className="text-white font-black text-sm">💬 {openChatFriend.nickname}</span>
+          <div className="flex items-center justify-between px-4 py-3 bg-zinc-950 border-b border-white/5">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-2 h-2 rounded-full ${openChatFriend.status === 'online' ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
+              <span className="text-white font-black text-sm uppercase tracking-widest">{openChatFriend.nickname}</span>
             </div>
-            <button
-              onClick={() => setOpenChatFriend(null)}
-              className="text-gray-500 hover:text-white transition-colors text-lg leading-none"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-1">
+              {/* TASK 3d: Bell mute toggle */}
+              <button
+                onClick={toggleNotifMute}
+                aria-label={notifMuted ? 'Activar notificacions' : 'Silenciar notificacions'}
+                className="w-10 h-10 flex items-center justify-center text-lg rounded-full hover:bg-white/10 transition-colors cursor-pointer bg-transparent border-none"
+                title={notifMuted ? 'Notificacions silenciades' : 'Notificacions actives'}
+              >
+                {notifMuted ? '🔕' : '🔔'}
+              </button>
+              <button
+                onClick={() => setOpenChatFriend(null)}
+                className="w-10 h-10 flex items-center justify-center text-zinc-500 hover:text-white transition-colors text-xl bg-transparent border-none cursor-pointer rounded-full hover:bg-white/10"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           {/* Missatges */}
-          <div className="h-52 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+          <div className="h-72 overflow-y-auto p-4 flex flex-col gap-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
             {chatMessages.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-gray-600 text-xs italic">
+              <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm italic">
                 Envia el primer missatge! 👋
               </div>
             ) : (
@@ -346,15 +370,15 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
                 const isMe = m.from === user?.uid;
                 return (
                   <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm break-words ${isMe
+                    <div className={`max-w-[75%] px-4 py-3 rounded-2xl text-base break-words ${isMe
                       ? 'bg-indigo-600 text-white rounded-br-md'
-                      : 'bg-white/10 text-gray-200 rounded-bl-md'
+                      : 'bg-zinc-800 text-zinc-100 rounded-bl-md'
                       }`}>
                       {!isMe && (
-                        <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">{openChatFriend.nickname}</p>
+                        <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-1">{openChatFriend.nickname}</p>
                       )}
                       <p className="m-0 leading-snug">{m.text}</p>
-                      <p className={`text-[8px] mt-0.5 m-0 ${isMe ? 'text-white/40 text-right' : 'text-gray-500'}`}>
+                      <p className={`text-[9px] mt-1 m-0 ${isMe ? 'text-white/40 text-right' : 'text-zinc-500'}`}>
                         {new Date(m.timestamp).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -366,19 +390,19 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
           </div>
 
           {/* Input d'enviament */}
-          <div className="flex gap-2 p-3 border-t border-white/5">
+          <div className="flex gap-2 p-3 border-t border-white/5 bg-zinc-950/60">
             <input
               type="text"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendMessage()}
               placeholder="Escriu un missatge..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors placeholder-gray-600"
+              className="flex-1 bg-zinc-800 border border-white/5 rounded-2xl px-4 py-3 text-base text-white placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <button
               onClick={sendMessage}
               disabled={!chatInput.trim()}
-              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-black px-4 py-2 rounded-xl transition-all active:scale-95 text-sm"
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-black min-w-[48px] py-3 px-4 rounded-2xl transition-all active:scale-95 text-base border-none cursor-pointer"
             >
               ➤
             </button>
@@ -386,21 +410,23 @@ export default function FriendsTab({ onNewMessage }: { onNewMessage?: (from: str
         </div>
       )}
 
-      {/* Vídeo del dia */}
-      <div className="mt-8 pt-6 border-t border-white/10">
-        <h3 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.2em] mb-4 text-center">Mentre esperes els amics...</h3>
-        <div className="bg-black/30 rounded-2xl p-3 border border-white/5">
-          <div className="mb-3">
-            <DailyVideo 
-              src={friendVideo.url} 
-              containerClassName="rounded-xl shadow-lg border border-white/5" 
-            />
-          </div>
-          <div className="text-center px-2">
-            <p className="text-gray-300 text-xs font-bold m-0">{friendVideo.caption}</p>
+      {/* Vídeo del dia — TASK 3a: Hidden when hideVideo is true (e.g. gameMode === 'amistats') */}
+      {!hideVideo && (
+        <div className="mt-8 pt-6 border-t border-white/10">
+          <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.2em] mb-4 text-center">Mentre esperes els amics...</h3>
+          <div className="bg-zinc-900 rounded-2xl p-3 border border-white/5">
+            <div className="mb-3">
+              <DailyVideo
+                src={friendVideo.url}
+                containerClassName="rounded-xl shadow-lg border border-white/5"
+              />
+            </div>
+            <div className="text-center px-2">
+              <p className="text-zinc-300 text-xs font-bold m-0">{friendVideo.caption}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* NOU: MODAL GLOBAL D'INSÍGNIES */}
       {selectedBadge && (
