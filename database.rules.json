@@ -1,0 +1,70 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": true,
+      ".write": false,
+      "$uid": {
+        ".write": "auth !== null && auth.uid === $uid"
+      },
+      ".indexOn": [
+        "bestScoreWorld_bala",
+        "bestScoreWorld_normal",
+        "bestScoreWorld_infinit",
+        "bestScoreCatalunya_bala",
+        "bestScoreCatalunya_normal",
+        "bestScoreCatalunya_infinit",
+        "bestScorePixapins_bala",
+        "bestScorePixapins_normal",
+        "bestScorePixapins_infinit",
+        "bestScoreEstadis_bala",
+        "bestScoreEstadis_normal",
+        "bestScoreEstadis_infinit",
+        "bestScoreCultural_bala",
+        "bestScoreCultural_normal",
+        "bestScoreCultural_infinit",
+        "total5k"
+      ]
+    },
+
+    "rooms": {
+      ".read": true,
+      ".write": "auth !== null",
+      ".indexOn": ["createdAt", "gameState", "isPublic"]
+    },
+
+    "chats": {
+      "$chatId": {
+        ".read": "auth !== null",
+        ".write": "auth !== null"
+      }
+    },
+
+    "system": {
+      "onlineUsers": {
+        ".read": true,
+        ".write": "auth !== null"
+      }
+    },
+
+    "appConfig": {
+      ".read": true,
+      ".write": false
+    },
+
+    "videoQueue": {
+      ".read": false,
+      ".write": "auth !== null",
+      "$videoId": {
+        ".write": "auth !== null"
+      }
+    },
+
+    "dailyLimits": {
+      ".read": false,
+      ".write": "auth !== null"
+    }
+  }
+}

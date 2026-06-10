@@ -16,6 +16,9 @@ interface Props {
 
 type Panel = 'welcome' | 'login' | 'signup' | 'guest' | 'reset';
 
+/* ── Glass Input ────────────────────────────────────────
+   Refined: indigo focus ring, indigo-tinted border, DM Sans
+   ───────────────────────────────────────────────────── */
 const GlassInput = ({
   type, placeholder, value, onChange, autoComplete, maxLength,
 }: {
@@ -29,47 +32,63 @@ const GlassInput = ({
     onChange={(e) => onChange(e.target.value)}
     autoComplete={autoComplete}
     maxLength={maxLength}
+    className="w-full px-5 py-[15px] rounded-2xl text-sm font-medium outline-none transition-all duration-200"
     style={{
-      width: '100%',
-      background: 'rgba(0,0,0,0.45)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: '14px',
-      padding: '15px 20px',
-      color: 'white',
-      fontSize: '15px',
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'border-color 0.2s',
+      background: 'rgba(6, 8, 16, 0.55)',
+      border: '1px solid rgba(99, 102, 241, 0.18)',
+      color: 'var(--text-base)',
+      fontFamily: 'var(--font-body)',
+      caretColor: 'var(--gold)',
     }}
-    onFocus={(e) => (e.target.style.borderColor = 'rgba(16,185,129,0.5)')}
-    onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+    onFocus={(e) => {
+      e.target.style.borderColor = 'rgba(212, 167, 44, 0.5)';
+      e.target.style.boxShadow = '0 0 0 3px rgba(212, 167, 44, 0.08)';
+    }}
+    onBlur={(e) => {
+      e.target.style.borderColor = 'rgba(99, 102, 241, 0.18)';
+      e.target.style.boxShadow = 'none';
+    }}
   />
 );
+
+/* ── Error box ───────────────────────────────────────── */
+function ErrorBox({ msg }: { msg: string }) {
+  return (
+    <div className="px-4 py-3 rounded-xl text-center"
+      style={{
+        background: 'rgba(239, 68, 68, 0.08)',
+        border: '1px solid rgba(239, 68, 68, 0.22)',
+        color: '#f87171',
+        fontSize: '11px',
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        fontFamily: 'var(--font-body)',
+      }}>
+      ⚠️ {msg}
+    </div>
+  );
+}
 
 export default function AuthScreen({ onGuestContinue }: Props) {
   const { setGuestMode } = useAuth();
   const [panel, setPanel] = useState<Panel>('welcome');
 
-  // Login
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-
-  // Signup
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupRepeat, setSignupRepeat] = useState('');
   const [signupNick, setSignupNick] = useState('');
-
-  // Guest
   const [guestNick, setGuestNick] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [resetRepeat, setResetRepeat] = useState('');
   const [resetMsg, setResetMsg] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const clearError = () => setError('');
+
   const handleResetPassword = async () => {
     if (!resetEmail.trim() || !resetRepeat.trim()) return setError('Emplena tots els camps');
     if (resetEmail.trim() !== resetRepeat.trim()) return setError('Els correus no coincideixen');
@@ -77,13 +96,10 @@ export default function AuthScreen({ onGuestContinue }: Props) {
     try {
       await sendPasswordResetEmail(auth, resetEmail.trim());
       setResetMsg('✅ Revisa el teu correu (i la carpeta de Spam). T\'hem enviat les instruccions per restablir la contrasenya.');
-      setResetEmail('');
-      setResetRepeat('');
-    } catch (e: any) {
+      setResetEmail(''); setResetRepeat('');
+    } catch {
       setError('Error en enviar el correu. Segur que està ben escrit?');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleLogin = async () => {
@@ -91,7 +107,6 @@ export default function AuthScreen({ onGuestContinue }: Props) {
     setLoading(true); clearError();
     try {
       await signInWithEmailAndPassword(auth, loginEmail.trim(), loginPassword);
-      // onAuthStateChanged del context s'encarregarà de la resta
     } catch (e: any) {
       const codes: Record<string, string> = {
         'auth/user-not-found': 'Usuari no trobat.',
@@ -100,9 +115,7 @@ export default function AuthScreen({ onGuestContinue }: Props) {
         'auth/invalid-credential': 'Credencials incorrectes.',
       };
       setError(codes[e.code] ?? 'Error en accedir. Torna-ho a provar.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleSignup = async () => {
@@ -112,7 +125,6 @@ export default function AuthScreen({ onGuestContinue }: Props) {
     if (signupPassword.length < 6) return setError('La contrasenya ha de tenir almenys 6 caràcters');
     if (signupPassword !== signupRepeat) return setError('Les contrasenyes no coincideixen');
     setLoading(true); clearError();
-    // TASK 1: Enforce max 20-char limit server-side before writing to Firebase
     const safeNick = signupNick.trim().slice(0, 20);
     try {
       const cred = await createUserWithEmailAndPassword(auth, signupEmail.trim(), signupPassword);
@@ -124,14 +136,11 @@ export default function AuthScreen({ onGuestContinue }: Props) {
         'auth/weak-password': 'La contrasenya és massa feble.',
       };
       setError(codes[e.code] ?? 'Error en registrar-se.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleGuest = () => {
     if (!guestNick.trim()) return setError('Introdueix un nom de convidat');
-    // TASK 1: Enforce max 20-char limit before storing in localStorage
     const safeGuestNick = guestNick.trim().slice(0, 20);
     localStorage.setItem('geoGuestName', safeGuestNick);
     let id = localStorage.getItem('geoPlayerId');
@@ -140,299 +149,310 @@ export default function AuthScreen({ onGuestContinue }: Props) {
     onGuestContinue();
   };
 
-  const bg = {
-    background: 'rgba(255,255,255,0.04)',
-    backdropFilter: 'blur(28px)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '28px',
+  /* ── Shared panel card style ──────────────────────── */
+  const cardStyle: React.CSSProperties = {
+    background: 'rgba(11, 15, 28, 0.75)',
+    backdropFilter: 'blur(32px)',
+    WebkitBackdropFilter: 'blur(32px)',
+    border: '1px solid rgba(99, 102, 241, 0.14)',
+    borderRadius: '24px',
     padding: '36px 32px',
   };
 
-  const btnPrimary = (disabled = false) => ({
-    width: '100%',
-    background: disabled ? 'rgba(16,185,129,0.2)' : 'linear-gradient(135deg, #10b981, #059669)',
-    color: disabled ? 'rgba(255,255,255,0.3)' : 'white',
-    fontWeight: 900 as const,
-    padding: '17px',
-    borderRadius: '14px',
-    fontSize: '16px',
-    border: 'none',
-    cursor: disabled ? 'not-allowed' as const : 'pointer' as const,
-    boxShadow: disabled ? 'none' : '0 6px 24px rgba(16,185,129,0.35)',
-    transition: 'all 0.2s',
-    letterSpacing: '-0.01em',
-  });
+  /* ── Label ────────────────────────────────────────── */
+  const labelCls = "block text-[9px] font-black uppercase tracking-[0.28em] mb-2 ml-0.5";
 
-  const btnSecondary = {
-    width: '100%',
-    background: 'rgba(255,255,255,0.06)',
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: 700 as const,
-    padding: '15px',
-    borderRadius: '14px',
-    fontSize: '14px',
-    border: '1px solid rgba(255,255,255,0.1)',
-    cursor: 'pointer' as const,
-    transition: 'all 0.2s',
-  };
+  /* ── Primary gold button ──────────────────────────── */
+  const PrimaryBtn = ({
+    onClick, disabled = false, children,
+  }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="shimmer-host w-full min-h-[52px] px-6 rounded-2xl font-black uppercase tracking-widest text-sm
+        transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none
+        flex items-center justify-center gap-2"
+      style={{
+        background: disabled
+          ? 'rgba(212,167,44,0.2)'
+          : 'linear-gradient(135deg, #d4a72c 0%, #f0c040 50%, #c49820 100%)',
+        color: '#0b0f1c',
+        fontFamily: 'var(--font-display)',
+        letterSpacing: '0.1em',
+        boxShadow: disabled ? 'none' : '0 6px 28px rgba(212,167,44,0.3)',
+      }}
+    >
+      {children}
+    </button>
+  );
 
-  const label = {
-    display: 'block' as const,
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: '9px',
-    fontWeight: 900 as const,
-    letterSpacing: '0.25em',
-    textTransform: 'uppercase' as const,
-    marginBottom: '8px',
-  };
+  /* ── Secondary ghost button ───────────────────────── */
+  const SecondaryBtn = ({
+    onClick, children,
+  }: { onClick: () => void; children: React.ReactNode }) => (
+    <button
+      onClick={onClick}
+      className="w-full min-h-[48px] px-6 rounded-2xl font-bold uppercase tracking-wider text-xs
+        transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2"
+      style={{
+        background: 'rgba(255, 255, 255, 0.04)',
+        border: '1px solid rgba(99, 102, 241, 0.16)',
+        color: 'var(--text-muted)',
+        fontFamily: 'var(--font-body)',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(99,102,241,0.1)';
+        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-base)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.04)';
+        (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
+      }}
+    >
+      {children}
+    </button>
+  );
 
   return (
     <div
-      className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden"
-      style={{ background: '#06080f' }}
+      className="relative min-h-[100dvh] w-full flex items-center justify-center overflow-x-hidden noise-overlay"
+      style={{ background: 'var(--bg-deep)' }}
     >
-      {/* Fons decoratiu */}
+      {/* ── Atmospheric background ─────────────────── */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div style={{ position: 'absolute', top: '-15%', left: '-10%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(16,185,129,0.13) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-        <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: '60%', height: '60%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-        <div style={{ position: 'absolute', top: '40%', right: '20%', width: '30%', height: '30%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.07) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.025, backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        {/* Top-left: indigo bloom */}
+        <div style={{
+          position: 'absolute', top: '-12%', left: '-8%',
+          width: '55%', height: '55%',
+          background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)',
+          filter: 'blur(50px)',
+        }} />
+        {/* Bottom-right: amber bloom */}
+        <div style={{
+          position: 'absolute', bottom: '-18%', right: '-8%',
+          width: '60%', height: '60%',
+          background: 'radial-gradient(ellipse, rgba(212,167,44,0.1) 0%, transparent 70%)',
+          filter: 'blur(50px)',
+        }} />
+        {/* Subtle grid mesh */}
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.022,
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }} />
       </div>
 
       <div className="relative z-10 w-full max-w-sm mx-auto px-5 py-12">
 
-        {/* Logo / Títol */}
+        {/* ── Wordmark / Logo ───────────────────────── */}
         <div className="text-center mb-8">
-          <div style={{ fontSize: '52px', marginBottom: '10px', filter: 'drop-shadow(0 0 24px rgba(16,185,129,0.4))' }}>🌍</div>
-          <h1 style={{ color: 'white', fontSize: '32px', fontWeight: 900, margin: 0, letterSpacing: '-0.03em' }}>
+          <div className="text-5xl mb-3" style={{ filter: 'drop-shadow(0 0 28px rgba(212,167,44,0.45))' }}>
+            🌍
+          </div>
+          <h1
+            className="text-[34px] leading-none font-black italic tracking-tight mb-1"
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}
+          >
             La Quinta Forca
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginTop: '6px', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
+          <p style={{ color: 'var(--text-dim)', fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 600 }}>
             Projecte Alpha
           </p>
         </div>
 
-        {/* ── PANELL BENVINGUDA ── */}
+        {/* ── WELCOME PANEL ─────────────────────────── */}
         {panel === 'welcome' && (
-          <div style={bg}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <button
-                onClick={() => { setPanel('signup'); clearError(); }}
-                style={btnPrimary()}
-              >
+          <div style={cardStyle} className="animate-slide-up">
+            <div className="flex flex-col gap-3">
+              <PrimaryBtn onClick={() => { setPanel('signup'); clearError(); }}>
                 ✨ Crear Compte
-              </button>
+              </PrimaryBtn>
               <button
                 onClick={() => { setPanel('login'); clearError(); }}
+                className="shimmer-host w-full min-h-[52px] px-6 rounded-2xl font-black uppercase tracking-widest text-sm
+                  transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2"
                 style={{
-                  ...btnSecondary,
-                  background: 'rgba(255,255,255,0.07)',
-                  color: 'white',
-                  fontWeight: 800,
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(99,102,241,0.12)',
+                  border: '1px solid rgba(99,102,241,0.28)',
+                  color: 'var(--text-base)',
+                  fontFamily: 'var(--font-display)',
+                  letterSpacing: '0.1em',
                 }}
               >
                 🔑 Iniciar Sessió
               </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em' }}>O</span>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+
+              <div className="flex items-center gap-3 my-1">
+                <div style={{ flex: 1, height: '1px', background: 'rgba(99,102,241,0.1)' }} />
+                <span style={{ color: 'var(--text-dim)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.15em' }}>O</span>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(99,102,241,0.1)' }} />
               </div>
-              <button
-                onClick={() => { setPanel('guest'); clearError(); }}
-                style={btnSecondary}
-              >
+
+              <SecondaryBtn onClick={() => { setPanel('guest'); clearError(); }}>
                 👤 Continuar com a Convidat
-              </button>
+              </SecondaryBtn>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.15)', fontSize: '10px', textAlign: 'center', marginTop: '20px', lineHeight: 1.6 }}>
+            <p className="text-center mt-5" style={{ color: 'var(--text-dim)', fontSize: '10px', lineHeight: 1.7 }}>
               El compte guarda les teves estadístiques i puntuacions als rànquings globals.
             </p>
           </div>
         )}
 
-        {/* ── PANELL LOGIN ── */}
+        {/* ── LOGIN PANEL ───────────────────────────── */}
         {panel === 'login' && (
-          <div style={bg}>
-            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '24px', textAlign: 'center' }}>
+          <div style={cardStyle} className="animate-slide-up">
+            <h2 className="text-xl font-black italic text-center mb-6"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
               🔑 Iniciar Sessió
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <div className="flex flex-col gap-3 mb-5">
               <div>
-                <label style={label}>Correu Electrònic</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Correu Electrònic</label>
                 <GlassInput type="email" placeholder="nom@exemple.com" value={loginEmail} onChange={setLoginEmail} autoComplete="email" />
               </div>
               <div>
-                <label style={label}>Contrasenya</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Contrasenya</label>
                 <GlassInput type="password" placeholder="••••••••" value={loginPassword} onChange={setLoginPassword} autoComplete="current-password" />
               </div>
             </div>
-            {}
-            <div style={{ textAlign: 'right', marginTop: '-10px', marginBottom: '15px' }}>
-              <button 
-                onClick={() => { setPanel('reset'); clearError(); }} 
-                style={{ background: 'none', border: 'none', color: '#10b981', fontSize: '11px', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+            <div className="text-right mb-4">
+              <button
+                onClick={() => { setPanel('reset'); clearError(); }}
+                className="text-[11px] font-semibold transition-colors"
+                style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
               >
                 Has oblidat la contrasenya?
               </button>
             </div>
             {error && <ErrorBox msg={error} />}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-              <button
-                onClick={handleLogin}
-                disabled={loading}
-                style={btnPrimary(loading)}
-              >
+            <div className="flex flex-col gap-2.5 mt-4">
+              <PrimaryBtn onClick={handleLogin} disabled={loading}>
                 {loading ? '⌛ Accedint...' : 'Accedir'}
-              </button>
-              <button onClick={() => { setPanel('welcome'); clearError(); }} style={btnSecondary}>
+              </PrimaryBtn>
+              <SecondaryBtn onClick={() => { setPanel('welcome'); clearError(); }}>
                 ← Tornar
-              </button>
+              </SecondaryBtn>
             </div>
           </div>
         )}
 
-        {/* ── AFEGIT: PANELL RECUPERAR CONTRASENYA ── */}
+        {/* ── RESET PANEL ───────────────────────────── */}
         {panel === 'reset' && (
-          <div style={bg}>
-            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '8px', textAlign: 'center' }}>
+          <div style={cardStyle} className="animate-slide-up">
+            <h2 className="text-xl font-black italic text-center mb-2"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
               🔒 Recuperar Contrasenya
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', textAlign: 'center', marginBottom: '10px', lineHeight: 1.5 }}>
-              Introdueix el teu correu electrònic i t'enviarem un enllaç per crear una nova contrasenya.
+            <p className="text-center mb-2" style={{ color: 'var(--text-muted)', fontSize: '11px', lineHeight: 1.6 }}>
+              Introdueix el teu correu i t&apos;enviarem un enllaç per crear una nova contrasenya.
             </p>
-            <p style={{ color: '#f59e0b', fontSize: '10px', textAlign: 'center', marginBottom: '20px', fontWeight: 700 }}>
+            <p className="text-center mb-5 text-[10px] font-bold" style={{ color: 'var(--gold)' }}>
               ⚠️ Revisa la carpeta de Correu Brossa (Spam) si triga a arribar.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <div className="flex flex-col gap-3 mb-5">
               <div>
-                <label style={label}>Correu Electrònic</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Correu Electrònic</label>
                 <GlassInput type="email" placeholder="nom@exemple.com" value={resetEmail} onChange={setResetEmail} />
               </div>
               <div>
-                <label style={label}>Repetir Correu</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Repetir Correu</label>
                 <GlassInput type="email" placeholder="Repeteix el correu" value={resetRepeat} onChange={setResetRepeat} />
               </div>
             </div>
             {error && <ErrorBox msg={error} />}
             {resetMsg && (
-              <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', color: '#34d399', fontSize: '11px', fontWeight: 700, textAlign: 'center', marginBottom: '15px' }}>
+              <div className="px-4 py-3 rounded-xl text-center mb-4" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399', fontSize: '11px', fontWeight: 700 }}>
                 {resetMsg}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button onClick={handleResetPassword} disabled={loading} style={btnPrimary(loading)}>
+            <div className="flex flex-col gap-2.5">
+              <PrimaryBtn onClick={handleResetPassword} disabled={loading}>
                 {loading ? '⌛ Enviant correu...' : '📧 Enviar Correu'}
-              </button>
-              <button onClick={() => { setPanel('login'); clearError(); setResetMsg(''); }} style={btnSecondary}>
+              </PrimaryBtn>
+              <SecondaryBtn onClick={() => { setPanel('login'); clearError(); setResetMsg(''); }}>
                 ← Tornar a Iniciar Sessió
-              </button>
+              </SecondaryBtn>
             </div>
           </div>
         )}
 
-        {/* ── PANELL SIGNUP ── */}
+        {/* ── SIGNUP PANEL ──────────────────────────── */}
         {panel === 'signup' && (
-          <div style={bg}>
-            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '24px', textAlign: 'center' }}>
+          <div style={cardStyle} className="animate-slide-up">
+            <h2 className="text-xl font-black italic text-center mb-6"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
               ✨ Crear Compte
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            <div className="flex flex-col gap-3 mb-5">
               <div>
-                <label style={label}>Nickname (públic)</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Nickname (públic)</label>
                 <GlassInput type="text" placeholder="El teu nom als rànquings" value={signupNick} onChange={setSignupNick} autoComplete="username" maxLength={20} />
               </div>
               <div>
-                <label style={label}>Correu Electrònic</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Correu Electrònic</label>
                 <GlassInput type="email" placeholder="nom@exemple.com" value={signupEmail} onChange={setSignupEmail} autoComplete="email" />
               </div>
               <div>
-                <label style={label}>Contrasenya</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Contrasenya</label>
                 <GlassInput type="password" placeholder="Mínim 6 caràcters" value={signupPassword} onChange={setSignupPassword} autoComplete="new-password" />
               </div>
               <div>
-                <label style={label}>Repetir Contrasenya</label>
+                <label className={labelCls} style={{ color: 'var(--text-dim)' }}>Repetir Contrasenya</label>
                 <GlassInput type="password" placeholder="Repeteix la contrasenya" value={signupRepeat} onChange={setSignupRepeat} autoComplete="new-password" />
               </div>
             </div>
             {error && <ErrorBox msg={error} />}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-              <button
-                onClick={handleSignup}
-                disabled={loading}
-                style={btnPrimary(loading)}
-              >
+            <div className="flex flex-col gap-2.5 mt-4">
+              <PrimaryBtn onClick={handleSignup} disabled={loading}>
                 {loading ? '⌛ Creant compte...' : 'Registrar-se'}
-              </button>
-              <button onClick={() => { setPanel('welcome'); clearError(); }} style={btnSecondary}>
+              </PrimaryBtn>
+              <SecondaryBtn onClick={() => { setPanel('welcome'); clearError(); }}>
                 ← Tornar
-              </button>
+              </SecondaryBtn>
             </div>
           </div>
         )}
 
-        {/* ── PANELL CONVIDAT ── */}
+        {/* ── GUEST PANEL ───────────────────────────── */}
         {panel === 'guest' && (
-          <div style={bg}>
-            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 900, marginBottom: '8px', textAlign: 'center' }}>
+          <div style={cardStyle} className="animate-slide-up">
+            <h2 className="text-xl font-black italic text-center mb-2"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)' }}>
               👤 Mode Convidat
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', textAlign: 'center', marginBottom: '24px', lineHeight: 1.5 }}>
+            <p className="text-center mb-6" style={{ color: 'var(--text-muted)', fontSize: '11px', lineHeight: 1.6 }}>
               Juga sense registrar-te. Les teves puntuacions no es guardaran als rànquings.
             </p>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={label}>El teu nom per la partida</label>
+            <div className="mb-5">
+              <label className={labelCls} style={{ color: 'var(--text-dim)' }}>El teu nom per la partida</label>
               <GlassInput type="text" placeholder="Nickname temporal" value={guestNick} onChange={setGuestNick} maxLength={20} />
             </div>
             {error && <ErrorBox msg={error} />}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-              <button
-                onClick={handleGuest}
-                disabled={!guestNick.trim()}
-                style={btnPrimary(!guestNick.trim())}
-              >
+            <div className="flex flex-col gap-2.5 mt-4">
+              <PrimaryBtn onClick={handleGuest} disabled={!guestNick.trim()}>
                 Jugar com a Convidat →
-              </button>
-              <button onClick={() => { setPanel('welcome'); clearError(); }} style={btnSecondary}>
+              </PrimaryBtn>
+              <SecondaryBtn onClick={() => { setPanel('welcome'); clearError(); }}>
                 ← Tornar
-              </button>
+              </SecondaryBtn>
             </div>
           </div>
         )}
 
-        {/* Suggeriment de compte des del panell convidat/welcome */}
-        {(panel === 'welcome') && (
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '11px' }}>Ja tens compte? </span>
+        {/* ── Bottom hint ───────────────────────────── */}
+        {panel === 'welcome' && (
+          <div className="text-center mt-5">
+            <span style={{ color: 'var(--text-dim)', fontSize: '11px' }}>Ja tens compte? </span>
             <button
               onClick={() => { setPanel('login'); clearError(); }}
-              style={{ background: 'none', border: 'none', color: '#10b981', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+              className="text-[11px] font-bold transition-colors"
+              style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
             >
               Inicia sessió →
             </button>
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function ErrorBox({ msg }: { msg: string }) {
-  return (
-    <div style={{
-      padding: '12px 16px',
-      background: 'rgba(239,68,68,0.1)',
-      border: '1px solid rgba(239,68,68,0.2)',
-      borderRadius: '12px',
-      color: '#f87171',
-      fontSize: '11px',
-      fontWeight: 700,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      textAlign: 'center',
-    }}>
-      ⚠️ {msg}
     </div>
   );
 }

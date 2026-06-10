@@ -589,15 +589,20 @@ export default function HomeScreen() {
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative group overflow-hidden min-h-[56px] px-8 py-4 rounded-2xl font-black uppercase tracking-widest
-        transition-transform duration-200 hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:pointer-events-none
+      className={`shimmer-host relative overflow-hidden min-h-[56px] px-8 py-4 rounded-2xl font-black uppercase
+        transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none
         ${pulse ? 'animate-gold-pulse' : ''}
-        bg-gradient-to-br from-yellow-600 via-yellow-500 to-yellow-700
-        text-black shadow-[0_10px_40px_rgba(212,175,55,0.3)]
-        hover:shadow-[0_15px_50px_rgba(212,175,55,0.5)]
         ${className}`}
+      style={{
+        background: disabled
+          ? 'rgba(212,167,44,0.2)'
+          : 'linear-gradient(135deg, #c49820 0%, #d4a72c 35%, #f0c040 65%, #c49820 100%)',
+        color: '#0b0f1c',
+        fontFamily: 'var(--font-display)',
+        letterSpacing: '0.12em',
+        boxShadow: disabled ? 'none' : '0 8px 32px rgba(212,167,44,0.28)',
+      }}
     >
-      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
       <span className="relative z-10 flex items-center justify-center gap-3">{children}</span>
     </button>
   );
@@ -611,26 +616,43 @@ export default function HomeScreen() {
   const OptionCard = ({ selected, onClick, title, desc, icon }: any) => (
     <button
       onClick={onClick}
-      className={`w-full text-left p-6 rounded-3xl border-2 transition-all duration-500 group flex items-center gap-5
-        ${selected 
-          ? 'bg-indigo-600/20 border-yellow-500 shadow-[0_0_30px_rgba(212,175,55,0.2)]' 
-          : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'}`}
+      className="w-full text-left min-h-[72px] px-5 py-4 rounded-2xl flex items-center gap-4 transition-all duration-300 group"
+      style={{
+        border: selected ? '1px solid rgba(212,167,44,0.55)' : '1px solid rgba(99,102,241,0.14)',
+        boxShadow: selected ? '0 0 24px rgba(212,167,44,0.12)' : 'none',
+        background: selected ? 'rgba(212,167,44,0.07)' : 'rgba(11,15,28,0.55)',
+        backdropFilter: 'blur(12px)',
+      }}
     >
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-colors
-        ${selected ? 'bg-yellow-500 text-black' : 'bg-white/5 text-white/50 group-hover:text-white'}`}>
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-all duration-300"
+        style={{
+          background: selected ? 'linear-gradient(135deg, #d4a72c, #f0c040)' : 'rgba(99,102,241,0.1)',
+          color: selected ? '#0b0f1c' : 'rgba(255,255,255,0.5)',
+        }}
+      >
         {icon}
       </div>
-      <div>
-        <h4 className={`font-black uppercase tracking-widest ${selected ? 'text-yellow-400' : 'text-white'}`}>{title}</h4>
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{desc}</p>
+      <div className="min-w-0">
+        <h4
+          className="font-black uppercase leading-tight mb-0.5"
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '14px',
+            letterSpacing: '0.08em',
+            color: selected ? '#f0c040' : 'var(--text-base)',
+          }}
+        >{title}</h4>
+        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>{desc}</p>
       </div>
     </button>
   );
 
+  // StatBox — flat inline stat, no nested card
   const StatBox = ({ label, value, color }: { label: string; value: string; color: string }) => (
-    <div className="bg-black/20 p-4 rounded-2xl border border-white/5 flex flex-col items-center">
-      <p className="text-[8px] font-black uppercase tracking-widest text-gray-500 mb-1">{label}</p>
-      <p className="text-xl font-black italic" style={{ color }}>{value}</p>
+    <div className="flex flex-col items-center gap-1 py-3">
+      <p className="text-[8px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--text-dim)' }}>{label}</p>
+      <p className="text-2xl font-black italic" style={{ color, fontFamily: 'var(--font-display)' }}>{value}</p>
     </div>
   );
 
@@ -692,10 +714,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <main className="min-h-screen bg-[#06080f] text-white selection:bg-yellow-500/30 overflow-hidden relative">
-      {/* Background Decor */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-yellow-600/5 blur-[150px] rounded-full pointer-events-none" />
+    <main className="min-h-screen overflow-hidden relative noise-overlay" style={{ background: 'var(--bg-deep)', color: 'var(--text-base)' }}>
+      {/* Atmospheric glows — boosted for real depth */}
+      <div className="absolute pointer-events-none" style={{ top: '-12%', right: '-8%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, transparent 70%)', filter: 'blur(120px)', borderRadius: '50%' }} />
+      <div className="absolute pointer-events-none" style={{ bottom: '-12%', left: '-8%', width: '55%', height: '55%', background: 'radial-gradient(ellipse, rgba(212,167,44,0.1) 0%, transparent 70%)', filter: 'blur(120px)', borderRadius: '50%' }} />
 
       <div className="max-w-7xl mx-auto px-6 py-12 min-h-screen flex flex-col relative z-10">
         
@@ -705,30 +727,36 @@ export default function HomeScreen() {
         <header className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16 animate-fade-in">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <span className="text-5xl">🌍</span>
-              <h1 className="text-5xl font-black uppercase tracking-tighter italic">La Quinta Forca</h1>
+              <span className="text-5xl" style={{ filter: 'drop-shadow(0 0 16px rgba(212,167,44,0.4))' }}>🌍</span>
+              <h1
+                className="text-5xl font-black uppercase italic leading-none"
+                style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.01em', color: 'var(--text-base)' }}
+              >La Quinta Forca</h1>
             </div>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] ml-1">
-              Creat per <span className="text-yellow-500/80">Fortià Arumí Casals</span>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] ml-1" style={{ color: 'var(--text-dim)' }}>
+              Creat per <span style={{ color: 'var(--gold)' }}>Fortià Arumí Casals</span>
             </p>
           </div>
 
           <div className="flex items-center gap-6">
             {user && (
-              <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-2 pr-6 rounded-full shadow-2xl backdrop-blur-md">
+              <div
+                className="flex items-center gap-4 p-2 pr-6 rounded-full shadow-2xl"
+                style={{ background: 'rgba(11,15,28,0.7)', border: '1px solid rgba(99,102,241,0.18)', backdropFilter: 'blur(20px)' }}
+              >
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-black/40 border border-white/10">
+                  <div className="w-10 h-10 rounded-full overflow-hidden" style={{ background: 'rgba(6,8,16,0.6)', border: '1px solid rgba(99,102,241,0.2)' }}>
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
                     )}
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#06080f]" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full animate-glow-pulse" style={{ background: 'var(--emerald)', border: '2px solid var(--bg-deep)' }} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-black uppercase tracking-widest">{nickname}</span>
-                  <button onClick={logout} className="text-[10px] text-red-400 font-black uppercase hover:underline text-left tracking-tighter">Sortir</button>
+                  <span className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--text-base)', fontFamily: 'var(--font-display)' }}>{nickname}</span>
+                  <button onClick={logout} className="text-[10px] font-black uppercase hover:underline text-left" style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-body)' }}>Sortir</button>
                 </div>
               </div>
             )}
@@ -744,40 +772,71 @@ export default function HomeScreen() {
               {/* Columna Esquerra: Juga i Botons */}
               <div className="lg:col-span-7 flex flex-col items-center gap-12">
                 <div className="text-center">
-                  <h2 className="text-7xl md:text-9xl font-black uppercase tracking-tighter italic mb-8 bg-gradient-to-r from-white via-white to-gray-500 bg-clip-text text-transparent leading-[0.85] select-none">
+                  <h2
+                    className="font-black uppercase italic select-none leading-[0.85] mb-8"
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 'clamp(4.5rem, 12vw, 9rem)',
+                      background: 'linear-gradient(160deg, var(--text-base) 0%, rgba(226,229,241,0.5) 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
                     Explora.<br/>Endevina.
                   </h2>
-                  <button 
+                  <button
                     onClick={() => {
                       if (!hasInteracted) setHasInteracted(true);
                       goToStep('type');
                     }}
-                    className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-black uppercase tracking-widest rounded-full py-5 px-12 text-xl shadow-lg shadow-yellow-500/20 hover:from-yellow-300 hover:to-yellow-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 mx-auto"
+                    className="shimmer-host min-h-[60px] rounded-full py-5 px-14 text-xl transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] flex items-center justify-center gap-3 mx-auto font-black uppercase"
+                    style={{
+                      background: 'linear-gradient(135deg, #c49820 0%, #d4a72c 35%, #f0c040 65%, #c49820 100%)',
+                      color: '#0b0f1c',
+                      fontFamily: 'var(--font-display)',
+                      letterSpacing: '0.14em',
+                      boxShadow: '0 10px 40px rgba(212,167,44,0.3), 0 2px 8px rgba(0,0,0,0.4)',
+                    }}
                   >
                     <span>JUGA ARA</span>
-                    <span className="text-3xl">→</span>
+                    <span className="text-2xl">→</span>
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <Link href="/stats" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
-                    <span className="text-lg group-hover:scale-125 transition-transform">🏆</span>
-                    <span>Rànquing Global</span>
-                  </Link>
-                  <Link href="/badges" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
-                    <span className="text-lg group-hover:rotate-12 transition-transform">🏅</span>
-                    <span>Les meves Insígnies</span>
-                  </Link>
-                  {isAdmin && (
-                    <Link href="/admin" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
-                      <span className="text-lg">⚡</span>
-                      <span>Administració</span>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  {[
+                    { href: '/stats', icon: '🏆', label: 'Rànquing Global' },
+                    { href: '/badges', icon: '🏅', label: 'Les meves Insígnies' },
+                    { href: '/soundtrack', icon: '🎵', label: 'Banda Sonora' },
+                    ...(isAdmin ? [{ href: '/admin', icon: '⚡', label: 'Administració' }] : []),
+                  ].map(({ href, icon, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="group min-h-[48px] px-5 rounded-full font-bold uppercase tracking-widest text-[11px] no-underline flex items-center gap-2 transition-all duration-200"
+                      style={{
+                        background: 'rgba(11,15,28,0.6)',
+                        border: '1px solid rgba(99,102,241,0.15)',
+                        color: 'var(--text-muted)',
+                        backdropFilter: 'blur(12px)',
+                        fontFamily: 'var(--font-body)',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,167,44,0.35)';
+                        (e.currentTarget as HTMLElement).style.color = 'var(--text-base)';
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(212,167,44,0.06)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.15)';
+                        (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(11,15,28,0.6)';
+                      }}
+                    >
+                      <span className="text-lg transition-transform duration-200 group-hover:scale-110">{icon}</span>
+                      <span>{label}</span>
                     </Link>
-                  )}
-                  <Link href="/soundtrack" className="group px-6 py-3 bg-white/5 border border-white/5 rounded-full hover:bg-white/10 transition-all font-bold uppercase tracking-widest text-[11px] backdrop-blur-md text-white no-underline flex items-center gap-2">
-                    <span className="text-lg group-hover:animate-spin">🎵</span>
-                    <span>Banda Sonora</span>
-                  </Link>
+                  ))}
                 </div>
 
               </div>
@@ -815,167 +874,151 @@ export default function HomeScreen() {
                 </div>
 
 
-                {/* Estadístiques Ràpides */}
+                {/* Estadístiques Ràpides — flat inline, no nested card */}
                 {user && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <StatBox label="Millor Món" value={myBestWorld !== null ? myBestWorld.toLocaleString() : '—'} color="#10b981" />
-                    <StatBox label="Millor Cat" value={myBestCat !== null ? myBestCat.toLocaleString() : '—'} color="#ef4444" />
+                  <div
+                    className="grid grid-cols-2 divide-x"
+                    style={{
+                      borderTop: '1px solid rgba(99,102,241,0.1)',
+                      borderBottom: '1px solid rgba(99,102,241,0.1)',
+                    }}
+                  >
+                    <StatBox label="Millor Món" value={myBestWorld !== null ? myBestWorld.toLocaleString() : '—'} color="#34d399" />
+                    <StatBox label="Millor Cat" value={myBestCat !== null ? myBestCat.toLocaleString() : '—'} color="#f87171" />
                   </div>
                 )}
 
                 {/* Sistema de Progressió */}
                 {user && (
-                  <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10 flex flex-col gap-5 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                  <div
+                    className="p-6 rounded-3xl flex flex-col gap-5"
+                    style={{
+                      background: 'rgba(11,15,28,0.65)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(99,102,241,0.14)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+                    }}
+                  >
                     {/* Capçalera: Nivell + Ratxa */}
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
-                        <p className="text-[9px] font-black uppercase tracking-[0.35em] text-gray-500 mb-0.5">Nivell Actual</p>
-                        <p className="text-4xl font-black italic text-yellow-400 leading-none">{myLevel}</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.35em] mb-0.5" style={{ color: 'var(--text-dim)' }}>Nivell Actual</p>
+                        <p className="text-4xl font-black italic leading-none" style={{ color: '#f0c040', fontFamily: 'var(--font-display)' }}>{myLevel}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <p className="text-[9px] font-black uppercase tracking-[0.35em] text-gray-500">Ratxa Diària</p>
-                        <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full">
+                        <p className="text-[9px] font-black uppercase tracking-[0.35em]" style={{ color: 'var(--text-dim)' }}>Ratxa Diària</p>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>
                           <span className="text-base">🔥</span>
-                          <span className="text-sm font-black text-orange-400">{myStreak} {myStreak === 1 ? 'dia' : 'dies'}</span>
+                          <span className="text-sm font-black" style={{ color: '#fb923c' }}>{myStreak} {myStreak === 1 ? 'dia' : 'dies'}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Barra d'XP */}
                     <div className="flex flex-col gap-1.5">
-                      <div className="w-full bg-black/40 rounded-full h-2.5 border border-white/5 overflow-hidden">
+                      <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(6,8,16,0.6)', border: '1px solid rgba(99,102,241,0.1)' }}>
                         <div
-                          className="bg-gradient-to-r from-yellow-600 via-yellow-400 to-amber-500 h-full rounded-full transition-all duration-1000 relative overflow-hidden"
-                          style={{ width: `${Math.min(100, (myXP / (myLevel * 1000)) * 100)}%` }}
+                          className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
+                          style={{
+                            width: `${Math.min(100, (myXP / (myLevel * 1000)) * 100)}%`,
+                            background: 'linear-gradient(90deg, #c49820, #d4a72c, #f0c040)',
+                          }}
                         >
-                          <div className="absolute inset-0 bg-white/25 w-1/2 animate-pulse" />
+                          <div className="absolute inset-0 w-1/2 animate-pulse" style={{ background: 'rgba(255,255,255,0.2)' }} />
                         </div>
                       </div>
-                      <p className="text-right text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                      <p className="text-right text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-dim)' }}>
                         {myXP.toLocaleString()} / {(myLevel * 1000).toLocaleString()} XP
                       </p>
                     </div>
 
-                {/* ── SISTEMA D'OBJECTIUS DUAL — Premium Gaming Dashboard ── */}
-                <div className="bg-zinc-900 rounded-2xl overflow-hidden">
+                {/* ── SISTEMA D'OBJECTIUS DUAL — flattened, no card-in-card ── */}
+                <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(99,102,241,0.12)' }}>
                   {/* Pill Tab Switcher */}
-                  <div className="flex gap-1 p-1.5 bg-black/60">
+                  <div className="flex gap-1 p-1.5" style={{ background: 'rgba(6,8,16,0.5)' }}>
                     <button
                       onClick={() => setQuestTab('daily')}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none ${
-                        questTab === 'daily'
-                          ? 'bg-zinc-700 text-white shadow-inner'
-                          : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none min-h-[44px]"
+                      style={questTab === 'daily'
+                        ? { background: 'rgba(212,167,44,0.15)', color: '#f0c040', fontFamily: 'var(--font-display)' }
+                        : { color: 'var(--text-dim)', background: 'transparent', fontFamily: 'var(--font-display)' }
+                      }
                     >
                       <span>📅</span> Diaris
                     </button>
                     <button
                       onClick={() => setQuestTab('weekly')}
-                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none ${
-                        questTab === 'weekly'
-                          ? 'bg-zinc-700 text-yellow-400 shadow-inner'
-                          : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 text-[10px] font-black uppercase tracking-[0.25em] rounded-xl transition-all duration-200 cursor-pointer border-none min-h-[44px]"
+                      style={questTab === 'weekly'
+                        ? { background: 'rgba(212,167,44,0.15)', color: '#f0c040', fontFamily: 'var(--font-display)' }
+                        : { color: 'var(--text-dim)', background: 'transparent', fontFamily: 'var(--font-display)' }
+                      }
                     >
                       <span>⭐</span> Setmanals
                     </button>
                   </div>
 
-                  {/* Quest Cards */}
-                  <div className="p-3 space-y-2">
-                    {questTab === 'daily' ? (
-                      myQuests.length > 0 ? myQuests.map((q: any) => (
+                  {/* Quest rows — hairline separators, no nested cards */}
+                  <div>
+                    {(questTab === 'daily' ? myQuests : myWeeklyQuests).length > 0
+                      ? (questTab === 'daily' ? myQuests : myWeeklyQuests).map((q: any, idx: number, arr: any[]) => (
                         <div
                           key={q.id}
-                          className={`p-4 rounded-xl transition-all duration-300 ${
-                            q.completed
-                              ? 'bg-emerald-950/60'
-                              : 'bg-zinc-800/70'
-                          }`}
+                          className="px-4 py-3.5 transition-all duration-300"
+                          style={{
+                            borderBottom: idx < arr.length - 1 ? '1px solid rgba(99,102,241,0.08)' : 'none',
+                            background: q.completed
+                              ? (questTab === 'daily' ? 'rgba(16,185,129,0.04)' : 'rgba(212,167,44,0.04)')
+                              : 'transparent',
+                          }}
                         >
-                          <div className="flex justify-between items-start mb-3">
+                          <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                              <span className="text-base flex-shrink-0">
-                                {q.completed ? '✅' : '🎯'}
+                              <span className="text-sm flex-shrink-0">
+                                {q.completed ? (questTab === 'daily' ? '✅' : '⭐') : (questTab === 'daily' ? '🎯' : '🏆')}
                               </span>
-                              <p className={`text-xs font-bold leading-tight ${q.completed ? 'text-emerald-400' : 'text-zinc-100'}`}>
+                              <p className="text-xs font-bold leading-tight" style={{ color: q.completed ? (questTab === 'daily' ? '#34d399' : '#f0c040') : 'var(--text-base)' }}>
                                 {q.description}
                               </p>
                             </div>
-                            <span className={`flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full ${
-                              q.completed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-300'
-                            }`}>
-                              +{q.xpReward}
-                            </span>
-                          </div>
-                          {/* Progress bar + fraction */}
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 h-3 bg-black/60 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-700 ${
-                                  q.completed ? 'bg-emerald-500' : 'bg-indigo-500'
-                                }`}
-                                style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-[11px] text-zinc-400 font-black tabular-nums flex-shrink-0 w-10 text-right">
-                              {q.progress}<span className="text-zinc-600">/</span>{q.target}
-                            </span>
-                          </div>
-                        </div>
-                      )) : (
-                        <div className="py-10 text-center opacity-40">
-                          <p className="text-2xl mb-2">🎯</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Sense objectius per avui</p>
-                        </div>
-                      )
-                    ) : (
-                      myWeeklyQuests.length > 0 ? myWeeklyQuests.map((q: any) => (
-                        <div
-                          key={q.id}
-                          className={`p-4 rounded-xl transition-all duration-300 ${
-                            q.completed
-                              ? 'bg-yellow-950/50'
-                              : 'bg-zinc-800/70'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-2">
-                              <span className="text-base flex-shrink-0">
-                                {q.completed ? '⭐' : '🏆'}
-                              </span>
-                              <p className={`text-xs font-bold leading-tight ${q.completed ? 'text-yellow-400' : 'text-zinc-100'}`}>
-                                {q.description}
-                              </p>
-                            </div>
-                            <span className={`flex-shrink-0 text-[10px] font-black px-2.5 py-1 rounded-full ${
-                              q.completed ? 'bg-yellow-500/20 text-yellow-400' : 'bg-zinc-700 text-zinc-300'
-                            }`}>
+                            <span
+                              className="flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full"
+                              style={{
+                                background: q.completed ? (questTab === 'daily' ? 'rgba(52,211,153,0.15)' : 'rgba(240,192,64,0.15)') : 'rgba(99,102,241,0.12)',
+                                color: q.completed ? (questTab === 'daily' ? '#34d399' : '#f0c040') : 'var(--text-muted)',
+                                fontFamily: 'var(--font-display)',
+                              }}
+                            >
                               +{q.xpReward}
                             </span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 h-3 bg-black/60 rounded-full overflow-hidden">
+                            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(6,8,16,0.5)' }}>
                               <div
-                                className={`h-full rounded-full transition-all duration-700 ${
-                                  q.completed ? 'bg-yellow-400' : 'bg-yellow-600'
-                                }`}
-                                style={{ width: `${Math.min(100, (q.progress / q.target) * 100)}%` }}
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{
+                                  width: `${Math.min(100, (q.progress / q.target) * 100)}%`,
+                                  background: q.completed
+                                    ? (questTab === 'daily' ? '#10b981' : 'var(--gold)')
+                                    : (questTab === 'daily' ? '#6366f1' : 'rgba(212,167,44,0.6)'),
+                                }}
                               />
                             </div>
-                            <span className="text-[11px] text-zinc-400 font-black tabular-nums flex-shrink-0 w-10 text-right">
-                              {q.progress}<span className="text-zinc-600">/</span>{q.target}
+                            <span className="text-[10px] font-black tabular-nums flex-shrink-0" style={{ color: 'var(--text-dim)' }}>
+                              {q.progress}<span style={{ color: 'rgba(74,80,104,0.6)' }}>/{q.target}</span>
                             </span>
                           </div>
                         </div>
-                      )) : (
+                      ))
+                      : (
                         <div className="py-10 text-center opacity-40">
-                          <p className="text-2xl mb-2">⭐</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Carregant objectius setmanals...</p>
+                          <p className="text-2xl mb-2">{questTab === 'daily' ? '🎯' : '⭐'}</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--text-dim)' }}>
+                            {questTab === 'daily' ? 'Sense objectius per avui' : 'Carregant objectius setmanals...'}
+                          </p>
                         </div>
                       )
-                    )}
+                    }
                   </div>
                 </div>
                   </div>
@@ -983,15 +1026,27 @@ export default function HomeScreen() {
 
 
                 {/* Usuaris Online */}
-                <div className="flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 px-6 py-3.5 rounded-2xl backdrop-blur-md">
+                <div
+                  className="flex items-center justify-between px-5 py-3.5 rounded-2xl"
+                  style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.18)', backdropFilter: 'blur(12px)' }}
+                >
                   <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full animate-glow-pulse"
+                      style={{ background: 'var(--emerald)', boxShadow: '0 0 8px rgba(16,185,129,0.7)' }}
+                    />
+                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#34d399' }}>
                       {onlineCount} Jugadors en línia
                     </span>
                   </div>
                   {user && !isGuest && (
-                    <button onClick={() => setActiveMenu('friends')} className="flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer border-none bg-transparent">Veure Amics →</button>
+                    <button
+                      onClick={() => setActiveMenu('friends')}
+                      className="min-h-[36px] flex items-center justify-center gap-1 text-[9px] font-black uppercase tracking-widest transition-all px-3 py-1.5 rounded-lg cursor-pointer border-none"
+                      style={{ color: 'var(--indigo)', background: 'transparent', fontFamily: 'var(--font-body)' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-base)'; (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.1)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--indigo)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    >Veure Amics →</button>
                   )}
                 </div>
               </div>
@@ -1209,40 +1264,57 @@ export default function HomeScreen() {
         </div>
 
         {/* FOOTER */}
-        <footer className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left animate-fade-in pb-12">
-          <div className="flex flex-wrap gap-12 justify-center">
-            <button onClick={() => setShowSunoManual(true)} className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-yellow-500 transition-colors bg-transparent border-none cursor-pointer">📖 Manual Suno</button>
-            <a href="mailto:laquintaforca.joc@gmail.com" className="flex flex-col text-left no-underline group">
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-400 transition-colors">✉️ Contactar</span>
-              <span className="text-[8px] font-bold text-gray-700 lowercase tracking-widest group-hover:text-indigo-300 transition-colors">laquintaforca.joc@gmail.com</span>
+        <footer
+          className="mt-24 pt-10 flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left animate-fade-in pb-12"
+          style={{ borderTop: '1px solid rgba(99,102,241,0.1)' }}
+        >
+          <div className="flex flex-wrap gap-6 justify-center">
+            <button
+              onClick={() => setShowSunoManual(true)}
+              className="min-h-[48px] flex items-center px-3 text-[10px] font-black uppercase tracking-widest transition-colors bg-transparent border-none cursor-pointer"
+              style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-body)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--gold)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'; }}
+            >📖 Manual Suno</button>
+            <a href="mailto:laquintaforca.joc@gmail.com" className="min-h-[48px] flex flex-col justify-center text-left no-underline px-3">
+              <span className="text-[10px] font-black uppercase tracking-widest transition-colors" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-body)' }}>✉️ Contactar</span>
+              <span className="text-[8px] font-bold lowercase tracking-widest" style={{ color: 'var(--text-dim)', opacity: 0.6 }}>laquintaforca.joc@gmail.com</span>
             </a>
-            <a href="https://paypal.me/fortiaarumi" target="_blank" className="text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-emerald-400 transition-colors no-underline">☕ Donar Suport</a>
+            <a href="https://paypal.me/fortiaarumi" target="_blank" className="min-h-[48px] flex items-center px-3 text-[10px] font-black uppercase tracking-widest no-underline transition-colors" style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-body)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#34d399'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'; }}
+            >☕ Donar Suport</a>
           </div>
-          <p className="text-[9px] font-bold text-gray-800 uppercase tracking-[0.3em]">© 2026 La Quinta Forca • Tots els drets reservats</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: 'var(--text-dim)', opacity: 0.45 }}>© 2026 La Quinta Forca • Tots els drets reservats</p>
         </footer>
 
       </div>
 
       {/* MODAL DE PERMÍS DE MÚSICA */}
       {showMusicModal && (
-        <div className="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-[#0c101d] border border-white/10 p-12 rounded-[3rem] max-w-md w-full text-center shadow-2xl shadow-yellow-500/10">
-            <div className="text-6xl mb-6 text-yellow-500">🎵</div>
-            <h2 className="text-3xl font-black uppercase italic mb-4 tracking-tighter">Vols activar la música?</h2>
-            <p className="text-gray-400 text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed">
+        <div className="fixed inset-0 z-[2000] backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in" style={{ background: 'rgba(6,8,16,0.88)' }}>
+          <div
+            className="p-12 rounded-[3rem] max-w-md w-full text-center"
+            style={{ background: 'rgba(11,15,28,0.92)', border: '1px solid rgba(212,167,44,0.2)', boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 80px rgba(212,167,44,0.06)', backdropFilter: 'blur(32px)' }}
+          >
+            <div className="text-6xl mb-6" style={{ filter: 'drop-shadow(0 0 24px rgba(212,167,44,0.5))' }}>🎵</div>
+            <h2
+              className="text-3xl font-black uppercase italic mb-4"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--text-base)', letterSpacing: '-0.01em' }}
+            >Vols activar la música?</h2>
+            <p className="text-sm mb-10 font-bold uppercase tracking-widest leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               La Quinta Forca té una banda sonora original per a una experiència immersiva.
             </p>
             <div className="flex flex-col gap-4">
               <GoldButton onClick={() => { setHasInteracted(true); setShowMusicModal(false); }} className="w-full py-6 rounded-2xl">
                 SÍ, ACTIVAR ARA
               </GoldButton>
-              <button 
-                onClick={() => {
-                  setHasInteracted(true);
-                  setMuted(true);
-                  setShowMusicModal(false);
-                }}
-                className="py-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white transition-colors"
+              <button
+                onClick={() => { setHasInteracted(true); setMuted(true); setShowMusicModal(false); }}
+                className="py-4 text-[10px] font-black uppercase tracking-[0.3em] transition-colors min-h-[48px]"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontFamily: 'var(--font-body)' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-base)'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-dim)'; }}
               >
                 No, prefereixo el silenci
               </button>

@@ -1,12 +1,33 @@
 // src/app/layout.tsx
 
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Barlow_Condensed, DM_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/authContext';
 import { AudioProvider } from '@/lib/AudioContext';
 
-const inter = Inter({ subsets: ['latin'] });
+/* ── Display font: Barlow Condensed ─────────────────────
+   Cinematic, condensed, aggressive — native to sport/gaming.
+   Weight 700 + 900, italic only (our hero text style).
+   ───────────────────────────────────────────────────── */
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['700', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+/* ── Body font: DM Sans ─────────────────────────────────
+   Geometric, refined, legible. A significant upgrade from
+   Inter — softer curves, distinctive character.
+   ───────────────────────────────────────────────────── */
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-body',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   // 1. Títol i descripció millorats pel SEO
@@ -34,7 +55,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#d4af37',
+  themeColor: '#d4a72c',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -47,9 +68,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ca">
+    <html lang="ca" className={`${barlowCondensed.variable} ${dmSans.variable}`}>
       <body
-        className={`${inter.className} antialiased`}
+        className="antialiased"
+        style={{ fontFamily: 'var(--font-body)' }}
         suppressHydrationWarning
       >
         <AuthProvider>
