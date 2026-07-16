@@ -162,7 +162,7 @@ export default function NonHistoricResultsOverlay({
           >
             <span style={{ fontSize: '22px' }}>{cfg.icon}</span>
             <span style={{ color: 'white', fontWeight: 900, fontSize: '20px', fontStyle: 'italic', textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
-              {locationName || '—'}
+              {locationName || 'Cercant ubicació...'}
             </span>
           </div>
         </div>

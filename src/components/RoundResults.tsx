@@ -518,9 +518,9 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   // ── DADES PER L'OVERLAY NO HISTORIC ──
   // Només el mostrem si NO és mode històric i encara no l'hem tancat
   // Calculem quina dada extra mostrar segons el mode
-  let locationName = actual.country || '';
+  let locationName = myGuess?.actualCountry || '';
   if (room.gameMode === 'catalunya' || room.gameMode === 'pixapins') {
-    locationName = actual.comarca || actual.country || '';
+    locationName = myGuess?.actualCountry || ''; // 'actualCountry' guarda el nom del poble/comarca als modes locals
   }
 
   let locationTitle = actual.title || '';
