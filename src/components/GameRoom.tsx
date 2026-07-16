@@ -463,6 +463,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
                   lat: data.location.latLng.lat(),
                   lng: data.location.latLng.lng(),
                   panoId: data.location.pano || '',
+                  title: (coords as any).title,
                 });
               }
               resolve();

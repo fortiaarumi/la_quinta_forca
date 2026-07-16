@@ -40,8 +40,8 @@ export default function BadgesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06080f] text-white p-6 font-sans">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-[#06080f] text-white p-6 md:p-12 font-sans">
+      <div className="max-w-4xl mx-auto md:ml-auto md:mr-16 lg:mx-auto">
         <header className="flex items-center justify-between mb-8">
           <Link href="/" className="text-gray-400 hover:text-white flex items-center gap-2 transition-colors">
             <span className="text-xl">←</span> Tornar
@@ -63,9 +63,9 @@ export default function BadgesPage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-white/5 border-b border-white/10">
-                    <th className="p-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Icona</th>
-                    <th className="p-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Detalls</th>
-                    <th className="p-5 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Estat</th>
+                    <th className="p-6 w-[120px] min-w-[120px] text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">Icona</th>
+                    <th className="p-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Detalls</th>
+                    <th className="p-6 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">Estat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,20 +82,22 @@ export default function BadgesPage() {
                         className={`border-b border-white/5 transition-all duration-500 hover:bg-white/5 cursor-pointer ${isUnlocked ? 'bg-indigo-500/5' : ''}`}
                         onClick={() => setSelectedBadge(b.id)}
                       >
-                      <td className="p-4 w-[88px] min-w-[88px]">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative overflow-hidden ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
-                            {/* IMATGE DE LA INSÍGNIA */}
-                            <img
-                              src={b.image || '/badges/default.jpeg'}
-                              alt={b.id}
-                              className={`w-full h-full object-contain rounded-2xl transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
-                            />
-                            {/* XINXETA (Si està fixada) */}
-                            {profile?.selectedBadges?.includes(b.id) && (
-                              <div className="absolute -top-2 -right-2 bg-yellow-500 text-black rounded-full p-1 shadow-md z-10 w-6 h-6 flex items-center justify-center text-xs">
-                                📌
-                              </div>
-                            )}
+                      <td className="p-5 w-[120px] min-w-[120px]">
+                          <div className="flex justify-center items-center w-full h-full">
+                            <div className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative overflow-hidden ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
+                              {/* IMATGE DE LA INSÍGNIA */}
+                              <img
+                                src={b.image || '/badges/default.jpeg'}
+                                alt={b.id}
+                                className={`w-full h-full object-contain p-2 rounded-2xl transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
+                              />
+                              {/* XINXETA (Si està fixada) */}
+                              {profile?.selectedBadges?.includes(b.id) && (
+                                <div className="absolute top-1 right-1 bg-yellow-500 text-black rounded-full p-1 shadow-md z-10 w-6 h-6 flex items-center justify-center text-xs">
+                                  📌
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="p-5">
