@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 import { ALL_BADGES } from '@/lib/badges';
 import HistoricResultsOverlay from '@/components/HistoricResultsOverlay';
+import NonHistoricResultsOverlay from '@/components/NonHistoricResultsOverlay';
 import { haversineDistance } from '@/lib/gameUtils';
 
 interface Props {
@@ -71,15 +72,15 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const [currentStage, setCurrentStage] = useState<'scores' | 'perfects' | 'roulette' | 'elimination' | 'done'>('scores');
   const [pendingEliminatedPlayer, setPendingEliminatedPlayer] = useState<string | null>(null);
 
-  // NOU: Vida visual per evitar salts en l'animació
+  // NOU: vida visual per evitar salts
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
 
-  // NOU: overlay historic visible fins que el jugador clica Continuar
-  const [historicOverlayDone, setHistoricOverlayDone] = useState(false);
+  // NOU: overlay visible fins que el jugador clica Continuar
+  const [overlayDone, setOverlayDone] = useState(false);
 
-  // Inicialitzem la vida visual amb la que tenien al començar la ronda (passada per prop)
+  // Inicialitzem la vida visual
   useEffect(() => {
-    setHistoricOverlayDone(false);
+    setOverlayDone(false);
     setDisplayHealth(initialHealth || {});
   }, [initialHealth]);
 
@@ -514,11 +515,25 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   const historicYearScore = myGuess?.yearScore ?? 0;
   const historicMapScore = myGuess ? (myGuess.score - historicYearScore) : 0;
 
+  // ── DADES PER L'OVERLAY NO HISTORIC ──
+  // Només el mostrem si NO és mode històric i encara no l'hem tancat
+  // Calculem quina dada extra mostrar segons el mode
+  let locationName = actual.country || '';
+  if (room.gameMode === 'catalunya' || room.gameMode === 'pixapins') {
+    locationName = actual.comarca || actual.country || '';
+  }
+
+  let locationTitle = actual.title || '';
+  let extraInfo = '';
+  if (room.gameMode === 'pixapins' && myGuess?.usedHint && room.rounds?.[round]?.sharedHint) {
+    extraInfo = room.rounds[round].sharedHint.value;
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
 
       {/* OVERLAY ANIMAT HISTORIC — apareix per sobre de tot mentre no s'ha tancat */}
-      {room.gameMode === 'historic' && actual.title && !historicOverlayDone && (
+      {room.gameMode === 'historic' && actual.title && !overlayDone && (
         <HistoricResultsOverlay
           title={actual.title}
           year={actual.year ?? 0}
@@ -528,7 +543,20 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           totalScore={myGuess?.score ?? 0}
           mapScore={historicMapScore}
           yearScore={historicYearScore}
-          onDone={() => setHistoricOverlayDone(true)}
+          onDone={() => setOverlayDone(true)}
+        />
+      )}
+
+      {/* OVERLAY ANIMAT NO HISTORIC */}
+      {room.gameMode !== 'historic' && !overlayDone && (
+        <NonHistoricResultsOverlay
+          gameMode={room.gameMode || 'world'}
+          locationName={locationName}
+          locationTitle={locationTitle}
+          extraInfo={extraInfo}
+          distanceError={historicDistanceKm}
+          totalScore={myGuess?.score ?? 0}
+          onDone={() => setOverlayDone(true)}
         />
       )}
 

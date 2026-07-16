@@ -6,6 +6,8 @@ export interface Location {
   year?: number;
   panoUrl?: string;
   description?: string;
+  country?: string;
+  comarca?: string;
 }
 
 export interface PlayerGuess {

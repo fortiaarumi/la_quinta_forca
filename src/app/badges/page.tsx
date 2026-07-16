@@ -82,13 +82,13 @@ export default function BadgesPage() {
                         className={`border-b border-white/5 transition-all duration-500 hover:bg-white/5 cursor-pointer ${isUnlocked ? 'bg-indigo-500/5' : ''}`}
                         onClick={() => setSelectedBadge(b.id)}
                       >
-                        <td className="p-5">
-                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
+                      <td className="p-4 w-[88px] min-w-[88px]">
+                          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl border transition-all relative overflow-hidden ${isUnlocked ? 'bg-indigo-600/30 border-yellow-500/60 scale-110 shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 'bg-gray-800/50 border-white/5'}`}>
                             {/* IMATGE DE LA INSÍGNIA */}
                             <img
                               src={b.image || '/badges/default.jpeg'}
                               alt={b.id}
-                              className={`w-full h-full object-cover rounded-2xl transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
+                              className={`w-full h-full object-contain rounded-2xl transition-all duration-500 ${isUnlocked ? 'grayscale-0 opacity-100' : 'grayscale opacity-40'}`}
                             />
                             {/* XINXETA (Si està fixada) */}
                             {profile?.selectedBadges?.includes(b.id) && (

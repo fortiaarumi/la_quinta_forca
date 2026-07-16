@@ -107,15 +107,15 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
       {/* ── CONTENIDOR PRINCIPAL ── */}
       <div
         className={`fixed z-[100] flex flex-col items-end transition-all duration-300 ease-out
-          ${isArnau && expanded 
-            ? 'inset-0 w-full h-[100dvh] bg-black z-[99999]' 
+          ${isArnau && expanded
+            ? 'inset-0 w-full h-[100dvh] bg-black z-[99999]'
             : isMobile
-            ? (expanded
-              ? 'inset-x-4 top-[12vh] bottom-[20vh]'
-              : 'bottom-6 right-6 w-32 h-32')
-            : (expanded
-              ? 'bottom-6 right-6 w-[480px] h-[360px]'
-              : 'bottom-6 right-6 w-48 h-32')
+              ? (expanded
+                ? 'inset-x-4 top-[12vh] bottom-[20vh]'
+                : 'bottom-6 right-6 w-32 h-32')
+              : (expanded
+                ? 'bottom-6 right-6 w-[480px] h-[360px]'
+                : 'bottom-6 right-6 w-48 h-32')
           }`}
 
       >
@@ -135,7 +135,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             className="absolute top-0 left-0 w-full bg-black/80 hover:bg-black text-white py-1.5 z-10 text-center cursor-pointer font-bold text-xs"
           >
-            {expanded ? '↙️ COLLAPSAR' : '↗️ AMPLIAR MAPA'}
+            {expanded ? '↙️ COL·LAPSAR' : '↗️ AMPLIAR MAPA'}
           </div>
 
           {/* Overlay col·lapsat (text "Ampliar" - només PC) */}
@@ -179,7 +179,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
             </div>
           )}
         </div>
-        
+
         {/* ── YEAR SELECTOR (només mode històric i si està expandit) ── */}
         {expanded && gameMode === 'historic' && (
           <div className="w-full mt-2 bg-[#121212] rounded-2xl p-4 border border-white/10 shadow-xl flex flex-col items-center">
