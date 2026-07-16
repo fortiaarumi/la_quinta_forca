@@ -1220,6 +1220,7 @@ export default function HomeScreen() {
                     <OptionCard selected={gameMode === 'pixapins'} title="Pixapins" desc="Només indrets de Barcelona." icon="🏙️" onClick={() => setGameMode('pixapins')} />
                     <OptionCard selected={gameMode === 'estadis'} title="Estadis" desc="Camps de futbol i recintes." icon="⚽" onClick={() => setGameMode('estadis')} />
                     <OptionCard selected={gameMode === 'cultural'} title="Cultura" desc="Monuments i edificis històrics." icon="🏛️" onClick={() => setGameMode('cultural')} />
+                    <OptionCard selected={gameMode === 'historic'} title="Històric" desc="Viatja en el temps amb 360º." icon="⏳" onClick={() => setGameMode('historic')} />
                   </div>
                   <GoldButton onClick={() => goToStep('time')} className="w-full mt-10 py-6 text-xl rounded-[1.5rem]">CONTINUAR</GoldButton>
                 </StepWrapper>

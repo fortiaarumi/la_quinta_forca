@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
-  onGuess: (lat: number, lng: number) => void;
+  onGuess: (lat: number, lng: number, year?: number) => void;
   onPinChange?: (lat: number, lng: number) => void;
   onClose: () => void;
   gameMode?: string;
@@ -19,6 +19,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
   const [submitting, setSubmitting] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [guessYear, setGuessYear] = useState<number>(1000);
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -90,7 +91,7 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
   const handleSubmit = async () => {
     if (!pinPos || submitting) return;
     setSubmitting(true);
-    await onGuess(pinPos.lat, pinPos.lng);
+    await onGuess(pinPos.lat, pinPos.lng, gameMode === 'historic' ? guessYear : undefined);
   };
 
   return (
@@ -178,6 +179,40 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
             </div>
           )}
         </div>
+        
+        {/* ── YEAR SLIDER (només mode històric i si està expandit) ── */}
+        {expanded && gameMode === 'historic' && (
+          <div className="w-full mt-2 bg-[#121212] rounded-2xl p-4 border border-white/10 shadow-xl flex flex-col items-center">
+            <p className="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase mb-1">Select Era</p>
+            <div className="flex items-center gap-4 w-full">
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 100)); }} className="text-gray-500 hover:text-white px-2 py-1">«</button>
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 10)); }} className="text-gray-500 hover:text-white px-2 py-1">‹</button>
+              
+              <div className="flex-1 text-center text-3xl font-black text-orange-500 italic" style={{ fontFamily: 'var(--font-display)' }}>
+                {guessYear < 0 ? `${Math.abs(guessYear)} a.C.` : `${guessYear} d.C.`}
+              </div>
+              
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 10)); }} className="text-gray-500 hover:text-white px-2 py-1">›</button>
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 100)); }} className="text-gray-500 hover:text-white px-2 py-1">»</button>
+            </div>
+            
+            <div className="w-full mt-3 px-4">
+              <input 
+                type="range" 
+                min="-3000" 
+                max="2025" 
+                value={guessYear}
+                onChange={(e) => setGuessYear(parseInt(e.target.value))}
+                className="w-full accent-orange-500"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="flex justify-between text-[8px] text-gray-500 mt-1 uppercase font-bold tracking-widest">
+                <span>Antiquity</span>
+                <span>Modern Day</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

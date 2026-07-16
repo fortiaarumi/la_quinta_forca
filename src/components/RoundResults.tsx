@@ -8,6 +8,8 @@ import { ref, update, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import confetti from 'canvas-confetti';
 import { ALL_BADGES } from '@/lib/badges';
+import HistoricResultsOverlay from '@/components/HistoricResultsOverlay';
+import { haversineDistance } from '@/lib/gameUtils';
 
 interface Props {
   room: Room;
@@ -72,8 +74,12 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   // NOU: Vida visual per evitar salts en l'animació
   const [displayHealth, setDisplayHealth] = useState<Record<string, number>>({});
 
+  // NOU: overlay historic visible fins que el jugador clica Continuar
+  const [historicOverlayDone, setHistoricOverlayDone] = useState(false);
+
   // Inicialitzem la vida visual amb la que tenien al començar la ronda (passada per prop)
   useEffect(() => {
+    setHistoricOverlayDone(false);
     setDisplayHealth(initialHealth || {});
   }, [initialHealth]);
 
@@ -399,7 +405,7 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
     if (hasCongratulated) return;
     setHasCongratulated(true);
 
-    const videoEl = document.getElementById('siu-video') as HTMLVideoElement;
+    const videoEl = document.getElementById(room.gameMode === 'historic' ? 'historic-5k-video' : 'siu-video') as HTMLVideoElement;
     if (videoEl) {
       videoEl.currentTime = 0;
       videoEl.play().catch(e => console.log(e));
@@ -497,8 +503,34 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
   // Funció per saber si el joc s'hauria d'acabar per rondes (només Classic)
   const isInfiniteMode = room.gameType === '1vs1' || room.gameType === 'battle_royale';
 
+  // ── DADES PER L'OVERLAY HISTORIC ──
+  const myGuess = guesses[playerId];
+  const historicDistanceKm = myGuess
+    ? Math.round(haversineDistance(myGuess.lat, myGuess.lng, actual.lat, actual.lng))
+    : 0;
+  const historicYearError = myGuess?.guessYear !== undefined && actual.year !== undefined
+    ? Math.abs(myGuess.guessYear - actual.year)
+    : 0;
+  const historicYearScore = myGuess?.yearScore ?? 0;
+  const historicMapScore = myGuess ? (myGuess.score - historicYearScore) : 0;
+
   return (
     <div className="flex flex-col h-screen bg-gray-900 relative overflow-hidden">
+
+      {/* OVERLAY ANIMAT HISTORIC — apareix per sobre de tot mentre no s'ha tancat */}
+      {room.gameMode === 'historic' && actual.title && !historicOverlayDone && (
+        <HistoricResultsOverlay
+          title={actual.title}
+          year={actual.year ?? 0}
+          description={actual.description}
+          distanceError={historicDistanceKm}
+          yearError={historicYearError}
+          totalScore={myGuess?.score ?? 0}
+          mapScore={historicMapScore}
+          yearScore={historicYearScore}
+          onDone={() => setHistoricOverlayDone(true)}
+        />
+      )}
 
       {/* MODAL RULETA DESEMPAT RE-DISSENYAT */}
       {showRoulette && localTieBreak && (
@@ -580,21 +612,39 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
       {/* OVERLAY 5K */}
       {perfectScorers.length > 0 && (
         <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-          <div className="bg-gradient-to-br from-indigo-900 to-blue-600 border-2 border-blue-400 rounded-[3rem] p-10 text-center max-w-xl shadow-[0_0_150px_rgba(59,130,246,0.8)]">
-            <h2 className="text-white text-5xl font-black uppercase tracking-widest mb-2 italic shadow-text">SIUUUUU!</h2>
-            <p className="text-blue-200 font-bold mb-6">
-              {perfectScorers.join(', ')} ha{perfectScorers.length > 1 ? 'n' : ''} clavat els 5.000 punts!
-            </p>
-            <video id="siu-video" src="/siu.mp4" autoPlay playsInline className="w-full max-h-60 object-cover rounded-2xl mb-8 shadow-2xl bg-black" />
-            <div className="flex gap-4">
-              <button onClick={handleCongratulate} disabled={hasCongratulated} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all border-none cursor-pointer ${hasCongratulated ? 'bg-gray-600 text-gray-400' : 'bg-emerald-500 text-emerald-950 shadow-lg hover:scale-105 active:scale-95'}`}>
-                {hasCongratulated ? 'Felicitat! 🎉' : 'Felicitar 👏'}
-              </button>
-              <button onClick={() => { setHasClosedPopup(true); setPerfectScorers([]); window.dispatchEvent(new Event('resumeBackgroundMusic')); }} className="flex-1 bg-yellow-500 text-yellow-950 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:scale-105 active:scale-95 border-none cursor-pointer">
-                Continuar 🚀
-              </button>
+          {room.gameMode === 'historic' ? (
+            <div className="bg-gradient-to-br from-[rgb(126,104,78)] to-[rgb(86,64,38)] border-2 border-yellow-700 rounded-[3rem] p-10 text-center max-w-xl shadow-[0_0_150px_rgba(180,83,9,0.8)]">
+              <h2 className="text-white text-5xl font-black uppercase tracking-widest mb-2 italic shadow-text">5K HISTÒRIC!</h2>
+              <p className="text-yellow-200 font-bold mb-6">
+                {perfectScorers.join(', ')} ha{perfectScorers.length > 1 ? 'n' : ''} clavat l'any i la ubicació!
+              </p>
+              <video id="historic-5k-video" src="/historic_5k.mp4" autoPlay playsInline className="w-full max-h-60 object-cover rounded-2xl mb-8 shadow-2xl bg-black" />
+              <div className="flex gap-4">
+                <button onClick={handleCongratulate} disabled={hasCongratulated} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all border-none cursor-pointer ${hasCongratulated ? 'bg-gray-600 text-gray-400' : 'bg-yellow-500 text-yellow-950 shadow-lg hover:scale-105 active:scale-95'}`}>
+                  {hasCongratulated ? 'Felicitat! 🎉' : 'Felicitar 👏'}
+                </button>
+                <button onClick={() => { setHasClosedPopup(true); setPerfectScorers([]); window.dispatchEvent(new Event('resumeBackgroundMusic')); }} className="flex-1 bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:scale-105 active:scale-95 border-none cursor-pointer">
+                  Continuar 🚀
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-br from-indigo-900 to-blue-600 border-2 border-blue-400 rounded-[3rem] p-10 text-center max-w-xl shadow-[0_0_150px_rgba(59,130,246,0.8)]">
+              <h2 className="text-white text-5xl font-black uppercase tracking-widest mb-2 italic shadow-text">SIUUUUU!</h2>
+              <p className="text-blue-200 font-bold mb-6">
+                {perfectScorers.join(', ')} ha{perfectScorers.length > 1 ? 'n' : ''} clavat els 5.000 punts!
+              </p>
+              <video id="siu-video" src="/siu.mp4" autoPlay playsInline className="w-full max-h-60 object-cover rounded-2xl mb-8 shadow-2xl bg-black" />
+              <div className="flex gap-4">
+                <button onClick={handleCongratulate} disabled={hasCongratulated} className={`flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all border-none cursor-pointer ${hasCongratulated ? 'bg-gray-600 text-gray-400' : 'bg-emerald-500 text-emerald-950 shadow-lg hover:scale-105 active:scale-95'}`}>
+                  {hasCongratulated ? 'Felicitat! 🎉' : 'Felicitar 👏'}
+                </button>
+                <button onClick={() => { setHasClosedPopup(true); setPerfectScorers([]); window.dispatchEvent(new Event('resumeBackgroundMusic')); }} className="flex-1 bg-yellow-500 text-yellow-950 py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-lg hover:scale-105 active:scale-95 border-none cursor-pointer">
+                  Continuar 🚀
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -624,7 +674,11 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
           </div>
         )}
         <h2 className="text-white text-xl font-black text-center mb-1 uppercase tracking-tighter italic">Resultats — Ronda {round + 1}</h2>
-        <p className="text-gray-500 text-[10px] text-center mb-4 font-mono tracking-widest uppercase">{actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}</p>
+        {room.gameMode === 'historic' && actual.title ? (
+          <p className="text-gray-400 text-sm text-center mb-4 font-bold tracking-widest uppercase">{actual.title} ({actual.year! < 0 ? `${Math.abs(actual.year!)} a.C.` : `${actual.year!} d.C.`})</p>
+        ) : (
+          <p className="text-gray-500 text-[10px] text-center mb-4 font-mono tracking-widest uppercase">{actual.lat.toFixed(4)}, {actual.lng.toFixed(4)}</p>
+        )}
 
         <div className={`grid ${room.gameType === 'teams' ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar`}>
           {room.gameType === 'teams' ? (
@@ -715,20 +769,28 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                     </div>
                   </div>
                   {guess ? (
-                    <div className={`text-yellow-400 font-black text-3xl flex items-center gap-2 transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
-                      <span
-                        className="transition-all duration-700"
-                        style={{
-                          transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
-                          color: isDividing[pid] ? '#EF4444' : '#FBBF24'
-                        }}
-                      >
-                        +{animatedScores[pid]?.toLocaleString() || 0}
-                      </span>
-                      {guess.usedHint && showPenalty && (
-                        <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                          50% PISTA
+                    <div className={`text-yellow-400 font-black text-3xl flex flex-col items-start transition-all duration-1000 ${room.gameType === '1vs1' && combatStage === 'collision' ? (i === 0 ? 'animate-collide-p1' : 'animate-collide-p2') : ''}`}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="transition-all duration-700"
+                          style={{
+                            transform: isDividing[pid] ? 'scale(1.2)' : 'scale(1)',
+                            color: isDividing[pid] ? '#EF4444' : '#FBBF24'
+                          }}
+                        >
+                          +{animatedScores[pid]?.toLocaleString() || 0}
                         </span>
+                        {guess.usedHint && showPenalty && (
+                          <span className="text-[10px] text-red-500 font-black animate-bounce bg-red-600/20 px-2 py-1 rounded border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                            50% PISTA
+                          </span>
+                        )}
+                      </div>
+                      {room.gameMode === 'historic' && (
+                        <div className="flex text-[10px] text-gray-400 font-bold tracking-widest gap-2 uppercase mt-1">
+                          <span>Map: {guess.score - (guess.yearScore || 0)}</span>
+                          <span>Year: {guess.yearScore || 0} ({guess.guessYear !== undefined ? (guess.guessYear < 0 ? `${Math.abs(guess.guessYear)} a.C.` : `${guess.guessYear} d.C.`) : 'N/A'})</span>
+                        </div>
                       )}
                     </div>
                   ) : <div className="text-gray-500 text-[10px] font-black uppercase italic">Sense tirada</div>}

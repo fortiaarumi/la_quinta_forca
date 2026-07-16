@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import { ref, onValue, update, set, runTransaction, get } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Room, PlayerGuess } from '@/lib/types';
-import { haversineDistance, calculateScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, getBalancedLocation, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS } from '@/lib/gameUtils';
+import { haversineDistance, calculateScore, calculateYearScore, randomBiasedCoords, randomCatalunyaCoords, randomPixapinsCoords, getBalancedLocation, CAMP_NOU_COORDS, ESTADIS_FUTBOL, MONUMENTS_CULTURALS, HISTORIC_LOCATIONS } from '@/lib/gameUtils';
 import { loadGoogleMaps } from '@/lib/mapsLoader';
 import StreetViewPaneBase from './StreetViewPane';
+import HistoricViewPane from './HistoricViewPane';
 import GuessMapBase from './GuessMap';
 import RoundResults from './RoundResults';
 import FinalResults from './FinalResults';
@@ -108,6 +109,10 @@ export default function GameRoom({ roomId, playerId }: Props) {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timeLeftRef = useRef<number | null>(null);
   const { user, isGuest } = useAuth();
+  const handleMapReady = useCallback(() => {
+    setMapsReady(true);
+  }, []);
+
   // Reset de pistes cada cop que canvia la ronda o l'estat del joc
   useEffect(() => {
     setHasUsedHint(false);
@@ -421,35 +426,50 @@ export default function GameRoom({ roomId, playerId }: Props) {
     const newLocations: any[] = [];
     let attempts = 0;
 
-    while (newLocations.length < count && attempts < 150) {
-      attempts++;
-      let coords;
-      if (room.gameMode === 'catalunya') coords = getBalancedLocation('catalunya');
-      else if (room.gameMode === 'pixapins') coords = randomPixapinsCoords();
-      else if (room.gameMode === 'estadis') coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
-      else if (room.gameMode === 'cultural') coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
-      else coords = getBalancedLocation('world');
+    if (room.gameMode === 'historic') {
+      for (let i = 0; i < count; i++) {
+        const item = HISTORIC_LOCATIONS[Math.floor(Math.random() * HISTORIC_LOCATIONS.length)];
+        newLocations.push({
+          lat: item.lat,
+          lng: item.lng,
+          panoId: '',
+          title: item.title,
+          year: item.year,
+          panoUrl: `/historic/${item.filename}`,
+          description: item.description
+        });
+      }
+    } else {
+      while (newLocations.length < count && attempts < 150) {
+        attempts++;
+        let coords;
+        if (room.gameMode === 'catalunya') coords = getBalancedLocation('catalunya');
+        else if (room.gameMode === 'pixapins') coords = randomPixapinsCoords();
+        else if (room.gameMode === 'estadis') coords = ESTADIS_FUTBOL[Math.floor(Math.random() * ESTADIS_FUTBOL.length)];
+        else if (room.gameMode === 'cultural') coords = MONUMENTS_CULTURALS[Math.floor(Math.random() * MONUMENTS_CULTURALS.length)];
+        else coords = getBalancedLocation('world');
 
-      await new Promise<void>((resolve) => {
-        service.getPanorama(
-          {
-            location: coords,
-            radius: (room.gameMode === 'catalunya' || room.gameMode === 'pixapins') ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
-            source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
-            preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
-          },
-          (data: any, status: any) => {
-            if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
-              newLocations.push({
-                lat: data.location.latLng.lat(),
-                lng: data.location.latLng.lng(),
-                panoId: data.location.pano || '',
-              });
+        await new Promise<void>((resolve) => {
+          service.getPanorama(
+            {
+              location: coords,
+              radius: (room.gameMode === 'catalunya' || room.gameMode === 'pixapins') ? 1000 : (room.gameMode === 'estadis' ? 250 : (room.gameMode === 'cultural' ? 150 : 50000)),
+              source: (google.maps as any).StreetViewSource?.OUTDOOR ?? 'outdoor',
+              preference: (google.maps as any).StreetViewPreference?.NEAREST ?? 'nearest',
+            },
+            (data: any, status: any) => {
+              if (status === google.maps.StreetViewStatus.OK && data?.location?.latLng) {
+                newLocations.push({
+                  lat: data.location.latLng.lat(),
+                  lng: data.location.latLng.lng(),
+                  panoId: data.location.pano || '',
+                });
+              }
+              resolve();
             }
-            resolve();
-          }
-        );
-      });
+          );
+        });
+      }
     }
 
     const currentLocations = room.locations || [];
@@ -830,7 +850,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
   };
 
   const submitGuess = useCallback(
-    async (guessLat: number, guessLng: number) => {
+    async (guessLat: number, guessLng: number, guessYear?: number) => {
       if (!room?.locations || hasGuessed || (room.players[playerId]?.isEliminated && isSpectating)) return;
 
       const actual = room.locations[room.currentRound];
@@ -840,8 +860,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
       const teamHints = room.rounds?.[room.currentRound]?.teamHints || {};
       const teamUsedHint = myTeamId && teamHints[myTeamId];
 
-      // Li passem el gameMode perquè sàpiga quina escala aplicar (divisor 30 o 2000)
       let score = calculateScore(distance, room.gameMode);
+      let yearScore = 0;
+
+      if (room.gameMode === 'historic' && actual.year !== undefined && guessYear !== undefined) {
+        yearScore = calculateYearScore(guessYear, actual.year);
+        score = score + yearScore;
+      }
       
       // SI L'EQUIP HA USAT PISTA, PUNTUACIÓ A LA MEITAT
       if (teamUsedHint) {
@@ -855,6 +880,9 @@ export default function GameRoom({ roomId, playerId }: Props) {
         lng: guessLng,
         distance,
         score,
+        yearScore,
+        guessYear,
+        actualYear: actual.year,
         usedHint: !!(hasUsedHint && !isFreeHint || teamUsedHint)
       };
 
@@ -1152,11 +1180,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
             </div>
           ) : (
             <>
-              <StreetViewPane
-                location={room.locations![room.currentRound]}
-                gameMode={room.gameMode}
-                onReady={() => setMapsReady(true)}
-              />
+              {room.gameMode === 'historic' ? (
+                <HistoricViewPane
+                  location={room.locations![room.currentRound]}
+                  onReady={handleMapReady}
+                />
+              ) : (
+                <StreetViewPane
+                  location={room.locations![room.currentRound]}
+                  gameMode={room.gameMode}
+                  onReady={handleMapReady}
+                />
+              )}
             </>
           )}
         </div>

@@ -20,4 +20,6 @@ export const ALL_BADGES: Badge[] = [
   { id: "Muniani", label: "Muniani", desc: "Revelar 500 pistes", totalGoal: 500, field: 'hintsRevealed', image: '/badges/muniani.jpeg' },
   { id: "David Txuc", label: "David Txuc", desc: "Jugar a tots els modes i temps", image: '/badges/davidtxuc.jpeg' },
   { id: "Humiliació", label: "Humiliació", desc: "Quedar últim a un Battle Royale de més de 8 jugadors", image: '/badges/humiliacio.jpeg' },
+  { id: "Pauiicartt", label: "Pauiicartt", desc: "Guanya el mode històric", image: '/badges/pauiicartt.jpeg' },
+  { id: "Stephen Bunting", label: "Stephen Bunting", desc: "Fes un 5k històric", image: '/badges/stephenbunting.jpg' },
 ];

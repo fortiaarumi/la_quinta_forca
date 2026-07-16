@@ -242,6 +242,8 @@ export async function updateUserStatsAfterGame(
     bestField = `bestScoreCultural_${timeMode}`;
   } else if (gameMode === 'pixapins') {
     bestField = `bestScorePixapins_${timeMode}`;
+  } else if (gameMode === 'historic') {
+    bestField = `bestScoreHistoric_${timeMode}`;
   }
 
   const currentBest = profile[bestField] ?? 0;
@@ -249,7 +251,11 @@ export async function updateUserStatsAfterGame(
 
   // 1. Comptar 5K (Només si no s'ha usat pista!)
   const new5k = roundScores.filter((s, idx) => s >= 5000 && !roundHints[idx]).length;
-  updates.total5k = (profile.total5k ?? 0) + new5k;
+  if (gameMode === 'historic') {
+    updates.total5kHistoric = (profile.total5kHistoric ?? 0) + new5k;
+  } else {
+    updates.total5k = (profile.total5k ?? 0) + new5k;
+  }
 
   // 2. Actualitzar millor puntuació (Només en mode clàssic!)
   if (gameType === 'classic' && totalGameScore > currentBest) {
@@ -261,6 +267,7 @@ export async function updateUserStatsAfterGame(
     else if (gameMode === 'estadis') globalField = 'bestScoreEstadis';
     else if (gameMode === 'cultural') globalField = 'bestScoreCultural';
     else if (gameMode === 'pixapins') globalField = 'bestScorePixapins';
+    else if (gameMode === 'historic') globalField = 'bestScoreHistoric';
 
     const currentGlobalBest = profile[globalField] ?? 0;
     if (totalGameScore > currentGlobalBest) {
@@ -287,7 +294,7 @@ export async function updateUserStatsAfterGame(
   const ALL_BADGE_IDS = [
     "Vinicius Blanc", "Franctirador", "Catalayudd", "Vinicius Butanero", 
     "Lofish the goat", "Uri Badia", "Rocha", "Duel Joan", "Pausu", 
-    "Muniani", "David Txuc", "Humiliació"
+    "Muniani", "David Txuc", "Humiliació", "Pauiicartt", "Stephen Bunting"
   ];
   
   // Netejem possibles insígnies antigues que l'usuari tingués guardades
@@ -313,6 +320,8 @@ export async function updateUserStatsAfterGame(
   if (gameType === 'battle_royale' && isWinner && totalPlayers > 8) checkAndAdd("Rocha");
   if ((updates.totalWins1vs1 || profile.totalWins1vs1 || 0) >= 15) checkAndAdd("Duel Joan");
   if (gameMode === 'cultural' && isWinner) checkAndAdd("Pausu");
+  if (gameMode === 'historic' && isWinner) checkAndAdd("Pauiicartt");
+  if (gameMode === 'historic' && roundScores.some((s, idx) => s >= 5000 && !roundHints[idx])) checkAndAdd("Stephen Bunting");
   if (updates.hintsRevealed >= 500) checkAndAdd("Muniani");
 
   // Lògica David Txuc: Ha de tenir puntuació en les 15 combinacions (12 d'abans + 3 pixapins)
@@ -554,6 +563,31 @@ export async function get5kMasters(limit = 10): Promise<LeaderboardEntry[]> {
         nickname: data.nickname,
         score: 0,
         total5k: data.total5k,
+        avatarUrl: data.avatarUrl,
+        badges: data.badges,
+        selectedBadges: data.selectedBadges
+      });
+    }
+  });
+
+  return entries.sort((a, b) => (b.total5k ?? 0) - (a.total5k ?? 0));
+}
+
+// Top 10 per total de rondes perfectes històriques (5k històrics)
+export async function getHistoric5kMasters(limit = 10): Promise<LeaderboardEntry[]> {
+  const q = query(ref(db, 'users'), orderByChild('total5kHistoric'), limitToLast(limit));
+  const snap = await get(q);
+  if (!snap.exists()) return [];
+
+  const entries: LeaderboardEntry[] = [];
+  snap.forEach((child) => {
+    const data = child.val() as UserProfile;
+    if ((data.total5kHistoric ?? 0) > 0) {
+      entries.push({
+        uid: child.key!,
+        nickname: data.nickname,
+        score: 0,
+        total5k: data.total5kHistoric, // Reutilitzem el camp total5k per a la renderització a la UI
         avatarUrl: data.avatarUrl,
         badges: data.badges,
         selectedBadges: data.selectedBadges

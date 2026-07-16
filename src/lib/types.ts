@@ -2,6 +2,10 @@ export interface Location {
   lat: number;
   lng: number;
   panoId: string;
+  title?: string;
+  year?: number;
+  panoUrl?: string;
+  description?: string;
 }
 
 export interface PlayerGuess {
@@ -12,6 +16,9 @@ export interface PlayerGuess {
   guessCountry?: string;
   actualCountry?: string;
   usedHint?: boolean;
+  guessYear?: number;
+  actualYear?: number;
+  yearScore?: number;
 }
 
 export interface RoundData {
@@ -62,7 +69,9 @@ export interface UserProfile {
   bestScoreCatalunya: number;
   bestScoreEstadis?: number;
   bestScoreCultural?: number;
+  bestScoreHistoric?: number;
   total5k: number;
+  total5kHistoric?: number;
   bestScoreWorld_bala?: number;
   bestScoreWorld_normal?: number;
   bestScoreWorld_infinit?: number;
@@ -79,6 +88,9 @@ export interface UserProfile {
   bestScorePixapins_bala?: number;
   bestScorePixapins_normal?: number;
   bestScorePixapins_infinit?: number;
+  bestScoreHistoric_bala?: number;
+  bestScoreHistoric_normal?: number;
+  bestScoreHistoric_infinit?: number;
   lastVideoUploadDate?: string;
   avatarUrl?: string;
   badges?: string[];
@@ -107,7 +119,7 @@ export type GameState =
   | 'finished';
 
 // Tipus de modes de joc
-export type GameMode = 'world' | 'catalunya' | 'estadis' | 'cultural' | 'pixapins';
+export type GameMode = 'world' | 'catalunya' | 'estadis' | 'cultural' | 'pixapins' | 'historic';
 
 // NOU: Tipus per al ritme de la partida
 export type TimeMode = 'bala' | 'normal' | 'infinit';

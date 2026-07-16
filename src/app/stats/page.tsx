@@ -21,7 +21,7 @@ export default function StatsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<any[]>([]); // Canviem a any[] pels camps dinàmics
-  const [mode, setMode] = useState<'world' | 'catalunya' | 'pixapins' | 'estadis' | 'cultural' | '5k'>('world');
+  const [mode, setMode] = useState<'world' | 'catalunya' | 'pixapins' | 'estadis' | 'cultural' | 'historic' | '5k' | '5k_historic'>('world');
   const [timeFilter, setTimeFilter] = useState<'bala' | 'normal' | 'infinit'>('bala');
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
 
@@ -33,13 +33,16 @@ export default function StatsPage() {
 
         // Construïm el camp exacte que volem buscar
         let field = 'total5k';
-        if (mode !== '5k') {
+        if (mode === '5k_historic') {
+          field = 'total5kHistoric';
+        } else if (mode !== '5k') {
           // Mirem quin mode és i li concatenem el temps
           if (mode === 'world') field = `bestScoreWorld_${timeFilter}`;
           else if (mode === 'catalunya') field = `bestScoreCatalunya_${timeFilter}`;
           else if (mode === 'pixapins') field = `bestScorePixapins_${timeFilter}`;
           else if (mode === 'estadis') field = `bestScoreEstadis_${timeFilter}`;
           else if (mode === 'cultural') field = `bestScoreCultural_${timeFilter}`;
+          else if (mode === 'historic') field = `bestScoreHistoric_${timeFilter}`;
         }
 
         const q = query(usersRef, orderByChild(field), limitToLast(10));
@@ -50,7 +53,7 @@ export default function StatsPage() {
           snap.forEach((child) => {
             const val = child.val();
             const score = val[field] ?? 0;
-            if (score > 0 || mode === '5k') { // Filtrem per no mostrar gent amb 0 (excepte si és 5k i el field és total5k)
+            if (score > 0 || mode === '5k' || mode === '5k_historic') { // Filtrem per no mostrar gent amb 0 (excepte si és 5k i el field és total5k)
               data.push({ uid: child.key, ...val });
             }
           });
@@ -107,12 +110,14 @@ export default function StatsPage() {
             <button onClick={() => setMode('pixapins')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'pixapins' ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏙️ Pixapins</button>
             <button onClick={() => setMode('estadis')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'estadis' ? 'bg-yellow-500 text-black shadow-[0_0_20px_rgba(234,179,8,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>⚽ Estadis</button>
             <button onClick={() => setMode('cultural')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'cultural' ? 'bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏛️ Cultura</button>
+            <button onClick={() => setMode('historic')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === 'historic' ? 'bg-[rgb(126,104,78)] text-white shadow-[0_0_20px_rgba(126,104,78,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>⏳ Històric</button>
             <button onClick={() => setMode('5k')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === '5k' ? 'bg-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>🏆 5K</button>
+            <button onClick={() => setMode('5k_historic')} className={`px-6 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all ${mode === '5k_historic' ? 'bg-amber-700 text-white shadow-[0_0_20px_rgba(180,83,9,0.3)] scale-105' : 'text-gray-500 hover:bg-white/5 hover:text-white'}`}>📜 5K Històrics</button>
           </div>
         </div>
 
         {/* AFEGIT: Selector de Temps (només es mostra si no estem a Mestres 5K) */}
-        {mode !== '5k' && (
+        {!mode.startsWith('5k') && (
           <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 mb-8 gap-1 max-w-md mx-auto">
             <button onClick={() => setTimeFilter('bala')} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeFilter === 'bala' ? 'bg-orange-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>⚡ Bala</button>
             <button onClick={() => setTimeFilter('normal')} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${timeFilter === 'normal' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}>🚶 Normal</button>
@@ -134,7 +139,7 @@ export default function StatsPage() {
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Pos</th>
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Explorador</th>
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 text-right">
-                      {mode === '5k' ? 'Rondes Perfectes' : 'Màxima Puntuació'}
+                      {mode.startsWith('5k') ? 'Rondes Perfectes' : 'Màxima Puntuació'}
                     </th>
                   </tr>
                 </thead>
@@ -187,11 +192,14 @@ export default function StatsPage() {
                       </td>
                       <td className="p-6 text-right font-mono text-2xl font-black text-emerald-400">
                         {mode === '5k' ? player.total5k : (
-                          mode === 'world' ? player[`bestScoreWorld_${timeFilter}`] :
-                            mode === 'catalunya' ? player[`bestScoreCatalunya_${timeFilter}`] :
-                              mode === 'pixapins' ? player[`bestScorePixapins_${timeFilter}`] :
-                                mode === 'estadis' ? player[`bestScoreEstadis_${timeFilter}`] :
-                                  player[`bestScoreCultural_${timeFilter}`]
+                          mode === '5k_historic' ? player.total5kHistoric : (
+                            mode === 'world' ? player[`bestScoreWorld_${timeFilter}`] :
+                              mode === 'catalunya' ? player[`bestScoreCatalunya_${timeFilter}`] :
+                                mode === 'pixapins' ? player[`bestScorePixapins_${timeFilter}`] :
+                                  mode === 'estadis' ? player[`bestScoreEstadis_${timeFilter}`] :
+                                    mode === 'historic' ? player[`bestScoreHistoric_${timeFilter}`] :
+                                      player[`bestScoreCultural_${timeFilter}`]
+                          )
                         ) || 0}
                       </td>
                     </tr>
