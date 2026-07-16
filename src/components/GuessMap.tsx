@@ -180,37 +180,42 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
           )}
         </div>
         
-        {/* ── YEAR SLIDER (només mode històric i si està expandit) ── */}
+        {/* ── YEAR SELECTOR (només mode històric i si està expandit) ── */}
         {expanded && gameMode === 'historic' && (
           <div className="w-full mt-2 bg-[#121212] rounded-2xl p-4 border border-white/10 shadow-xl flex flex-col items-center">
-            <p className="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase mb-1">Select Era</p>
-            <div className="flex items-center gap-4 w-full">
-              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 100)); }} className="text-gray-500 hover:text-white px-2 py-1">«</button>
-              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 10)); }} className="text-gray-500 hover:text-white px-2 py-1">‹</button>
-              
-              <div className="flex-1 text-center text-3xl font-black text-orange-500 italic" style={{ fontFamily: 'var(--font-display)' }}>
-                {guessYear < 0 ? `${Math.abs(guessYear)} a.C.` : `${guessYear} d.C.`}
-              </div>
-              
-              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 10)); }} className="text-gray-500 hover:text-white px-2 py-1">›</button>
-              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 100)); }} className="text-gray-500 hover:text-white px-2 py-1">»</button>
-            </div>
-            
-            <div className="w-full mt-3 px-4">
-              <input 
-                type="range" 
-                min="-3000" 
-                max="2025" 
+            <p className="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase mb-2">Any de l&apos;Esdeveniment</p>
+            <div className="flex items-center gap-3 w-full mb-3">
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 100)); }} className="text-gray-500 hover:text-white px-3 py-2 rounded-lg bg-white/5 text-sm font-black">&laquo;</button>
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.max(-3000, guessYear - 10)); }} className="text-gray-500 hover:text-white px-3 py-2 rounded-lg bg-white/5 text-sm font-black">&lsaquo;</button>
+              {/* Camp editable: clicar obre el teclat numèric al mòbil */}
+              <input
+                type="number"
+                min="-3000"
+                max="2025"
                 value={guessYear}
-                onChange={(e) => setGuessYear(parseInt(e.target.value))}
-                className="w-full accent-orange-500"
+                onChange={(e) => {
+                  const v = parseInt(e.target.value);
+                  if (!isNaN(v)) setGuessYear(Math.max(-3000, Math.min(2025, v)));
+                }}
                 onClick={(e) => e.stopPropagation()}
+                className="flex-1 text-center text-3xl font-black text-orange-500 italic bg-transparent border border-white/10 rounded-xl py-2 outline-none focus:border-orange-500 transition-colors"
+                style={{ fontFamily: 'var(--font-display)' }}
               />
-              <div className="flex justify-between text-[8px] text-gray-500 mt-1 uppercase font-bold tracking-widest">
-                <span>Antiquity</span>
-                <span>Modern Day</span>
-              </div>
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 10)); }} className="text-gray-500 hover:text-white px-3 py-2 rounded-lg bg-white/5 text-sm font-black">&rsaquo;</button>
+              <button onClick={(e) => { e.stopPropagation(); setGuessYear(Math.min(2025, guessYear + 100)); }} className="text-gray-500 hover:text-white px-3 py-2 rounded-lg bg-white/5 text-sm font-black">&raquo;</button>
             </div>
+            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+              {guessYear < 0 ? `${Math.abs(guessYear)} a.C.` : `${guessYear} d.C.`} &mdash; Rang: 3000 a.C. &mdash; 2025 d.C.
+            </p>
+            <input
+              type="range"
+              min="-3000"
+              max="2025"
+              value={guessYear}
+              onChange={(e) => setGuessYear(parseInt(e.target.value))}
+              className="w-full accent-orange-500 mt-2"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         )}
       </div>

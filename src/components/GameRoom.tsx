@@ -875,15 +875,15 @@ export default function GameRoom({ roomId, playerId }: Props) {
 
       // 1. Guardem l'estimació BASE ràpidament per no bloquejar el joc
       const isFreeHint = room.rounds?.[room.currentRound]?.sharedHint?.isFree;
+      const isHistoric = room.gameMode === 'historic';
       const baseGuess: PlayerGuess = {
         lat: guessLat,
         lng: guessLng,
         distance,
         score,
-        yearScore,
-        guessYear,
-        actualYear: actual.year,
-        usedHint: !!(hasUsedHint && !isFreeHint || teamUsedHint)
+        usedHint: !!(hasUsedHint && !isFreeHint || teamUsedHint),
+        // Només afegim camps d'any si estem al mode Històric (Firebase rebutja undefined)
+        ...(isHistoric && { yearScore, guessYear, actualYear: actual.year }),
       };
 
       const guessRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/guesses/${playerId}`);

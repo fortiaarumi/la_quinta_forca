@@ -107,7 +107,14 @@ export default function AdminPanel() {
         bestScoreCultural_bala: Number(editingUser.bestScoreCultural_bala) || 0,
         bestScoreCultural_normal: Number(editingUser.bestScoreCultural_normal) || 0,
         bestScoreCultural_infinit: Number(editingUser.bestScoreCultural_infinit) || 0,
+        bestScorePixapins_bala: Number(editingUser.bestScorePixapins_bala) || 0,
+        bestScorePixapins_normal: Number(editingUser.bestScorePixapins_normal) || 0,
+        bestScorePixapins_infinit: Number(editingUser.bestScorePixapins_infinit) || 0,
+        bestScoreHistoric_bala: Number(editingUser.bestScoreHistoric_bala) || 0,
+        bestScoreHistoric_normal: Number(editingUser.bestScoreHistoric_normal) || 0,
+        bestScoreHistoric_infinit: Number(editingUser.bestScoreHistoric_infinit) || 0,
         total5k: Number(editingUser.total5k) || 0,
+        total5kHistoric: Number(editingUser.total5kHistoric) || 0,
         badges: editingUser.badges || [],
       });
       setEditingUser(null);
@@ -470,9 +477,33 @@ export default function AdminPanel() {
                     </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Total 5K (Plens al centre)</label>
-                  <input type="number" value={editingUser.total5k || 0} onChange={(e) => setEditingUser({...editingUser, total5k: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-yellow-500 font-mono" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-blue-300 uppercase tracking-widest mb-1 border-b border-blue-900/50 pb-1">Pixapins (BCN)</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScorePixapins_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScorePixapins_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScorePixapins_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScorePixapins_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScorePixapins_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScorePixapins_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1 border-b border-amber-900/50 pb-1">Històric</label>
+                    <div className="space-y-2 mt-2">
+                      <input type="number" placeholder="Bala" value={editingUser.bestScoreHistoric_bala || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreHistoric_bala: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Bala" />
+                      <input type="number" placeholder="Normal" value={editingUser.bestScoreHistoric_normal || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreHistoric_normal: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Normal" />
+                      <input type="number" placeholder="Infinit" value={editingUser.bestScoreHistoric_infinit || 0} onChange={(e) => setEditingUser({...editingUser, bestScoreHistoric_infinit: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white text-xs font-mono placeholder:text-gray-600" title="Rècord Infinit" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">Total 5K (general)</label>
+                    <input type="number" value={editingUser.total5k || 0} onChange={(e) => setEditingUser({...editingUser, total5k: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-yellow-500 font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">Total 5K Històrics</label>
+                    <input type="number" value={editingUser.total5kHistoric || 0} onChange={(e) => setEditingUser({...editingUser, total5kHistoric: e.target.value})} className="w-full bg-black/50 border border-white/10 rounded-lg p-2 text-white outline-none focus:border-amber-700 font-mono" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Insígnies (Badges)</label>

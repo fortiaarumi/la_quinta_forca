@@ -152,7 +152,7 @@ export default function StatsPage() {
                     >
                       <td className="p-6 font-black text-xl italic opacity-30 italic">#{index + 1}</td>
                       <td className="p-6">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-black/40 flex-shrink-0 flex items-center justify-center">
                             {player.avatarUrl ? (
                               <img src={player.avatarUrl} alt={player.nickname} className="w-full h-full object-cover" />
@@ -160,25 +160,25 @@ export default function StatsPage() {
                               <span className="text-lg opacity-40">👤</span>
                             )}
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <div className="font-bold text-lg flex items-center gap-2 truncate">
-                              {player.nickname}
+                          <div className="flex flex-col min-w-0 flex-1 pb-1">
+                            <div className="font-bold text-lg flex items-center gap-2 flex-wrap">
+                              <span className="break-words">{player.nickname}</span>
                               {player.isAdmin && <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-md font-black tracking-widest shadow-[0_0_10px_rgba(220,38,38,0.6)]">👑 ADMIN</span>}
                             </div>
-                            <div className="flex flex-wrap gap-2 mt-0.5 items-center">
+                            <div className="flex flex-wrap gap-2 mt-1.5 items-center">
                               {user?.uid === player.uid && <span className="text-[8px] bg-emerald-500 text-black px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter h-fit">Tu</span>}
                               {player.badges && player.badges.map((bId: string, bi: number) => {
                                 const badgeDef = ALL_BADGES.find(b => b.id === bId);
                                 return (
                                   <div
                                     key={bi}
-                                    className="group relative flex items-center justify-center cursor-pointer"
+                                    className="group relative flex items-center justify-center cursor-pointer p-0.5"
                                     onClick={() => setSelectedBadge(bId)}
                                   >
                                     <img
                                       src={badgeDef?.image || '/badges/default.png'}
                                       alt={bId}
-                                      className="w-5 h-5 object-contain drop-shadow-md group-hover:scale-125 transition-transform"
+                                      className="w-6 h-6 object-contain drop-shadow-md group-hover:scale-125 transition-transform"
                                     />
                                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/90 border border-yellow-500/50 text-yellow-400 text-[9px] font-black uppercase tracking-widest rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-[100]">
                                       {bId}

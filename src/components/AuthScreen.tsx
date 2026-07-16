@@ -255,9 +255,6 @@ export default function AuthScreen({ onGuestContinue }: Props) {
           >
             La Quinta Forca
           </h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 600 }}>
-            Projecte Alpha
-          </p>
         </div>
 
         {/* ── WELCOME PANEL ─────────────────────────── */}

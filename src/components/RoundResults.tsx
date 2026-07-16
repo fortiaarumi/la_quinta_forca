@@ -786,10 +786,40 @@ export default function RoundResults({ room, roomId, round, isHost, playerId, on
                           </span>
                         )}
                       </div>
-                      {room.gameMode === 'historic' && (
+                      {room.gameMode === 'historic' ? (
                         <div className="flex text-[10px] text-gray-400 font-bold tracking-widest gap-2 uppercase mt-1">
                           <span>Map: {guess.score - (guess.yearScore || 0)}</span>
                           <span>Year: {guess.yearScore || 0} ({guess.guessYear !== undefined ? (guess.guessYear < 0 ? `${Math.abs(guess.guessYear)} a.C.` : `${guess.guessYear} d.C.`) : 'N/A'})</span>
+                        </div>
+                      ) : (
+                        // Informació extra per a tots els altres modes
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          {/* Distància d'error */}
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            <span>📏</span>
+                            <span>{guess.distance < 1 ? `${Math.round(guess.distance * 1000)}m` : `${Math.round(guess.distance).toLocaleString()} km`} d&apos;error</span>
+                          </div>
+                          {/* Ubicació real (país/poble) */}
+                          {guess.actualCountry && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400/80 uppercase tracking-widest">
+                              <span>📍</span>
+                              <span>{guess.actualCountry}</span>
+                            </div>
+                          )}
+                          {/* Informació addicional de la ubicació (estadi, monument, barri, pista...) */}
+                          {actual.title && (room.gameMode === 'estadis' || room.gameMode === 'cultural') && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-300/80 uppercase tracking-widest">
+                              <span>{room.gameMode === 'estadis' ? '⚽' : '🏛️'}</span>
+                              <span>{actual.title}</span>
+                            </div>
+                          )}
+                          {/* Per a Pixapins: mostrem la pista compartida si la hi ha */}
+                          {room.gameMode === 'pixapins' && room.rounds?.[round]?.sharedHint?.value && (
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-yellow-300/70 uppercase tracking-widest">
+                              <span>💡</span>
+                              <span>{room.rounds?.[round]?.sharedHint?.value}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
