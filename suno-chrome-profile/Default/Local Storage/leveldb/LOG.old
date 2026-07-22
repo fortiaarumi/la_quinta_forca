@@ -1,9 +1,6 @@
-2026/05/09-00:40:38.145 51b0 Reusing MANIFEST C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/09-00:40:38.152 51b0 Recovering log #133
-2026/05/09-00:40:38.155 51b0 Reusing old log C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/000133.log 
-2026/05/09-00:40:53.311 bf8 Level-0 table #138: started
-2026/05/09-00:40:53.320 bf8 Level-0 table #138: 221823 bytes OK
-2026/05/09-00:40:53.324 bf8 Delete type=0 #133
-2026/05/09-00:41:38.175 bf8 Level-0 table #140: started
-2026/05/09-00:41:38.202 bf8 Level-0 table #140: 217826 bytes OK
-2026/05/09-00:41:38.208 bf8 Delete type=0 #137
+2026/05/13-20:07:26.688 1fdc Reusing MANIFEST C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/13-20:07:26.693 1fdc Recovering log #139
+2026/05/13-20:07:26.695 1fdc Reusing old log C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/000139.log 
+2026/05/13-20:07:39.208 1fdc Level-0 table #143: started
+2026/05/13-20:07:39.221 1fdc Level-0 table #143: 974834 bytes OK
+2026/05/13-20:07:39.224 1fdc Delete type=0 #139

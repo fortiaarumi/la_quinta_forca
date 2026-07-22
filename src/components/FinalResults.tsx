@@ -30,7 +30,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
   const [friendReqSent, setFriendReqSent] = useState<Record<string, boolean>>({});
   const [songVolume, setSongVolume] = useState(1);
   const { 
-    playCelebration, playDecepcion, stopAllMusic,
+    playCelebration, playDecepcion, stopAllMusic, playMenuMusic,
     isMuted, toggleMute, nextTrack, prevTrack, hasInteracted 
   } = useAudio();
   const [grayscale, setGrayscale] = useState(false);
@@ -127,14 +127,29 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
         const particleCount = 50 * (timeLeft / duration);
         confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
       }, 250);
-      return () => clearInterval(interval);
+      
+      const timeoutMusic = setTimeout(() => {
+        playMenuMusic();
+      }, 6000);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeoutMusic);
+      };
     } else {
       playDecepcion();
       setGrayscale(true);
       const timeout = setTimeout(() => setGrayscale(false), 5000);
-      return () => clearTimeout(timeout);
+      const timeoutMusic = setTimeout(() => {
+        playMenuMusic();
+      }, 6000);
+      
+      return () => {
+        clearTimeout(timeout);
+        clearTimeout(timeoutMusic);
+      };
     }
-  }, [iWon, playCelebration, playDecepcion, stopAllMusic]);
+  }, [iWon, playCelebration, playDecepcion, stopAllMusic, playMenuMusic]);
 
   const numberToCatalan = (n: number): string => {
     if (n === 0) return 'zero';
@@ -154,24 +169,30 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
     return n.toString();
   };
 
-  const handleGenerateSong = async () => {
+  const handleGenerateLyricsOnly = async () => {
     if (!isHost) return;
     try {
-      await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_lyrics', error: null });
-      const roundsSnap = await get(ref(db, `rooms/${roomId}/rounds`));
-      const freshRounds = roundsSnap.val() || room.rounds || [];
-      const gameMode = room.gameMode || 'world';
-      const totalRounds = Object.keys(freshRounds).length;
+      await update(ref(db, `rooms/${roomId}/songState`), { status: 'generating_lyrics' });
+      const snap = await get(ref(db, `rooms/${roomId}/rounds`));
+      const freshRounds = snap.val() || [];
+      const totalRounds = room.totalRounds || 5;
 
       const guesses = Object.entries(room.players).map(([id, p]) => {
         const roundLines: string[] = [];
         for (let i = 0; i < totalRounds; i++) {
           const guessObj = freshRounds[i]?.guesses?.[id];
+          const location = room.locations?.[i];
           if (!guessObj) continue;
           const distWords = numberToCatalan(Math.round(guessObj.distance));
           const actual = guessObj.actualCountry || 'un lloc desconegut';
           const guess = guessObj.guessCountry || 'un lloc desconegut';
-          roundLines.push(`  Ronda ${i+1}: estava a "${actual}", ha posat el pin a "${guess}" (error: ${distWords} km)`);
+          
+          if (room.gameMode === 'historic' && location) {
+            const yearError = guessObj.year !== undefined ? Math.abs(guessObj.year - (location.year || 0)) : 0;
+            roundLines.push(`  Ronda ${i+1}: Esdeveniment "${location.title}" (${location.year}). El jugador ha dit l'any ${guessObj.year} (error: ${yearError} anys). Lloc real: "${actual}", ha posat el pin a "${guess}" (error: ${distWords} km). Detall de l'esdeveniment: "${location.description}"`);
+          } else {
+            roundLines.push(`  Ronda ${i+1}: estava a "${actual}", ha posat el pin a "${guess}" (error: ${distWords} km)`);
+          }
         }
         if (roundLines.length > 0) {
           return `- Jugador: ${p.name}\n${roundLines.join('\n')}\n`;
@@ -182,16 +203,34 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       const res = await fetch('/api/generate-song', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guesses, gameMode })
+        body: JSON.stringify({ guesses, gameMode: room.gameMode || 'world' })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error desconegut al generar la cançó');
+      if (!res.ok) throw new Error(data.error || 'Error desconegut al generar la lletra');
+      
       await update(ref(db, `rooms/${roomId}/songState`), {
-        status: 'waiting_for_bot',
+        status: 'lyrics_generated',
         lyrics: data.lyrics,
         genre: data.genre,
         prompt: guesses
       });
+    } catch (err: any) {
+      await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: err.message });
+    }
+  };
+
+  const handleGenerateSong = async () => {
+    if (!isHost) return;
+    
+    try {
+      // Si ja tenim la lletra pre-generada, només despertem al bot de Puppeteer per fer l'àudio
+      if (room.songState?.status === 'lyrics_generated') {
+        await update(ref(db, `rooms/${roomId}/songState`), { status: 'waiting_for_bot' });
+      } else {
+        // Si no la teníem (per error o perquè era molt ràpid), la generem ara i despertem el bot
+        await handleGenerateLyricsOnly();
+        await update(ref(db, `rooms/${roomId}/songState`), { status: 'waiting_for_bot' });
+      }
 
       // Completar quest diarià si el jugador la té activa
       if (user?.uid) {
@@ -219,6 +258,14 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
       await update(ref(db, `rooms/${roomId}/songState`), { status: 'error', error: err.message });
     }
   };
+
+  const autoGenerateRef = useRef(false);
+  useEffect(() => {
+    if (isHost && (!room.songState || room.songState.status === 'idle') && !autoGenerateRef.current) {
+      autoGenerateRef.current = true;
+      handleGenerateLyricsOnly();
+    }
+  }, [isHost, room.songState?.status]);
 
   const handlePlaySong = async () => {
     if (!isHost) return;

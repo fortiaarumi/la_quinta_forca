@@ -116,10 +116,10 @@ export default function HistoricViewPane({ location, onReady }: Props) {
         lat = Math.max(-85, Math.min(85, lat));
       }
 
-      // Slow auto-rotate
-      if (!isDragging && Math.abs(velX) < 0.5) {
-        lon -= 0.02;
-      }
+      // Slow auto-rotate (disabled per user request)
+      // if (!isDragging && Math.abs(velX) < 0.5) {
+      //   lon -= 0.02;
+      // }
 
       // Convert lon/lat → camera look-at target
       const phi   = THREE.MathUtils.degToRad(90 - lat);

@@ -155,7 +155,7 @@ export interface Room {
     timestamp: number;
   };
   songState?: {
-    status: 'idle' | 'generating_lyrics' | 'waiting_for_bot' | 'generating_music' | 'ready' | 'playing' | 'error';
+    status: 'idle' | 'generating_lyrics' | 'lyrics_generated' | 'waiting_for_bot' | 'generating_music' | 'ready' | 'playing' | 'error';
     lyrics?: string;
     audioUrl?: string;
     genre?: string;

@@ -44,6 +44,15 @@ Totes les fotos eren d'ESTADIS DE FUTBOL d'arreu del món. Els jugadors havien d
 Fes broma de com han confós l'Wanda Metropolitano amb el Bernabéu, o el Camp Nou amb el Johan Cruyff Arena.
 Les dades de localització indiquen el país on és cada estadi.`
       };
+    case 'historic':
+      return {
+        label: 'Històric (esdeveniments i moments claus)',
+        joke: `CONTEXT ESPECIAL MODE HISTÒRIC:
+Totes les fotos són d'ESDEVENIMENTS HISTÒRICS d'arreu del món i de diferents èpoques. Els jugadors havien d'endevinar on va passar l'esdeveniment i quin any era.
+Les dades inclouen l'error de distància geogràfica, l'any que han posat i l'any real, així com LA DESCRIPCIÓ de l'esdeveniment històric.
+Fes broma de la seva ignorància històrica: com han confós l'antiguitat amb el segle XX, o com han posat un esdeveniment d'ún país a un altre lloc equivocat.
+INCORPORA DETALLS de la descripció dels esdeveniments per riure-te'n de que els protagonistes d'aquests esdeveniments s'estirarien dels cabells si veiessin les respostes dels jugadors.`
+      };
     default:
       return {
         label: 'Món (geografia mundial)',

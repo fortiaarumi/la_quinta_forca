@@ -1,6 +1,18 @@
-2026/05/13-20:07:26.688 1fdc Reusing MANIFEST C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/13-20:07:26.693 1fdc Recovering log #139
-2026/05/13-20:07:26.695 1fdc Reusing old log C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/000139.log 
-2026/05/13-20:07:39.208 1fdc Level-0 table #143: started
-2026/05/13-20:07:39.221 1fdc Level-0 table #143: 974834 bytes OK
-2026/05/13-20:07:39.224 1fdc Delete type=0 #139
+2026/07/22-19:29:55.505 1890 Reusing MANIFEST C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/07/22-19:29:55.514 1890 Recovering log #142
+2026/07/22-19:29:55.517 1890 Reusing old log C:\Fortia\Personal\LaQuintaForca\la-quinta-forca\suno-chrome-profile\Default\Local Storage\leveldb/000142.log 
+2026/07/22-19:30:11.726 4d60 Level-0 table #146: started
+2026/07/22-19:30:11.761 4d60 Level-0 table #146: 1018883 bytes OK
+2026/07/22-19:30:11.765 4d60 Delete type=0 #142
+2026/07/22-19:30:11.768 4d60 Compacting 4@0 + 1@1 files
+2026/07/22-19:30:11.831 4d60 Generated table #147@0: 165 keys, 1253797 bytes
+2026/07/22-19:30:11.831 4d60 Compacted 4@0 + 1@1 files => 1253797 bytes
+2026/07/22-19:30:11.832 4d60 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/07/22-19:30:11.833 4d60 Delete type=2 #135
+2026/07/22-19:30:11.833 4d60 Delete type=2 #138
+2026/07/22-19:30:11.833 4d60 Delete type=2 #140
+2026/07/22-19:30:11.834 4d60 Delete type=2 #143
+2026/07/22-19:30:11.834 4d60 Delete type=2 #146
+2026/07/22-19:30:55.536 4d60 Level-0 table #149: started
+2026/07/22-19:30:55.580 4d60 Level-0 table #149: 598846 bytes OK
+2026/07/22-19:30:55.587 4d60 Delete type=0 #145
