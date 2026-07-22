@@ -656,7 +656,7 @@ export default function AdminPanel() {
                   <video src={`/${testFile}`} autoPlay controls playsInline className="w-full h-full max-h-[60vh] object-contain" />
                 ) : testFile.endsWith('.webp') || testFile.endsWith('.jpg') || testFile.endsWith('.jpeg') ? (
                   <div className="absolute inset-0 w-full h-full">
-                    <HistoricViewPane location={{ lat: 0, lng: 0, panoUrl: `/${testFile}`, hasStreetView: false }} />
+                    <HistoricViewPane location={{ panoId: 'test', lat: 0, lng: 0, panoUrl: `/${testFile}` }} />
                   </div>
                 ) : (
                   <img src={`/${testFile}`} alt="Prova" className="w-full h-full max-h-[60vh] object-contain" />
