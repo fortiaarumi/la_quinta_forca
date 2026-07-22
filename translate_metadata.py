@@ -80,12 +80,27 @@ def main():
     
     # Ara reconstruïm src/lib/gameUtils.ts
     print("Generant gameUtils.ts...")
-    ts_content = "export interface HistoricLocation {\n  filename: string;\n  title: string;\n  year: number;\n  lat: number;\n  lng: number;\n  description: string;\n}\n\nexport const HISTORIC_LOCATIONS: HistoricLocation[] = [\n"
     
-    for item in results:
-        desc = item['description'].replace('"', '\\"').replace('\n', ' ')
-        title = item['title'].replace('"', '\\"')
-        ts_content += f"""  {{
+    with open("src/lib/gameUtils.ts", "r", encoding="utf-8") as f:
+        old_content = f.read()
+        
+    start_str = "export const HISTORIC_LOCATIONS"
+    start_idx = old_content.find(start_str)
+    
+    if start_idx != -1:
+        # Trobem on s'acaba l'array existent
+        end_idx = old_content.find("];", start_idx)
+        if end_idx != -1:
+            array_content = old_content[start_idx:end_idx]
+            
+            # Només afegim aquells que no existeixen ja en el text de l'array
+            new_items_ts = ""
+            for item in results:
+                # Comprovem si el fitxer ja està mencionat al codi font existent
+                if f'filename: "{item["filename"]}"' not in array_content:
+                    desc = item['description'].replace('"', '\\"').replace('\n', ' ')
+                    title = item['title'].replace('"', '\\"')
+                    new_items_ts += f"""  {{
     filename: "{item['filename']}",
     title: "{title}",
     year: {item['year']},
@@ -94,21 +109,16 @@ def main():
     description: "{desc}"
   }},
 """
-    ts_content += "];\n"
-    with open("src/lib/gameUtils.ts", "r", encoding="utf-8") as f:
-        old_content = f.read()
-        
-    start_idx = old_content.find('export interface HistoricLocation')
-    if start_idx == -1:
-        start_idx = old_content.find('export const HISTORIC_LOCATIONS')
-        
-    if start_idx != -1:
-        new_utils = old_content[:start_idx] + ts_content
+            # Inserim els nous elements abans del ]; final
+            new_utils = old_content[:end_idx] + new_items_ts + old_content[end_idx:]
+        else:
+            new_utils = old_content # fallback si no trobem el final
     else:
-        new_utils = old_content + "\n\n" + ts_content
+        # Fallback si no trobem res (no hauria de passar)
+        new_utils = old_content
         
     with open("src/lib/gameUtils.ts", "w", encoding="utf-8") as f:
-        f.write(new_utils)        
+        f.write(new_utils)
     print("gameUtils.ts generat correctament.")
 
 if __name__ == "__main__":

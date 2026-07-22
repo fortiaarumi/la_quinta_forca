@@ -36,6 +36,7 @@ def parse_year(year_str: str) -> int:
 
 def load_existing():
     global collected, seen_urls
+    # 1. Carregar _metadata.json
     if os.path.exists(META_PATH):
         try:
             with open(META_PATH, encoding="utf-8") as f:
@@ -48,43 +49,25 @@ def load_existing():
                         seen_urls.add(e["source_url"])
         except:
             pass
+            
+    # 2. Llegir de gameUtils.ts per evitar descarregar el que ja tenim!
+    if os.path.exists(GAMUTILS_PATH):
+        try:
+            with open(GAMUTILS_PATH, "r", encoding="utf-8") as f:
+                content = f.read()
+            # Buscar tots els títols ja existents
+            titles = re.findall(r'title:\s*"([^"]+)"', content)
+            for t in titles:
+                # Afegim el títol processat per evitar descarregar panos d'un títol que ja tenim
+                seen_urls.add(slugify(t))
+        except:
+            pass
 
 def save_metadata_and_utils():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     with open(META_PATH, "w", encoding="utf-8") as f:
         json.dump(list(collected.values()), f, ensure_ascii=False, indent=2)
-
-    if not os.path.exists(GAMUTILS_PATH): return
-    entries = list(collected.values())
-    lines = ["export const HISTORIC_LOCATIONS = ["]
-    for e in entries:
-        fn    = e["filename"]
-        title = e.get("title", fn)
-        year  = e.get("year", 0)
-        lat   = e.get("lat", 0.0)
-        lng   = e.get("lng", 0.0)
-        desc  = e.get("description", "")
-        lines.append(
-            f"  {{ lat: {lat}, lng: {lng}, title: {json.dumps(title)}, year: {year}, description: {json.dumps(desc)}, panoUrl: '/historic/{fn}' }},"
-        )
-    lines.append("];\n")
-    new_block = "\n".join(lines)
-
-    with open(GAMUTILS_PATH, "r", encoding="utf-8") as f:
-        content = f.read()
-        
-    start = content.find("export const HISTORIC_LOCATIONS")
-    if start != -1:
-        end = content.find("];", start)
-        if end != -1:
-            content = content[:start] + new_block + content[end + 2:]
-        else:
-            content += "\n" + new_block
-    else:
-        content += "\n" + new_block
-
-    with open(GAMUTILS_PATH, "w", encoding="utf-8") as f:
-        f.write(content)
+    # L'actualització a gameUtils la fa el translate_metadata.py, no l'esborrem des d'aquí.
 
 async def intercept_route(route):
     global panos_allowed
@@ -257,6 +240,10 @@ async def main():
                     title_raw = f"unknown_event_{len(collected)+1}"
 
                 slug = slugify(title_raw)
+                if slug in seen_urls:
+                    print(f"   [DUPLICAT] L'esdeveniment '{title_raw}' ja el tenim. Ignorant...")
+                    continue
+                    
                 fn = slug + ext
                 c = 1
                 while fn in collected or os.path.exists(os.path.join(OUTPUT_DIR, fn)):
