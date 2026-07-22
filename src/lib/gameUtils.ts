@@ -13151,6 +13151,1982 @@ export const HISTORIC_LOCATIONS: HistoricLocation[] = [
     lng: 2.2664,
     description: "Historica babacoa de matemàtics a Torelló, en aquest precís instant es veu uns quants membres de Ramanjan gaudint amb la panxa plena del solet del millor poble d'Osona i de la piscina més agradable d'Occident"
   },
+  {
+    filename: "taxis_of_the_marne_arrive.webp",
+    title: "Taxis Of The Marne Arrive",
+    year: 1914,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "euboean_trading_post_at_al_mina.webp",
+    title: "Euboean Trading Post at Al Mina",
+    year: -840,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "stradivari_piazza_san_domenico_workshop.webp",
+    title: "Stradivari Piazza San Domenico Workshop",
+    year: 1735,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "linear_b_tablets_inscribed_at_pylos.webp",
+    title: "Linear B Tablets Inscribed At Pylos",
+    year: -1180,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "constitutional_convention_debates.webp",
+    title: "Constitutional Convention Debates",
+    year: 1787,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_black_hole_image_released.webp",
+    title: "First Black Hole Image Released",
+    year: 2019,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "woodstock_festival.webp",
+    title: "Woodstock Festival",
+    year: 1969,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "dome_of_the_rock_completed.webp",
+    title: "Dome Of The Rock Completed",
+    year: 691,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "darwin_reaches_the_galapagos_islands.webp",
+    title: "Darwin Reaches The Galapagos Islands",
+    year: 1835,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "jackie_robinson_baseball_debut.webp",
+    title: "Jackie Robinson Baseball Debut",
+    year: 1947,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "eratosthenes_measures_the_earth.webp",
+    title: "Eratosthenes Measures The Earth",
+    year: -240,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "olynthus_falls_to_macedon.webp",
+    title: "Olynthus Falls to Macedon",
+    year: -348,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cincinnatus_called_from_his_plow.webp",
+    title: "Cincinnatus Called From His Plow",
+    year: -458,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "allied_invasion_of_sicily_begins.webp",
+    title: "Allied Invasion of Sicily Begins",
+    year: 1943,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "lion_gate_of_mycenae_completed.webp",
+    title: "Lion Gate Of Mycenae Completed",
+    year: -1250,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "a_christmas_carol_published.webp",
+    title: "A Christmas Carol Published",
+    year: 1843,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "clock_of_the_long_now_prototype_begins_working.webp",
+    title: "Clock Of The Long Now Prototype Begins Working",
+    year: 1999,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "moabite_inscription_at_dibon.webp",
+    title: "Moabite Inscription at Dibon",
+    year: -890,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "minamoto_yoritomo_appointed_shogun.webp",
+    title: "Minamoto Yoritomo Appointed Shogun",
+    year: 1192,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "disneyland_opens_in_anaheim.webp",
+    title: "Disneyland Opens In Anaheim",
+    year: 1955,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "siege_of_jerusalem.webp",
+    title: "Siege Of Jerusalem",
+    year: 70,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_siege_of_vienna.webp",
+    title: "First Siege of Vienna",
+    year: 1529,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "voyager_golden_record_installed.webp",
+    title: "Voyager Golden Record Installed",
+    year: 1977,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "boudica_rallies_the_iceni.webp",
+    title: "Boudica Rallies The Iceni",
+    year: 60,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "masaniello_leads_the_naples_revolt.webp",
+    title: "Masaniello Leads The Naples Revolt",
+    year: 1647,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "lawrence_enters_aqaba.webp",
+    title: "Lawrence Enters Aqaba",
+    year: 1917,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "marco_polo_meets_kublai_khan.webp",
+    title: "Marco Polo Meets Kublai Khan",
+    year: 1275,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "imam_shamil_surrenders_at_gunib.webp",
+    title: "Imam Shamil Surrenders At Gunib",
+    year: 1859,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_salamis.webp",
+    title: "Battle Of Salamis",
+    year: -480,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "the_spirit_of_laws_published.webp",
+    title: "The Spirit of Laws Published",
+    year: 1748,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "picasso_at_bateau_lavoir.webp",
+    title: "Picasso At Bateau Lavoir",
+    year: 1907,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "outbreak_of_the_hundred_years_war.webp",
+    title: "Outbreak Of The Hundred Years War",
+    year: 1337,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "founding_of_the_university_of_bologna.webp",
+    title: "Founding Of The University Of Bologna",
+    year: 1088,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "sicilian_expedition.webp",
+    title: "Sicilian Expedition",
+    year: -413,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "trojan_room_coffee_pot_webcam.webp",
+    title: "Trojan Room Coffee Pot Webcam",
+    year: 1991,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "warsaw_ghetto_uprising.webp",
+    title: "Warsaw Ghetto Uprising",
+    year: 1943,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "romanov_costume_ball_at_winter_palace.webp",
+    title: "Romanov Costume Ball At Winter Palace",
+    year: 1903,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "einstein_annus_mirabilis_papers.webp",
+    title: "Einstein Annus Mirabilis Papers",
+    year: 1905,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_vouille.webp",
+    title: "Battle of Vouille",
+    year: 507,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "world_s_columbian_exposition_electric_night_city.webp",
+    title: "World's Columbian Exposition Electric Night City",
+    year: 1893,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "san_lorenzo_colossal_head_carved.webp",
+    title: "San Lorenzo Colossal Head Carved",
+    year: -1200,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "pheidippides_arrives_in_athens.webp",
+    title: "Pheidippides Arrives In Athens",
+    year: -490,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "execution_of_louis_xvi.webp",
+    title: "Execution Of Louis XVI",
+    year: 1793,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cartier_raises_cross_at_gaspe.webp",
+    title: "Cartier Raises Cross at Gaspe",
+    year: 1534,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "katherine_johnson_checks_john_glenns_orbit.webp",
+    title: "Katherine Johnson Checks John Glenns Orbit",
+    year: 1962,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "irminsul_destroyed.webp",
+    title: "Irminsul Destroyed",
+    year: 772,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "new_york_world_s_fair_the_world_of_tomorrow.webp",
+    title: "New York World's Fair The World Of Tomorrow",
+    year: 1939,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "savery_steam_pump_demonstrated.webp",
+    title: "Savery Steam Pump Demonstrated",
+    year: 1698,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "taiping_rebellion_begins.webp",
+    title: "Taiping Rebellion Begins",
+    year: 1850,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "dante_exiled_from_florence.webp",
+    title: "Dante Exiled From Florence",
+    year: 1302,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "noor_inayat_khan_transmits_from_occupied_paris.webp",
+    title: "Noor Inayat Khan Transmits From Occupied Paris",
+    year: 1943,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "may_fourth_movement.webp",
+    title: "May Fourth Movement",
+    year: 1919,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "new_york_subway_opens.webp",
+    title: "New York Subway Opens",
+    year: 1904,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "early_olympic_wrestlers_train.webp",
+    title: "Early Olympic Wrestlers Train",
+    year: -600,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_nineveh.webp",
+    title: "Battle of Nineveh",
+    year: 627,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "hungarian_revolution_of_1956.webp",
+    title: "Hungarian Revolution of 1956",
+    year: 1956,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "sejong_promulgates_hunminjeongeum.webp",
+    title: "Sejong Promulgates Hunminjeongeum",
+    year: 1446,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "peter_abelard_s_school_in_paris.webp",
+    title: "Peter Abelard's School in Paris",
+    year: 1140,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "the_little_rock_nine_enter_central_high.webp",
+    title: "The Little Rock Nine Enter Central High",
+    year: 1957,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "william_adams_arrives_in_japan.webp",
+    title: "William Adams Arrives In Japan",
+    year: 1600,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "linear_b_tablets_at_knossos.webp",
+    title: "Linear B Tablets at Knossos",
+    year: -1400,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "paris_catacombs_consecrated.webp",
+    title: "Paris Catacombs Consecrated",
+    year: 1786,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_council_of_constantinople_ends.webp",
+    title: "First Council of Constantinople Ends",
+    year: 381,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "sack_of_rome.webp",
+    title: "Sack Of Rome",
+    year: 410,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_marathon.webp",
+    title: "Battle Of Marathon",
+    year: -490,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_airplane_bombing_at_ain_zara.webp",
+    title: "First Airplane Bombing At Ain Zara",
+    year: 1911,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "emperor_norton_proclaims_himself_emperor.webp",
+    title: "Emperor Norton Proclaims Himself Emperor",
+    year: 1859,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "leonard_thompson_receives_insulin.webp",
+    title: "Leonard Thompson Receives Insulin",
+    year: 1922,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nero_declared_public_enemy.webp",
+    title: "Nero Declared Public Enemy",
+    year: 68,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "berlin_airlift_begins.webp",
+    title: "Berlin Airlift Begins",
+    year: 1948,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "seoul_evacuation_during_korean_war.webp",
+    title: "Seoul Evacuation During Korean War",
+    year: 1950,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "apollo_11_launch_site.webp",
+    title: "Apollo 11 Launch Site",
+    year: 1969,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "kon_tiki_reaches_raroia.webp",
+    title: "Kon-Tiki Reaches Raroia",
+    year: 1947,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_fleet_at_sydney_cove.webp",
+    title: "First Fleet at Sydney Cove",
+    year: 1788,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "thomas_eakins_rowing_paintings.webp",
+    title: "Thomas Eakins' Rowing Paintings",
+    year: 1874,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "croesus_consults_the_oracle_of_delphi.webp",
+    title: "Croesus Consults The Oracle Of Delphi",
+    year: -550,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "erfurt_latrine_disaster.webp",
+    title: "Erfurt Latrine Disaster",
+    year: 1184,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "eggnog_riot_at_west_point.webp",
+    title: "Eggnog Riot At West Point",
+    year: 1826,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "edict_of_milan.webp",
+    title: "Edict Of Milan",
+    year: 313,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "ashurbanipal_lion_hunt.webp",
+    title: "Ashurbanipal Lion Hunt",
+    year: -645,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "founding_of_quebec.webp",
+    title: "Founding of Quebec",
+    year: 1608,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "emerald_buddha_installed_at_wat_phra_kaew.webp",
+    title: "Emerald Buddha Installed At Wat Phra Kaew",
+    year: 1785,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cassander_founds_thessalonica.webp",
+    title: "Cassander Founds Thessalonica",
+    year: -294,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "magellan_expedition_departs_seville.webp",
+    title: "Magellan Expedition Departs Seville",
+    year: 1519,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "selma_to_montgomery_march.webp",
+    title: "Selma To Montgomery March",
+    year: 1965,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cleisthenes_establishes_athenian_democracy.webp",
+    title: "Cleisthenes Establishes Athenian Democracy",
+    year: -508,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_the_standard.webp",
+    title: "Battle Of The Standard",
+    year: 1138,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "trial_of_galileo.webp",
+    title: "Trial Of Galileo",
+    year: 1633,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "diocletians_palace_completed.webp",
+    title: "Diocletians Palace Completed",
+    year: 305,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "mikhail_gorbachev_at_the_brandenburg_gate.webp",
+    title: "Mikhail Gorbachev At The Brandenburg Gate",
+    year: 1989,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "aurelian_enters_palmyra.webp",
+    title: "Aurelian Enters Palmyra",
+    year: 272,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cypriot_red_polished_ware.webp",
+    title: "Cypriot Red Polished Ware",
+    year: -2200,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "four_pests_sparrow_campaign.webp",
+    title: "Four Pests Sparrow Campaign",
+    year: 1958,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_lechfeld.webp",
+    title: "Battle Of Lechfeld",
+    year: 955,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "founding_of_al_qarawiyyin.webp",
+    title: "Founding Of Al Qarawiyyin",
+    year: 859,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "dna_double_helix_model_at_cavendish.webp",
+    title: "DNA Double Helix Model At Cavendish",
+    year: 1953,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "siege_of_leningrad_begins.webp",
+    title: "Siege Of Leningrad Begins",
+    year: 1941,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "minoans_paint_bull_leaping_fresco.webp",
+    title: "Minoans Paint Bull Leaping Fresco",
+    year: -1450,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "stenka_razin_leads_cossacks_on_the_volga.webp",
+    title: "Stenka Razin Leads Cossacks On The Volga",
+    year: 1670,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "london_beer_flood.webp",
+    title: "London Beer Flood",
+    year: 1814,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "ottomans_capture_bursa.webp",
+    title: "Ottomans Capture Bursa",
+    year: 1326,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "jesse_owens_wins_in_berlin.webp",
+    title: "Jesse Owens Wins In Berlin",
+    year: 1936,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "treaty_of_paris_ends_the_seven_years_war.webp",
+    title: "Treaty Of Paris Ends The Seven Years War",
+    year: 1763,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "velazquez_paints_las_meninas.webp",
+    title: "Velazquez Paints Las Meninas",
+    year: 1656,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "german_spring_offensive_at_saint_quentin.webp",
+    title: "German Spring Offensive At Saint Quentin",
+    year: 1918,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "krakatoa_eruption_aftermath.webp",
+    title: "Krakatoa Eruption Aftermath",
+    year: 1883,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "watergate_break_in.webp",
+    title: "Watergate Break-In",
+    year: 1972,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "construction_of_petra.webp",
+    title: "Construction Of Petra",
+    year: -312,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "good_friday_agreement_signed.webp",
+    title: "Good Friday Agreement Signed",
+    year: 1998,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "black_ships_in_japan.webp",
+    title: "Black Ships In Japan",
+    year: 1854,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "bar_kokhba_coins_struck.webp",
+    title: "Bar Kokhba Coins Struck",
+    year: 132,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "euromaidan_protests.webp",
+    title: "Euromaidan Protests",
+    year: 2014,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nansen_organizes_volga_famine_relief.webp",
+    title: "Nansen Organizes Volga Famine Relief",
+    year: 1921,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "kobe_earthquake_aftermath.webp",
+    title: "Kobe Earthquake Aftermath",
+    year: 1995,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "corbulo_captures_artaxata.webp",
+    title: "Corbulo Captures Artaxata",
+    year: 58,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "columba_founds_iona_abbey.webp",
+    title: "Columba Founds Iona Abbey",
+    year: 563,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "hugh_capet_crowned_king.webp",
+    title: "Hugh Capet Crowned King",
+    year: 987,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "la_venta_great_pyramid_completed.webp",
+    title: "La Venta Great Pyramid Completed",
+    year: -800,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "piri_reis_map_completed.webp",
+    title: "Piri Reis Map Completed",
+    year: 1513,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "shackleton_s_endurance_trapped_in_ice.webp",
+    title: "Shackleton's Endurance Trapped In Ice",
+    year: 1915,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "boy_scouts_rally_at_crystal_palace.webp",
+    title: "Boy Scouts Rally At Crystal Palace",
+    year: 1909,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "emancipation_proclamation_signed.webp",
+    title: "Emancipation Proclamation Signed",
+    year: 1863,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "crystal_palace_exhibition.webp",
+    title: "Crystal Palace Exhibition",
+    year: 1851,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "berlin_conference.webp",
+    title: "Berlin Conference",
+    year: 1884,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "wat_tyler_meets_richard_ii.webp",
+    title: "Wat Tyler Meets Richard II",
+    year: 1381,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "forbidden_city_completed.webp",
+    title: "Forbidden City Completed",
+    year: 1421,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "u_s_camel_corps_arrives_at_indianola.webp",
+    title: "U.S. Camel Corps Arrives At Indianola",
+    year: 1856,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "great_temple_of_yeha_construction.webp",
+    title: "Great Temple of Yeha Construction",
+    year: -825,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nazca_lines_created.webp",
+    title: "Nazca Lines Created",
+    year: -200,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "julian_calendar_proclaimed_in_rome.webp",
+    title: "Julian Calendar Proclaimed In Rome",
+    year: -46,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "grand_kitano_tea_ceremony.webp",
+    title: "Grand Kitano Tea Ceremony",
+    year: 1587,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "java_announced_at_sunworld.webp",
+    title: "Java Announced At SunWorld",
+    year: 1995,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "war_of_the_worlds_broadcast_airs.webp",
+    title: "War of the Worlds Broadcast Airs",
+    year: 1938,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "birth_of_nicolaus_copernicus.webp",
+    title: "Birth of Nicolaus Copernicus",
+    year: 1473,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "akhenaten_founds_amarna.webp",
+    title: "Akhenaten Founds Amarna",
+    year: -1350,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "christmas_truce.webp",
+    title: "Christmas Truce",
+    year: 1914,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "stalingrad_tractor_factory_fighting.webp",
+    title: "Stalingrad Tractor Factory Fighting",
+    year: 1942,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "tanganyika_laughter_epidemic_at_kashasha_school.webp",
+    title: "Tanganyika Laughter Epidemic At Kashasha School",
+    year: 1962,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "ivan_shishman_crowned.webp",
+    title: "Ivan Shishman Crowned",
+    year: 1366,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "john_brown_raids_harpers_ferry.webp",
+    title: "John Brown Raids Harpers Ferry",
+    year: 1859,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_live_television_broadcast_by_baird.webp",
+    title: "First Live Television Broadcast By Baird",
+    year: 1926,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "fatimid_demolition_order_in_jerusalem.webp",
+    title: "Fatimid Demolition Order In Jerusalem",
+    year: 1009,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "norse_traders_at_greenland_thing.webp",
+    title: "Norse Traders At Greenland Thing",
+    year: 1000,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nasa_created.webp",
+    title: "NASA Created",
+    year: 1958,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "de_montfort_s_parliament.webp",
+    title: "De Montfort's Parliament",
+    year: 1265,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_geneva_convention_signed.webp",
+    title: "First Geneva Convention Signed",
+    year: 1864,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "cato_street_conspirators_arrested.webp",
+    title: "Cato Street Conspirators Arrested",
+    year: 1820,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "founding_of_cairo.webp",
+    title: "Founding Of Cairo",
+    year: 969,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "norse_landing_in_vinland.webp",
+    title: "Norse Landing In Vinland",
+    year: 1000,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "zhukov_accepts_german_surrender_at_karlshorst.webp",
+    title: "Zhukov Accepts German Surrender At Karlshorst",
+    year: 1945,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "temujin_learns_yesugei_was_poisoned.webp",
+    title: "Temujin Learns Yesugei Was Poisoned",
+    year: 1171,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "accession_of_queen_victoria.webp",
+    title: "Accession of Queen Victoria",
+    year: 1837,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "socotra_declared_protected_area.webp",
+    title: "Socotra Declared Protected Area",
+    year: 1996,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "opening_of_the_colosseum.webp",
+    title: "Opening Of The Colosseum",
+    year: 80,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_legnica.webp",
+    title: "Battle Of Legnica",
+    year: 1241,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "tarxien_temple_altars.webp",
+    title: "Tarxien Temple Altars",
+    year: -2850,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "deep_blue_defeats_kasparov.webp",
+    title: "Deep Blue Defeats Kasparov",
+    year: 1997,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "mary_seacole_opens_the_british_hotel.webp",
+    title: "Mary Seacole Opens The British Hotel",
+    year: 1855,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "pompeii.webp",
+    title: "Pompeii",
+    year: 79,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "treaty_of_tilsit_signed_with_prussia.webp",
+    title: "Treaty of Tilsit Signed with Prussia",
+    year: 1807,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "leonardo_begins_the_mona_lisa.webp",
+    title: "Leonardo Begins The Mona Lisa",
+    year: 1503,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "vandals_enter_rome.webp",
+    title: "Vandals Enter Rome",
+    year: 455,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "qin_book_burning_order.webp",
+    title: "Qin Book Burning Order",
+    year: -213,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "palace_of_knossos_rebuilt.webp",
+    title: "Palace Of Knossos Rebuilt",
+    year: -1700,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "marseillaise_sung_by_volunteers_in_paris.webp",
+    title: "Marseillaise Sung By Volunteers In Paris",
+    year: 1792,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "venetian_lagoon_refuge_settlements.webp",
+    title: "Venetian Lagoon Refuge Settlements",
+    year: 462,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "sack_of_constantinople.webp",
+    title: "Sack Of Constantinople",
+    year: 1204,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "shapur_i_captures_valerian_at_edessa.webp",
+    title: "Shapur I Captures Valerian At Edessa",
+    year: 260,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "great_fire_of_london.webp",
+    title: "Great Fire Of London",
+    year: 1666,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "leeuwenhoek_observes_microorganisms_in_delft.webp",
+    title: "Leeuwenhoek Observes Microorganisms In Delft",
+    year: 1676,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "gudea_statues_dedicated_at_girsu.webp",
+    title: "Gudea Statues Dedicated At Girsu",
+    year: -2120,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "great_serpent_mound_rebuilt.webp",
+    title: "Great Serpent Mound Rebuilt",
+    year: 1070,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "pearl_street_station_opens.webp",
+    title: "Pearl Street Station Opens",
+    year: 1882,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "sylacauga_meteorite_strikes_ann_hodges.webp",
+    title: "Sylacauga Meteorite Strikes Ann Hodges",
+    year: 1954,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "alexander_witnesses_his_father_s_assassination.webp",
+    title: "Alexander Witnesses His Father's Assassination",
+    year: -336,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "ashoka_pillar_polished_at_sarnath.webp",
+    title: "Ashoka Pillar Polished At Sarnath",
+    year: -250,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "fort_zeelandia_founded.webp",
+    title: "Fort Zeelandia Founded",
+    year: 1624,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "napoleon_enters_alexandria.webp",
+    title: "Napoleon Enters Alexandria",
+    year: 1798,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "bayreuth_festival_opens.webp",
+    title: "Bayreuth Festival Opens",
+    year: 1876,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_b_ch_ng.webp",
+    title: "Battle of Bạch Đằng",
+    year: 1288,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "zheng_yi_sao_commands_the_red_flag_fleet.webp",
+    title: "Zheng Yi Sao Commands The Red Flag Fleet",
+    year: 1807,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "looting_of_the_summer_palace.webp",
+    title: "Looting Of The Summer Palace",
+    year: 1860,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "lagash_temple_ration_tablets.webp",
+    title: "Lagash Temple Ration Tablets",
+    year: -2150,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_bannockburn.webp",
+    title: "Battle Of Bannockburn",
+    year: 1314,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "botticelli_paints_the_birth_of_venus.webp",
+    title: "Botticelli Paints The Birth Of Venus",
+    year: 1485,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "aristotle_tutors_alexander_at_mieza.webp",
+    title: "Aristotle Tutors Alexander At Mieza",
+    year: -343,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "roman_envoys_in_illyria.webp",
+    title: "Roman Envoys in Illyria",
+    year: -229,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "vito_genovese_at_the_apalachin_meeting.webp",
+    title: "Vito Genovese At The Apalachin Meeting",
+    year: 1957,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "moulin_rouge_opening_night.webp",
+    title: "Moulin Rouge Opening Night",
+    year: 1889,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "mathias_rust_lands_in_moscow.webp",
+    title: "Mathias Rust Lands in Moscow",
+    year: 1987,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "mohenjo_daro_street_drain_cleaned.webp",
+    title: "Mohenjo Daro Street Drain Cleaned",
+    year: -2500,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "charles_ponzi_arrested_in_boston.webp",
+    title: "Charles Ponzi Arrested In Boston",
+    year: 1920,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "pasteur_first_rabies_vaccine.webp",
+    title: "Pasteur First Rabies Vaccine",
+    year: 1885,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_dandanaqan.webp",
+    title: "Battle of Dandanaqan",
+    year: 1040,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "bleriot_celebrates_channel_flight.webp",
+    title: "Bleriot Celebrates Channel Flight",
+    year: 1909,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "eddington_eclipse_expedition.webp",
+    title: "Eddington Eclipse Expedition",
+    year: 1919,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "jane_addams_visits_toynbee_hall.webp",
+    title: "Jane Addams Visits Toynbee Hall",
+    year: 1888,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "salem_witch_trials_begin.webp",
+    title: "Salem Witch Trials Begin",
+    year: 1692,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "renoir_paints_bal_du_moulin_de_la_galette.webp",
+    title: "Renoir Paints Bal Du Moulin De La Galette",
+    year: 1876,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "persian_conquest_of_egypt.webp",
+    title: "Persian Conquest Of Egypt",
+    year: -525,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_los_angeles_blackout.webp",
+    title: "Battle of Los Angeles Blackout",
+    year: 1942,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "augustus_receives_his_title.webp",
+    title: "Augustus Receives His Title",
+    year: -27,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "charlemagne_takes_the_lombard_crown_at_pavia.webp",
+    title: "Charlemagne Takes The Lombard Crown At Pavia",
+    year: 774,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "unification_of_egypt_under_narmer.webp",
+    title: "Unification Of Egypt Under Narmer",
+    year: -3100,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "stockholm_bloodbath.webp",
+    title: "Stockholm Bloodbath",
+    year: 1520,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "council_of_florence.webp",
+    title: "Council Of Florence",
+    year: 1440,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "murder_of_rasputin_at_yusupov_palace.webp",
+    title: "Murder Of Rasputin At Yusupov Palace",
+    year: 1916,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "council_of_clermont.webp",
+    title: "Council Of Clermont",
+    year: 1095,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "arab_conquest_of_alexandria.webp",
+    title: "Arab Conquest Of Alexandria",
+    year: 642,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "bugsy_siegel_opens_the_flamingo.webp",
+    title: "Bugsy Siegel Opens The Flamingo",
+    year: 1946,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "copernicus_de_revolutionibus_published.webp",
+    title: "Copernicus De Revolutionibus Published",
+    year: 1543,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "pony_express_first_ride.webp",
+    title: "Pony Express First Ride",
+    year: 1860,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "emiliano_zapata_issues_the_plan_of_ayala.webp",
+    title: "Emiliano Zapata Issues The Plan Of Ayala",
+    year: 1911,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "jugurtha_betrayed_in_mauretania.webp",
+    title: "Jugurtha Betrayed In Mauretania",
+    year: -105,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "preslav_literary_school_at_work.webp",
+    title: "Preslav Literary School At Work",
+    year: 893,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "geronimo_surrenders_at_skeleton_canyon.webp",
+    title: "Geronimo Surrenders At Skeleton Canyon",
+    year: 1886,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "blackbeard_last_stand_at_ocracoke.webp",
+    title: "Blackbeard Last Stand At Ocracoke",
+    year: 1718,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "red_army_takes_the_reichstag.webp",
+    title: "Red Army Takes The Reichstag",
+    year: 1945,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "st_louis_olympic_marathon_chaos.webp",
+    title: "St. Louis Olympic Marathon Chaos",
+    year: 1904,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "svetitskhoveli_cathedral_completed.webp",
+    title: "Svetitskhoveli Cathedral Completed",
+    year: 1029,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "longmen_grottoes_begun.webp",
+    title: "Longmen Grottoes Begun",
+    year: 493,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nerva_proclaimed_emperor.webp",
+    title: "Nerva Proclaimed Emperor",
+    year: 96,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "ottoman_circumcision_festival_of_1720.webp",
+    title: "Ottoman Circumcision Festival Of 1720",
+    year: 1720,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_hastings.webp",
+    title: "Battle Of Hastings",
+    year: 1066,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "brazilian_independence_proclaimed_at_ipiranga.webp",
+    title: "Brazilian Independence Proclaimed At Ipiranga",
+    year: 1822,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "christ_the_redeemer_inaugurated.webp",
+    title: "Christ The Redeemer Inaugurated",
+    year: 1931,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "copper_hoard_culture_tools.webp",
+    title: "Copper Hoard Culture Tools",
+    year: -2400,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "fall_of_acre.webp",
+    title: "Fall Of Acre",
+    year: 1291,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "battle_of_gaugamela.webp",
+    title: "Battle Of Gaugamela",
+    year: -331,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "rock_hewn_churches_of_lalibela_carved.webp",
+    title: "Rock Hewn Churches Of Lalibela Carved",
+    year: 1200,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "kublai_khans_paper_money_circulates.webp",
+    title: "Kublai Khans Paper Money Circulates",
+    year: 1260,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "reuters_news_agency_founded.webp",
+    title: "Reuters News Agency Founded",
+    year: 1851,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "destruction_of_opium_at_humen.webp",
+    title: "Destruction Of Opium At Humen",
+    year: 1839,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "assassination_of_archduke_franz_ferdinand.webp",
+    title: "Assassination Of Archduke Franz Ferdinand",
+    year: 1914,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "umayyad_conquest_of_hispania.webp",
+    title: "Umayyad Conquest Of Hispania",
+    year: 711,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_manned_hot_air_balloon_flight.webp",
+    title: "First Manned Hot Air Balloon Flight",
+    year: 1783,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "castro_enters_havana.webp",
+    title: "Castro Enters Havana",
+    year: 1959,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "scopes_trial_crowd.webp",
+    title: "Scopes Trial Crowd",
+    year: 1925,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "diet_of_roncaglia.webp",
+    title: "Diet of Roncaglia",
+    year: 1158,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "jean_lafitte_at_barataria_bay.webp",
+    title: "Jean Lafitte At Barataria Bay",
+    year: 1814,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "late_harappan_kilns_at_sindh.webp",
+    title: "Late Harappan Kilns at Sindh",
+    year: -1720,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "first_nobel_prize_ceremony.webp",
+    title: "First Nobel Prize Ceremony",
+    year: 1901,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "nixon_visits_mao.webp",
+    title: "Nixon Visits Mao",
+    year: 1972,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "alexander_at_the_oracle_of_amun.webp",
+    title: "Alexander At The Oracle Of Amun",
+    year: -331,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "eudes_crowned_king_of_west_francia.webp",
+    title: "Eudes Crowned King of West Francia",
+    year: 888,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "napoleon_crosses_great_st_bernard_pass.webp",
+    title: "Napoleon Crosses Great St Bernard Pass",
+    year: 1800,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
+  {
+    filename: "begum_rokeya_opens_her_girls_school.webp",
+    title: "Begum Rokeya Opens Her Girls School",
+    year: 1911,
+    lat: 0.0,
+    lng: 0.0,
+    description: ""
+  },
 ];
 
 

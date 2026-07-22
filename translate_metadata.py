@@ -2,8 +2,17 @@ import os
 import json
 import time
 import requests
+from dotenv import load_dotenv
 
-API_KEY = "POSA_LA_TEVA_API_KEY_AQUI"
+# Carregar les variables d'entorn dels fitxers .env
+load_dotenv(".env")
+load_dotenv(".env.local")
+
+API_KEY = os.getenv("GROQ_API_KEY")
+if not API_KEY:
+    print("❌ ERROR: No s'ha trobat GROQ_API_KEY a l'arxiu .env o .env.local")
+    exit(1)
+
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 def process_batch(batch):
@@ -33,22 +42,36 @@ Dades:
         try:
             resp = requests.post(URL, headers=headers, json=payload, timeout=30)
             data = resp.json()
-            content = data["choices"][0]["message"]["content"]
-            
-            if "```" in content:
-                content = content.split("```")[1]
-                if content.startswith("json"):
-                    content = content[4:]
-            content = content.strip()
-            
-            parsed = json.loads(content)
-            if len(parsed) == len(batch):
-                return parsed
+            if "choices" in data:
+                content = data["choices"][0]["message"]["content"]
+                
+                if "```" in content:
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                content = content.strip()
+                
+                parsed = json.loads(content)
+                if len(parsed) == len(batch):
+                    return parsed
+                else:
+                    print(f"Error de longitud: {len(parsed)} vs {len(batch)}")
             else:
-                print(f"Error de longitud: {len(parsed)} vs {len(batch)}")
+                print(f"Error de l'API de Groq: {data}")
+                # Comprovar si és un rate limit
+                if "error" in data and "message" in data["error"]:
+                    msg = data["error"]["message"]
+                    if "Please try again in" in msg:
+                        import re
+                        match = re.search(r"Please try again in ([0-9.]+)s", msg)
+                        if match:
+                            wait_time = float(match.group(1)) + 1.0
+                            print(f"⏳ Rate limit de Groq, esperant {wait_time:.1f} segons...")
+                            time.sleep(wait_time)
+                            continue
         except Exception as e:
             print("Error en petició:", e)
-        time.sleep(2)
+        time.sleep(3)
     return batch # Si falla, retorna original
 
 def main():
@@ -67,7 +90,7 @@ def main():
             to_translate.append(item)
             
     results = []
-    batch_size = 20
+    batch_size = 15
     for i in range(0, len(to_translate), batch_size):
         batch = to_translate[i:i+batch_size]
         print(f"Processant lot {i//batch_size + 1}/{len(to_translate)//batch_size + 1}...")

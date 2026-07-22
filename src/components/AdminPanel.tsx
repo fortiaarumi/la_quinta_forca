@@ -7,8 +7,9 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '@/lib/authContext';
 import DailyVideo from './DailyVideo';
 import { useRouter } from 'next/navigation';
+import HistoricViewPane from './HistoricViewPane';
 
-type AdminTab = 'users' | 'rooms' | 'app';
+type AdminTab = 'users' | 'rooms' | 'app' | 'proves';
 
 export default function AdminPanel() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function AdminPanel() {
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [activeRooms, setActiveRooms] = useState<any[]>([]);
+  const [testFile, setTestFile] = useState<string>('');
 
   useEffect(() => {
     if (!isAdmin || activeTab !== 'rooms') return;
@@ -214,11 +216,12 @@ export default function AdminPanel() {
           {([
             { id: 'app', icon: '📱', label: 'App & Vídeo' },
             { id: 'users', icon: '👥', label: 'Gestió Usuaris' },
-            { id: 'rooms', icon: '🌍', label: 'Sales Actives' }
+            { id: 'rooms', icon: '🌍', label: 'Sales Actives' },
+            { id: 'proves', icon: '🧪', label: 'Proves' }
           ] as const).map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => setActiveTab(tab.id as AdminTab)}
               className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-black uppercase tracking-wider transition-all ${
                 activeTab === tab.id ? 'bg-emerald-500 text-black shadow-lg' : 'text-gray-400 hover:bg-white/5'
               }`}
@@ -626,6 +629,38 @@ export default function AdminPanel() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── CONTINGUT PESTANYA PROVES ── */}
+        {activeTab === 'proves' && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 animate-fade-in-up">
+            <h2 className="text-xl font-black mb-6 text-emerald-400 border-b border-white/10 pb-4">Proves de Fitxers (Panoràmiques/Vídeos)</h2>
+            <div className="mb-6">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Ruta de l'arxiu (dins de public)</label>
+              <input 
+                type="text" 
+                value={testFile}
+                onChange={(e) => setTestFile(e.target.value)}
+                placeholder="Ex: historic/graumans_chinese_theatre_opening.webp o historic_5k.mp4"
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 outline-none text-white transition-all"
+              />
+              <p className="text-[10px] text-gray-500 mt-2">Posa la ruta a partir de 'public/'. Exemples: <code className="text-emerald-400">historic_5k.mp4</code>, <code className="text-emerald-400">historic/test.webp</code></p>
+            </div>
+
+            {testFile && (
+              <div className="border border-white/10 rounded-xl overflow-hidden bg-black relative min-h-[400px] flex items-center justify-center">
+                {testFile.endsWith('.mp4') || testFile.endsWith('.webm') ? (
+                  <video src={`/${testFile}`} autoPlay controls playsInline className="w-full h-full max-h-[60vh] object-contain" />
+                ) : testFile.endsWith('.webp') || testFile.endsWith('.jpg') || testFile.endsWith('.jpeg') ? (
+                  <div className="absolute inset-0 w-full h-full">
+                    <HistoricViewPane location={{ lat: 0, lng: 0, panoUrl: `/${testFile}`, hasStreetView: false }} />
+                  </div>
+                ) : (
+                  <img src={`/${testFile}`} alt="Prova" className="w-full h-full max-h-[60vh] object-contain" />
+                )}
               </div>
             )}
           </div>
