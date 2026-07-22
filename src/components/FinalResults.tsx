@@ -149,7 +149,8 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
         clearTimeout(timeoutMusic);
       };
     }
-  }, [iWon, playCelebration, playDecepcion, stopAllMusic, playMenuMusic]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iWon]);
 
   const numberToCatalan = (n: number): string => {
     if (n === 0) return 'zero';
@@ -500,7 +501,7 @@ export default function FinalResults({ roomId, room, playerId, onRestart, onLeav
 
         <div className="flex flex-col gap-3">
           <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 mt-2 text-center shadow-2xl overflow-hidden relative">
-            {!room.songState || room.songState.status === 'idle' ? (
+            {!room.songState || room.songState.status === 'idle' || room.songState.status === 'lyrics_generated' ? (
               isHost ? (
                 botAlive && (botCredits === null || botCredits > 0) ? (
                   <button onClick={handleGenerateSong} className="w-full bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-95 text-white font-black py-5 rounded-2xl text-xs transition-all uppercase tracking-[0.2em] shadow-xl border-none cursor-pointer">
