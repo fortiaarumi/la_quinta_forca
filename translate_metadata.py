@@ -52,31 +52,48 @@ Dades:
     return batch # Si falla, retorna original
 
 def main():
-    with open("all_metadata.json", "r", encoding="utf-8") as f:
+    meta_path = "public/historic/_metadata.json"
+    with open(meta_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     
+    # 1. Separar el que ja està traduït del que s'ha de traduir
+    to_translate = []
+    already_translated = []
+    for item in data:
+        # Si té descripció i és un string no buit, vol dir que ja està traduït
+        if item.get("description", "").strip():
+            already_translated.append(item)
+        else:
+            to_translate.append(item)
+            
     results = []
     batch_size = 20
-    for i in range(0, len(data), batch_size):
-        batch = data[i:i+batch_size]
-        print(f"Processant lot {i//batch_size + 1}/{len(data)//batch_size + 1}...")
-        res = process_batch(batch)
+    for i in range(0, len(to_translate), batch_size):
+        batch = to_translate[i:i+batch_size]
+        print(f"Processant lot {i//batch_size + 1}/{len(to_translate)//batch_size + 1}...")
         
-        # Mergejar amb les dades originals per no perdre l'any
+        # Adaptem el batch per al prompt: necessita 'f' (filename) i 't' (títol original a traduir)
+        prompt_batch = [{"f": x["filename"], "t": x.get("t", x.get("title", ""))} for x in batch]
+        res = process_batch(prompt_batch)
+        
+        # Mergejar amb les dades originals per no perdre l'any original
         for orig, nov in zip(batch, res):
             results.append({
-                "filename": orig["f"],
-                "title": nov.get("t", orig["t"]),
-                "year": orig["y"],
-                "lat": float(nov.get("lat", 0.0)),
-                "lng": float(nov.get("lng", 0.0)),
+                "filename": orig["filename"],
+                "title": nov.get("t", orig.get("t", orig.get("title", ""))),
+                "year": orig.get("year", orig.get("y", 0)),
+                "lat": float(nov.get("lat", orig.get("lat", 0.0))),
+                "lng": float(nov.get("lng", orig.get("lng", 0.0))),
                 "description": nov.get("d", "")
             })
             
-    with open("public/historic/_metadata.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+    # Combinar-ho tot
+    final_data = already_translated + results
+            
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(final_data, f, indent=2, ensure_ascii=False)
         
-    print("Metadades actualitzades a public/historic/_metadata.json!")
+    print(f"Metadades actualitzades a {meta_path}! ({len(results)} traduïts)")
     
     # Ara reconstruïm src/lib/gameUtils.ts
     print("Generant gameUtils.ts...")

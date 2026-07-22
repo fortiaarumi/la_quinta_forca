@@ -175,10 +175,10 @@ async def main():
             await page.wait_for_timeout(1000)
         print("\n -> COMENÇA L'AUTOMATITZACIÓ!\n")
 
-        while len(collected) < TARGET_COUNT:
+        while True:
             global capturing_pano
             global panos_allowed
-            print(f"\n--- Nova Partida (Round 1) | Total: {len(collected)}/{TARGET_COUNT} ---")
+            print(f"\n--- Nova Partida (Round 1) | Total: {len(collected)} ---")
             
             # 0. Obrim l'aixeta ABANS de carregar la pàgina (WenWare precarga la panoràmica)
             latest_pano = None
