@@ -95,10 +95,20 @@ def main():
   }},
 """
     ts_content += "];\n"
-    
-    with open("src/lib/gameUtils.ts", "w", encoding="utf-8") as f:
-        f.write(ts_content)
+    with open("src/lib/gameUtils.ts", "r", encoding="utf-8") as f:
+        old_content = f.read()
         
+    start_idx = old_content.find('export interface HistoricLocation')
+    if start_idx == -1:
+        start_idx = old_content.find('export const HISTORIC_LOCATIONS')
+        
+    if start_idx != -1:
+        new_utils = old_content[:start_idx] + ts_content
+    else:
+        new_utils = old_content + "\n\n" + ts_content
+        
+    with open("src/lib/gameUtils.ts", "w", encoding="utf-8") as f:
+        f.write(new_utils)        
     print("gameUtils.ts generat correctament.")
 
 if __name__ == "__main__":
