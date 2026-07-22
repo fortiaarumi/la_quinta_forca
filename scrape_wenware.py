@@ -47,6 +47,8 @@ def load_existing():
                     collected[fn] = e
                     if "source_url" in e:
                         seen_urls.add(e["source_url"])
+                    # Això assegura que els ítems que estan descarregats però encara NO traduïts tampoc es dupliquin
+                    seen_urls.add(fn.replace(".webp", "").replace(".jpg", "").replace(".png", ""))
         except:
             pass
             
@@ -244,10 +246,9 @@ async def main():
                     continue
                     
                 fn = slug + ext
-                c = 1
-                while fn in collected or os.path.exists(os.path.join(OUTPUT_DIR, fn)):
-                    fn = f"{slug}_{c}{ext}"
-                    c += 1
+                if fn in collected or os.path.exists(os.path.join(OUTPUT_DIR, fn)):
+                    print(f"   [FILTRE SEGURETAT FINAL] El fitxer {fn} ja existeix físicament a la carpeta. Rebutjant duplicat per no generar un _1.")
+                    continue
 
                 print(f"   Dades extretes: {title_raw} ({result.get('yearStr')})")
                 os.makedirs(OUTPUT_DIR, exist_ok=True)
