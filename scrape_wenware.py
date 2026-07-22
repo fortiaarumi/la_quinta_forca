@@ -94,12 +94,12 @@ async def on_response(response):
         
         if "tile" in url.lower() or "openfreemap" in url.lower() or "wikipedia" in url.lower(): return
         
-        body = await response.body()
-        size_kb = len(body) // 1024
-        # Rebaixem el filtre a 80KB perquè algunes panoràmiques (com JFK) pesen menys de 250KB
-        if size_kb > 80:
+        # Filtrem perquè NOMÉS es guardin les imatges que corresponen a la ronda del joc (roundid=)
+        if "asset" in url.lower() and "roundid=" in url.lower():
+            body = await response.body()
+            size_kb = len(body) // 1024
             if latest_pano is None:
-                print(f"   [Xarxa] Panoràmica detectada: {size_kb}KB ({url.split('?')[0].split('/')[-1]})")
+                print(f"   [Xarxa] Panoràmica real detectada: {size_kb}KB ({url.split('?')[0].split('/')[-1]})")
                 latest_pano = {"data": body, "url": url, "ct": ct, "size": size_kb}
     except:
         pass
