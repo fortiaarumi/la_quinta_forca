@@ -1032,14 +1032,6 @@
     "description": "El Carnaval de Venècia va celebrar un ball de disfresses, on els participants van lluir les seves màscares i vestits més elaborats. Aquest esdeveniment va tenir lloc a Venècia, Itàlia."
   },
   {
-    "filename": "battle_of_leipzig_1.webp",
-    "title": "Batalla de Leipzig",
-    "year": 1813,
-    "lat": 51.3333,
-    "lng": 12.3833,
-    "description": "La Batalla de Leipzig va tenir lloc durant les Guerres Napoleòniques, on les forces aliades van derrotar a les tropes franceses. Aquest esdeveniment va tenir lloc a Leipzig, Alemanya."
-  },
-  {
     "filename": "luther_at_the_diet_of_worms.webp",
     "title": "Luter a la Dieta de Worms",
     "year": 1521,
@@ -1102,14 +1094,6 @@
     "lat": 40.9667,
     "lng": 26.0667,
     "description": "Maximí el Traci va ser proclamat emperador de Roma, marcant l'inici d'un període de guerra civil. Aquest esdeveniment va tenir lloc a Nicòpolis, Grècia."
-  },
-  {
-    "filename": "battle_of_hwangsanbeol_1.webp",
-    "title": "Batalla de Hwangsanbeol",
-    "year": 660,
-    "lat": 36.3833,
-    "lng": 127.4167,
-    "description": "La Batalla de Hwangsanbeol va tenir lloc durant la invasió japonesa de Corea, on les forces coreanes van lluitar contra els invasors. Aquest esdeveniment va tenir lloc a Corea del Sud."
   },
   {
     "filename": "confucius_teaching.webp",
@@ -1206,14 +1190,6 @@
     "lat": 39.9167,
     "lng": 116.3833,
     "description": "Un període de canvis socials i polítics a la Xina sota el lideratge de Mao Zedong."
-  },
-  {
-    "filename": "einstein_delivers_nobel_lecture_in_gothenburg_1.webp",
-    "title": "Einstein pronuncia la conferència Nobel a Göteborg",
-    "year": 1923,
-    "lat": 57.7089,
-    "lng": 11.9746,
-    "description": "Albert Einstein va pronunciar la seva conferència Nobel a la ciutat sueca de Göteborg."
   },
   {
     "filename": "first_iphone_unveiled.webp",
@@ -1568,14 +1544,6 @@
     "description": "Alfred Wegener va ser un científic alemany que va presentar la teoria de la deriva continental el 1912. Va ser una de les primeres vegades que es va proposar aquesta teoria."
   },
   {
-    "filename": "confucius_born_in_lu_1.webp",
-    "title": "Confuci neix a Lu",
-    "year": -551,
-    "lat": 35.5814,
-    "lng": 116.9844,
-    "description": "Confuci va ser un filòsof xinès que va néixer a la ciutat de Lu el 551 aC. Va ser el fundador del confucianisme."
-  },
-  {
     "filename": "firmus_leads_revolt_in_mauretania.webp",
     "title": "Firmus lidera la revolta a la Mauritània",
     "year": 372,
@@ -1598,5 +1566,13 @@
     "lat": 41.9028,
     "lng": 12.4964,
     "description": "L'Imperi Romà va ser dividit en dues parts el 395 dC, després de la mort de l'emperador Teodosi. La divisió va marcar el final de l'Imperi Romà d'Occident."
+  },
+  {
+    "filename": "taxis_of_the_marne_arrive.webp",
+    "title": "Taxis Of The Marne Arrive",
+    "year": 1914,
+    "lat": 0.0,
+    "lng": 0.0,
+    "description": ""
   }
 ]

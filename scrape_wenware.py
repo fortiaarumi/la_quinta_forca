@@ -55,11 +55,10 @@ def load_existing():
         try:
             with open(GAMUTILS_PATH, "r", encoding="utf-8") as f:
                 content = f.read()
-            # Buscar tots els títols ja existents
-            titles = re.findall(r'title:\s*"([^"]+)"', content)
-            for t in titles:
-                # Afegim el títol processat per evitar descarregar panos d'un títol que ja tenim
-                seen_urls.add(slugify(t))
+            # Buscar els noms de fitxer (que són els slugs originals sense traduir)
+            filenames = re.findall(r'filename:\s*"([^"]+)\.(?:webp|jpg|jpeg|png)"', content)
+            for fn in filenames:
+                seen_urls.add(fn)
         except:
             pass
 
@@ -97,10 +96,10 @@ async def on_response(response):
         
         body = await response.body()
         size_kb = len(body) // 1024
-        if size_kb > 250:
-            # Ens quedem NOMÉS amb la PRIMERA imatge grossa (que és la de la ronda 1), ignorant les precàrregues posteriors
+        # Rebaixem el filtre a 80KB perquè algunes panoràmiques (com JFK) pesen menys de 250KB
+        if size_kb > 80:
             if latest_pano is None:
-                print(f"   [Xarxa] Panoràmica detectada: {size_kb}KB")
+                print(f"   [Xarxa] Panoràmica detectada: {size_kb}KB ({url.split('?')[0].split('/')[-1]})")
                 latest_pano = {"data": body, "url": url, "ct": ct, "size": size_kb}
     except:
         pass
