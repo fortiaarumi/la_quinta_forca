@@ -15,8 +15,14 @@ export function haversineDistance(
 }
 
 export function calculateScore(distanceKm: number, mode: string = 'world'): number {
-  if (distanceKm <= 0.05) return 5000;
+  // En mode històric, els punts màxims geogràfics són 2500 i donem un marge molt generós (10 km)
+  if (mode === 'historic') {
+    if (distanceKm <= 10) return 2500;
+    const score = Math.round(2500 * Math.exp(-distanceKm / 2000));
+    return Math.max(0, Math.min(2500, score));
+  }
 
+  // Per a la resta de modes, els punts màxims són 5000, amb marge de 50 metres
   if (distanceKm <= 0.05) return 5000;
 
   if (mode === 'pixapins') {
@@ -27,10 +33,6 @@ export function calculateScore(distanceKm: number, mode: string = 'world'): numb
     // Escala per a Catalunya: La caiguda de punts és molt ràpida (divisor 30)
     const score = Math.round(5000 * Math.exp(-distanceKm / 30));
     return Math.max(0, Math.min(5000, score));
-  } else if (mode === 'historic') {
-    // Escala per al mode Històric: La meitat dels punts (2500) són per la distància
-    const score = Math.round(2500 * Math.exp(-distanceKm / 2000));
-    return Math.max(0, Math.min(2500, score));
   } else {
     // Escala per al Món, Estadis i Cultural: La caiguda de punts és més suau (divisor 2000)
     const score = Math.round(5000 * Math.exp(-distanceKm / 2000));
