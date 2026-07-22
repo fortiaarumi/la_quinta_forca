@@ -5,12 +5,13 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   onGuess: (lat: number, lng: number, year?: number) => void;
   onPinChange?: (lat: number, lng: number) => void;
+  onYearChange?: (year: number) => void;
   onClose: () => void;
   gameMode?: string;
   userEmail?: string | null;
 }
 
-export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'world', userEmail }: Props) {
+export default function GuessMap({ onGuess, onPinChange, onYearChange, onClose, gameMode = 'world', userEmail }: Props) {
   const isArnau = userEmail === 'arnau.montull@gmail.com';
   const mapRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
@@ -26,6 +27,12 @@ export default function GuessMap({ onGuess, onPinChange, onClose, gameMode = 'wo
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (onYearChange) {
+      onYearChange(guessYear);
+    }
+  }, [guessYear, onYearChange]);
 
   useEffect(() => {
     if (!mapRef.current) return;

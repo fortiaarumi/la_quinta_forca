@@ -148,6 +148,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
     }
   }, [room?.currentRound, room?.gameState]); // S'actualitza en canviar de ronda o tornar a 'playing'
   const tempPinRef = useRef<{ lat: number, lng: number } | null>(null);
+  const tempYearRef = useRef<number>(1000);
   const [showAlert, setShowAlert] = useState(false);
   const [badgeToast, setBadgeToast] = useState<string | null>(null);
   const [levelUpToast, setLevelUpToast] = useState<number | null>(null);
@@ -381,11 +382,13 @@ export default function GameRoom({ roomId, playerId }: Props) {
           // 1. Tancar el mapa i enviar el pin auto-guardat si s'ha esgotat el temps
           if (isTimeUp && !hasGuessed) {
             if (tempPinRef.current) {
-              await submitGuess(tempPinRef.current.lat, tempPinRef.current.lng); // Esperem que s'enviï siusplau
+              await submitGuess(tempPinRef.current.lat, tempPinRef.current.lng, tempYearRef.current); // Esperem que s'enviï siusplau
             } else {
-              setShowGuessMap(false);
-              setHasGuessed(true);
+              // Envia 0,0 si s'esgota el temps sense clicar el mapa per no trencar l'estat en batalles
+              await submitGuess(0, 0, tempYearRef.current);
             }
+            setShowGuessMap(false);
+            setHasGuessed(true);
           }
 
           // 2. NOMÉS el Host calcula i suma els punts
@@ -899,17 +902,24 @@ export default function GameRoom({ roomId, playerId }: Props) {
         update(guessRef, { guessCountry, actualCountry }).catch(e => console.log('Error actualitzant zones', e));
       });
 
-      // 2. Comprovem si som els PRIMERS a endevinar
-      const existingGuesses = room.rounds?.[room.currentRound]?.guesses || {};
-      const isFirstToGuess = Object.keys(existingGuesses).length === 0;
-
-      // Si ets el primer en Multijugador, reduïm el temps de la sala segons el mode
+      // 2. Comprovem si som els PRIMERS a endevinar mitjançant una transacció de Firebase (per evitar Race Conditions)
       const tSettings = getTimeSettings(room.timeMode);
-      if (isFirstToGuess && !isSinglePlayer && room.roundEndsAt && tSettings.panic) {
-        const panicTime = Date.now() + tSettings.panic;
-        if (panicTime < room.roundEndsAt) {
-          await update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });
-        }
+      if (!isSinglePlayer && room.roundEndsAt && tSettings.panic) {
+        const panicRef = ref(db, `rooms/${roomId}/rounds/${room.currentRound}/panicTriggered`);
+        runTransaction(panicRef, (currentData) => {
+          if (currentData === null) {
+            return true;
+          }
+          return; // Ja s'havia disparat, abortem
+        }).then((result) => {
+          if (result.committed) {
+            // Som el primer jugador real, reduïm temps
+            const panicTime = Date.now() + tSettings.panic!;
+            if (panicTime < room.roundEndsAt!) {
+              update(ref(db, `rooms/${roomId}`), { roundEndsAt: panicTime });
+            }
+          }
+        }).catch(e => console.log('Error en transacció panic:', e));
       }
 
       setHasGuessed(true);
@@ -1347,6 +1357,7 @@ export default function GameRoom({ roomId, playerId }: Props) {
           <GuessMap
             onGuess={submitGuess}
             onPinChange={(lat, lng) => { tempPinRef.current = { lat, lng }; }}
+            onYearChange={(year) => { tempYearRef.current = year; }}
             onClose={() => setShowGuessMap(false)}
             gameMode={room.gameMode}
             userEmail={user?.email}
