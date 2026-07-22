@@ -430,8 +430,18 @@ export default function GameRoom({ roomId, playerId }: Props) {
     let attempts = 0;
 
     if (room.gameMode === 'historic') {
+      let historicData = HISTORIC_LOCATIONS;
+      try {
+        const res = await fetch('/historic/_metadata.json');
+        if (res.ok) {
+          historicData = await res.json();
+        }
+      } catch (e) {
+        console.error("Error fetching historic metadata:", e);
+      }
+
       for (let i = 0; i < count; i++) {
-        const item = HISTORIC_LOCATIONS[Math.floor(Math.random() * HISTORIC_LOCATIONS.length)];
+        const item = historicData[Math.floor(Math.random() * historicData.length)];
         newLocations.push({
           lat: item.lat,
           lng: item.lng,
